@@ -2,6 +2,7 @@ import { Star, ShoppingCart } from 'lucide-react';
 import { Product } from '@/data/mockData';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   product: Product;
@@ -9,16 +10,12 @@ interface Props {
 
 const ProductCard = ({ product }: Props) => {
   const { addToCart } = useCart();
+  const { t } = useTranslation();
 
   return (
     <div className="group bg-card border border-border rounded-lg overflow-hidden hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
       <div className="aspect-square overflow-hidden bg-secondary">
-        <img
-          src={product.image}
-          alt={product.name}
-          loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-        />
+        <img src={product.image} alt={product.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
       </div>
       <div className="p-4">
         <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
@@ -33,7 +30,7 @@ const ProductCard = ({ product }: Props) => {
         <div className="flex items-center justify-between">
           <span className="text-primary font-bold text-lg">${product.price}</span>
           <Button size="sm" onClick={() => addToCart(product)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <ShoppingCart className="h-4 w-4 mr-1" /> Add
+            <ShoppingCart className="h-4 w-4 mr-1" /> {t('shop.add')}
           </Button>
         </div>
       </div>

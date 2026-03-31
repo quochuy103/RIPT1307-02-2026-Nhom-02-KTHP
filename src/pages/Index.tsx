@@ -6,6 +6,7 @@ import BarberCard from '@/components/BarberCard';
 import ReviewCard from '@/components/ReviewCard';
 import heroImage from '@/assets/hero-barber.jpg';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const fadeUp = {
   initial: { opacity: 0, y: 30 },
@@ -15,6 +16,7 @@ const fadeUp = {
 };
 
 const Index = () => {
+  const { t } = useTranslation();
   const featured = services.slice(0, 4);
 
   return (
@@ -29,21 +31,19 @@ const Index = () => {
           <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="max-w-xl">
             <div className="flex items-center gap-2 mb-4">
               <Scissors className="h-5 w-5 text-primary" />
-              <span className="text-primary text-sm font-medium tracking-widest uppercase">Est. 2010</span>
+              <span className="text-primary text-sm font-medium tracking-widest uppercase">{t('hero.est')}</span>
             </div>
             <h1 className="font-display text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              Where Style<br />
-              <span className="text-gradient-gold">Meets Craft</span>
+              {t('hero.title1')}<br />
+              <span className="text-gradient-gold">{t('hero.title2')}</span>
             </h1>
-            <p className="text-muted-foreground text-lg mb-8 max-w-md">
-              Premium grooming experience crafted by expert barbers. Walk in confident, walk out transformed.
-            </p>
+            <p className="text-muted-foreground text-lg mb-8 max-w-md">{t('hero.subtitle')}</p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8">
-                <Link to="/booking">Book Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link to="/booking">{t('hero.bookNow')} <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 text-base">
-                <Link to="/services">Our Services</Link>
+                <Link to="/services">{t('hero.ourServices')}</Link>
               </Button>
             </div>
           </motion.div>
@@ -55,10 +55,10 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { label: 'Happy Clients', value: '5,000+' },
-              { label: 'Expert Barbers', value: '3' },
-              { label: 'Years Experience', value: '14+' },
-              { label: 'Average Rating', value: '4.9' },
+              { label: t('stats.happyClients'), value: '5,000+' },
+              { label: t('stats.expertBarbers'), value: '3' },
+              { label: t('stats.yearsExperience'), value: '14+' },
+              { label: t('stats.avgRating'), value: '4.9' },
             ].map(s => (
               <motion.div key={s.label} {...fadeUp}>
                 <p className="text-3xl md:text-4xl font-display font-bold text-gradient-gold">{s.value}</p>
@@ -73,8 +73,8 @@ const Index = () => {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">Our <span className="text-gradient-gold">Services</span></h2>
-            <p className="text-muted-foreground max-w-md mx-auto">Premium grooming services tailored to your unique style</p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.servicesTitle')} <span className="text-gradient-gold">{t('home.servicesHighlight')}</span></h2>
+            <p className="text-muted-foreground max-w-md mx-auto">{t('home.servicesSubtitle')}</p>
           </motion.div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {featured.map((s, i) => (
@@ -83,11 +83,11 @@ const Index = () => {
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                     <Scissors className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="font-display text-lg font-semibold mb-1">{s.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-3">{s.description}</p>
+                  <h3 className="font-display text-lg font-semibold mb-1">{t(`serviceItems.${s.nameKey}`)}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{t(`serviceItems.${s.descKey}`)}</p>
                   <div className="flex justify-between items-center">
                     <span className="text-primary font-bold">${s.price}</span>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {s.duration}min</span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {s.duration}{t('services.min')}</span>
                   </div>
                 </div>
               </motion.div>
@@ -95,7 +95,7 @@ const Index = () => {
           </div>
           <div className="text-center mt-10">
             <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
-              <Link to="/services">View All Services <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Link to="/services">{t('home.viewAll')} <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </div>
         </div>
@@ -105,8 +105,8 @@ const Index = () => {
       <section className="py-20 bg-card/50 border-y border-border">
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">Meet Our <span className="text-gradient-gold">Barbers</span></h2>
-            <p className="text-muted-foreground">Skilled craftsmen dedicated to your look</p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.barbersTitle')} <span className="text-gradient-gold">{t('home.barbersHighlight')}</span></h2>
+            <p className="text-muted-foreground">{t('home.barbersSubtitle')}</p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-3xl mx-auto">
             {barbers.map((b, i) => (
@@ -122,7 +122,7 @@ const Index = () => {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">What Our <span className="text-gradient-gold">Clients Say</span></h2>
+            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.reviewsTitle')} <span className="text-gradient-gold">{t('home.reviewsHighlight')}</span></h2>
           </motion.div>
           <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
             {reviews.map(r => (
@@ -138,7 +138,7 @@ const Index = () => {
       <section className="py-20 bg-card/50 border-y border-border">
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">Our <span className="text-gradient-gold">Work</span></h2>
+            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.galleryTitle')} <span className="text-gradient-gold">{t('home.galleryHighlight')}</span></h2>
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {['https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
@@ -153,7 +153,7 @@ const Index = () => {
           </div>
           <div className="text-center mt-10">
             <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
-              <Link to="/gallery">View Gallery <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Link to="/gallery">{t('home.viewGallery')} <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </div>
         </div>
@@ -165,10 +165,10 @@ const Index = () => {
           <motion.div {...fadeUp} className="text-center bg-card border border-border rounded-2xl p-12 md:p-16 relative overflow-hidden">
             <div className="absolute inset-0 bg-gold-gradient opacity-5" />
             <div className="relative z-10">
-              <h2 className="font-display text-3xl md:text-5xl font-bold mb-4">Ready for a <span className="text-gradient-gold">Fresh Look?</span></h2>
-              <p className="text-muted-foreground mb-8 max-w-md mx-auto">Book your appointment today and experience the Blade & Co difference.</p>
+              <h2 className="font-display text-3xl md:text-5xl font-bold mb-4">{t('home.ctaTitle')} <span className="text-gradient-gold">{t('home.ctaHighlight')}</span></h2>
+              <p className="text-muted-foreground mb-8 max-w-md mx-auto">{t('home.ctaSubtitle')}</p>
               <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-10">
-                <Link to="/booking">Book Your Appointment <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link to="/booking">{t('home.ctaButton')} <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </div>
           </motion.div>

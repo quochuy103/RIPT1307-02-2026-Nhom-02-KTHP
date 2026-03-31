@@ -4,10 +4,10 @@ import barber3 from '@/assets/barber-3.jpg';
 
 export interface Service {
   id: string;
-  name: string;
+  nameKey: string;
+  descKey: string;
   price: number;
   duration: number;
-  description: string;
   category: 'haircut' | 'styling' | 'coloring' | 'grooming';
 }
 
@@ -35,7 +35,7 @@ export interface Review {
   id: string;
   name: string;
   rating: number;
-  comment: string;
+  commentKey: string;
   date: string;
   avatar: string;
 }
@@ -48,16 +48,16 @@ export interface GalleryImage {
 }
 
 export const services: Service[] = [
-  { id: '1', name: 'Classic Haircut', price: 35, duration: 30, description: 'Traditional scissor cut tailored to your style', category: 'haircut' },
-  { id: '2', name: 'Skin Fade', price: 40, duration: 45, description: 'Sharp skin fade with clean line-up', category: 'haircut' },
-  { id: '3', name: 'Buzz Cut', price: 25, duration: 20, description: 'Quick and clean all-over clipper cut', category: 'haircut' },
-  { id: '4', name: 'Beard Trim', price: 20, duration: 20, description: 'Shape and trim your beard to perfection', category: 'grooming' },
-  { id: '5', name: 'Hot Towel Shave', price: 30, duration: 30, description: 'Luxury straight razor shave with hot towel treatment', category: 'grooming' },
-  { id: '6', name: 'Hair Coloring', price: 60, duration: 60, description: 'Full color treatment with premium products', category: 'coloring' },
-  { id: '7', name: 'Highlights', price: 75, duration: 90, description: 'Subtle or bold highlights to enhance your look', category: 'coloring' },
-  { id: '8', name: 'Hair Styling', price: 30, duration: 25, description: 'Professional blow-dry and styling', category: 'styling' },
-  { id: '9', name: 'Pompadour Style', price: 45, duration: 40, description: 'Classic pompadour cut and style', category: 'styling' },
-  { id: '10', name: 'Kids Haircut', price: 25, duration: 25, description: 'Gentle haircut for children under 12', category: 'haircut' },
+  { id: '1', nameKey: 'classicHaircut', descKey: 'classicHaircutDesc', price: 35, duration: 30, category: 'haircut' },
+  { id: '2', nameKey: 'skinFade', descKey: 'skinFadeDesc', price: 40, duration: 45, category: 'haircut' },
+  { id: '3', nameKey: 'buzzCut', descKey: 'buzzCutDesc', price: 25, duration: 20, category: 'haircut' },
+  { id: '4', nameKey: 'beardTrim', descKey: 'beardTrimDesc', price: 20, duration: 20, category: 'grooming' },
+  { id: '5', nameKey: 'hotTowelShave', descKey: 'hotTowelShaveDesc', price: 30, duration: 30, category: 'grooming' },
+  { id: '6', nameKey: 'hairColoring', descKey: 'hairColoringDesc', price: 60, duration: 60, category: 'coloring' },
+  { id: '7', nameKey: 'highlights', descKey: 'highlightsDesc', price: 75, duration: 90, category: 'coloring' },
+  { id: '8', nameKey: 'hairStyling', descKey: 'hairStylingDesc', price: 30, duration: 25, category: 'styling' },
+  { id: '9', nameKey: 'pompadourStyle', descKey: 'pompadourStyleDesc', price: 45, duration: 40, category: 'styling' },
+  { id: '10', nameKey: 'kidsHaircut', descKey: 'kidsHaircutDesc', price: 25, duration: 25, category: 'haircut' },
 ];
 
 export const barbers: Barber[] = [
@@ -76,11 +76,11 @@ export const products: Product[] = [
 ];
 
 export const reviews: Review[] = [
-  { id: '1', name: 'David M.', rating: 5, comment: 'Best fade I\'ve ever had. Marcus is a true artist.', date: '2024-03-15', avatar: 'DM' },
-  { id: '2', name: 'Chris P.', rating: 5, comment: 'The hot towel shave was incredible. So relaxing.', date: '2024-03-10', avatar: 'CP' },
-  { id: '3', name: 'Alex T.', rating: 4, comment: 'Great atmosphere, skilled barbers. My go-to shop now.', date: '2024-02-28', avatar: 'AT' },
-  { id: '4', name: 'Ryan K.', rating: 5, comment: 'Sofia did amazing highlights. Highly recommend!', date: '2024-02-20', avatar: 'RK' },
-  { id: '5', name: 'James L.', rating: 5, comment: 'Premium experience from start to finish. Worth every penny.', date: '2024-02-15', avatar: 'JL' },
+  { id: '1', name: 'David M.', rating: 5, commentKey: 'r1', date: '2024-03-15', avatar: 'DM' },
+  { id: '2', name: 'Chris P.', rating: 5, commentKey: 'r2', date: '2024-03-10', avatar: 'CP' },
+  { id: '3', name: 'Alex T.', rating: 4, commentKey: 'r3', date: '2024-02-28', avatar: 'AT' },
+  { id: '4', name: 'Ryan K.', rating: 5, commentKey: 'r4', date: '2024-02-20', avatar: 'RK' },
+  { id: '5', name: 'James L.', rating: 5, commentKey: 'r5', date: '2024-02-15', avatar: 'JL' },
 ];
 
 export const galleryImages: GalleryImage[] = [

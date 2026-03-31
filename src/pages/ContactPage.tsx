@@ -5,33 +5,37 @@ import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const ContactPage = () => {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.message) { toast.error('Please fill all fields'); return; }
-    toast.success('Message sent! We\'ll get back to you soon.');
+    if (!form.name || !form.email || !form.message) { toast.error(t('contact.fillAll')); return; }
+    toast.success(t('contact.sent'));
     setForm({ name: '', email: '', message: '' });
   };
+
+  const info = [
+    { icon: MapPin, label: t('contact.address'), value: t('contact.addressValue') },
+    { icon: Phone, label: t('contact.phone'), value: t('contact.phoneValue') },
+    { icon: Mail, label: t('contact.email'), value: t('contact.emailValue') },
+    { icon: Clock, label: t('contact.hours'), value: t('contact.hoursValue') },
+  ];
 
   return (
     <div className="pt-24 pb-20">
       <div className="container mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-          <h1 className="font-display text-4xl md:text-5xl font-bold mb-3">Get in <span className="text-gradient-gold">Touch</span></h1>
-          <p className="text-muted-foreground">We'd love to hear from you</p>
+          <h1 className="font-display text-4xl md:text-5xl font-bold mb-3">{t('contact.title')} <span className="text-gradient-gold">{t('contact.highlight')}</span></h1>
+          <p className="text-muted-foreground">{t('contact.subtitle')}</p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
           <div className="space-y-8">
-            {[
-              { icon: MapPin, label: 'Address', value: '123 Main Street, Downtown, NY 10001' },
-              { icon: Phone, label: 'Phone', value: '(555) 123-4567' },
-              { icon: Mail, label: 'Email', value: 'hello@bladeandco.com' },
-              { icon: Clock, label: 'Hours', value: 'Mon-Fri 9AM-7PM • Sat 9AM-6PM • Sun 10AM-4PM' },
-            ].map((item, i) => (
+            {info.map((item, i) => (
               <div key={i} className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
                   <item.icon className="h-5 w-5 text-primary" />
@@ -57,11 +61,11 @@ const ContactPage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-6 md:p-8 space-y-4 h-fit">
-            <h2 className="font-display text-2xl font-semibold mb-2">Send us a Message</h2>
-            <Input placeholder="Your Name" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="bg-secondary border-border" />
-            <Input type="email" placeholder="Your Email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className="bg-secondary border-border" />
-            <Textarea placeholder="Your Message" rows={5} value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} className="bg-secondary border-border" />
-            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">Send Message</Button>
+            <h2 className="font-display text-2xl font-semibold mb-2">{t('contact.formTitle')}</h2>
+            <Input placeholder={t('contact.yourName')} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="bg-secondary border-border" />
+            <Input type="email" placeholder={t('contact.yourEmail')} value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className="bg-secondary border-border" />
+            <Textarea placeholder={t('contact.yourMessage')} rows={5} value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} className="bg-secondary border-border" />
+            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">{t('contact.send')}</Button>
           </form>
         </div>
       </div>

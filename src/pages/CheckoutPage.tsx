@@ -7,19 +7,20 @@ import { Minus, Plus, Trash2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const CheckoutPage = () => {
   const { items, totalPrice, updateQuantity, removeFromCart, clearCart } = useCart();
   const [form, setForm] = useState({ name: '', phone: '', address: '' });
   const [ordered, setOrdered] = useState(false);
+  const { t } = useTranslation();
 
   const handleOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.phone || !form.address) { toast.error('Please fill all fields'); return; }
-    if (items.length === 0) { toast.error('Cart is empty'); return; }
+    if (!form.name || !form.phone || !form.address) { toast.error(t('checkout.fillAll')); return; }
+    if (items.length === 0) { toast.error(t('checkout.cartEmpty')); return; }
     setOrdered(true);
     clearCart();
-    toast.success('Order placed!');
   };
 
   if (ordered) {
@@ -27,10 +28,10 @@ const CheckoutPage = () => {
       <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
           <CheckCircle className="h-20 w-20 text-primary mx-auto mb-6" />
-          <h2 className="font-display text-3xl font-bold mb-3">Order Placed!</h2>
-          <p className="text-muted-foreground mb-6">Thank you, {form.name}. We'll contact you shortly.</p>
+          <h2 className="font-display text-3xl font-bold mb-3">{t('checkout.orderPlaced')}</h2>
+          <p className="text-muted-foreground mb-6">{t('checkout.thankYou', { name: form.name })}</p>
           <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
-            <Link to="/shop">Continue Shopping</Link>
+            <Link to="/shop">{t('checkout.continueShopping')}</Link>
           </Button>
         </motion.div>
       </div>
@@ -41,14 +42,14 @@ const CheckoutPage = () => {
     <div className="pt-24 pb-20">
       <div className="container mx-auto px-4 max-w-4xl">
         <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="font-display text-4xl font-bold mb-8 text-center">
-          <span className="text-gradient-gold">Checkout</span>
+          <span className="text-gradient-gold">{t('checkout.title')}</span>
         </motion.h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-3 space-y-4">
-            <h2 className="font-display text-xl font-semibold mb-4">Your Cart</h2>
+            <h2 className="font-display text-xl font-semibold mb-4">{t('checkout.yourCart')}</h2>
             {items.length === 0 ? (
-              <p className="text-muted-foreground">Your cart is empty. <Link to="/shop" className="text-primary hover:underline">Shop now</Link></p>
+              <p className="text-muted-foreground">{t('checkout.emptyCart')} <Link to="/shop" className="text-primary hover:underline">{t('checkout.shopNow')}</Link></p>
             ) : (
               items.map(item => (
                 <div key={item.product.id} className="flex gap-4 bg-card border border-border rounded-lg p-4">
@@ -71,16 +72,16 @@ const CheckoutPage = () => {
 
           <div className="lg:col-span-2">
             <div className="bg-card border border-border rounded-xl p-6 sticky top-24">
-              <h2 className="font-display text-xl font-semibold mb-4">Order Summary</h2>
-              <div className="flex justify-between mb-2 text-sm"><span className="text-muted-foreground">Subtotal</span><span>${totalPrice.toFixed(2)}</span></div>
-              <div className="flex justify-between mb-4 text-sm"><span className="text-muted-foreground">Shipping</span><span>Free</span></div>
-              <div className="flex justify-between font-bold text-lg border-t border-border pt-4 mb-6"><span>Total</span><span className="text-primary">${totalPrice.toFixed(2)}</span></div>
+              <h2 className="font-display text-xl font-semibold mb-4">{t('checkout.orderSummary')}</h2>
+              <div className="flex justify-between mb-2 text-sm"><span className="text-muted-foreground">{t('checkout.subtotal')}</span><span>${totalPrice.toFixed(2)}</span></div>
+              <div className="flex justify-between mb-4 text-sm"><span className="text-muted-foreground">{t('checkout.shipping')}</span><span>{t('checkout.free')}</span></div>
+              <div className="flex justify-between font-bold text-lg border-t border-border pt-4 mb-6"><span>{t('checkout.total')}</span><span className="text-primary">${totalPrice.toFixed(2)}</span></div>
 
               <form onSubmit={handleOrder} className="space-y-3">
-                <Input placeholder="Full Name" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="bg-secondary border-border" />
-                <Input placeholder="Phone" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} className="bg-secondary border-border" />
-                <Textarea placeholder="Delivery Address" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} className="bg-secondary border-border" />
-                <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">Place Order</Button>
+                <Input placeholder={t('checkout.fullName')} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="bg-secondary border-border" />
+                <Input placeholder={t('checkout.phone')} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} className="bg-secondary border-border" />
+                <Textarea placeholder={t('checkout.address')} value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} className="bg-secondary border-border" />
+                <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">{t('checkout.placeOrder')}</Button>
               </form>
             </div>
           </div>

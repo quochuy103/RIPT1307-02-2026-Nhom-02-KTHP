@@ -3,9 +3,11 @@ import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const CartSidebar = () => {
   const { items, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, totalPrice, totalItems } = useCart();
+  const { t } = useTranslation();
 
   return (
     <AnimatePresence>
@@ -27,7 +29,7 @@ const CartSidebar = () => {
           >
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h2 className="font-display text-lg font-semibold flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5 text-primary" /> Cart ({totalItems})
+                <ShoppingBag className="h-5 w-5 text-primary" /> {t('cart.title')} ({totalItems})
               </h2>
               <button onClick={() => setIsCartOpen(false)} className="p-2 text-muted-foreground hover:text-foreground transition-colors">
                 <X className="h-5 w-5" />
@@ -38,7 +40,7 @@ const CartSidebar = () => {
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                   <ShoppingBag className="h-12 w-12 mb-4 opacity-30" />
-                  <p>Your cart is empty</p>
+                  <p>{t('cart.empty')}</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
@@ -70,11 +72,11 @@ const CartSidebar = () => {
             {items.length > 0 && (
               <div className="border-t border-border p-4">
                 <div className="flex justify-between mb-4">
-                  <span className="font-medium">Total</span>
+                  <span className="font-medium">{t('cart.total')}</span>
                   <span className="text-primary font-bold text-lg">${totalPrice.toFixed(2)}</span>
                 </div>
                 <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsCartOpen(false)}>
-                  <Link to="/checkout">Checkout</Link>
+                  <Link to="/checkout">{t('cart.checkout')}</Link>
                 </Button>
               </div>
             )}

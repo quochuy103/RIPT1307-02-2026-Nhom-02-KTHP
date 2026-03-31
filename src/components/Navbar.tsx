@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingBag, User, Scissors } from 'lucide-react';
+import { Menu, X, ShoppingBag, User, Scissors, Globe } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const navLinks = [
-  { to: '/', label: 'Home' },
-  { to: '/services', label: 'Services' },
-  { to: '/booking', label: 'Book Now' },
-  { to: '/shop', label: 'Shop' },
-  { to: '/gallery', label: 'Gallery' },
-  { to: '/about', label: 'About' },
-  { to: '/contact', label: 'Contact' },
+  { to: '/', labelKey: 'nav.home' },
+  { to: '/services', labelKey: 'nav.services' },
+  { to: '/booking', labelKey: 'nav.bookNow' },
+  { to: '/shop', labelKey: 'nav.shop' },
+  { to: '/gallery', labelKey: 'nav.gallery' },
+  { to: '/about', labelKey: 'nav.about' },
+  { to: '/contact', labelKey: 'nav.contact' },
 ];
 
 const Navbar = () => {
@@ -20,6 +21,11 @@ const Navbar = () => {
   const { totalItems, setIsCartOpen } = useCart();
   const { isAuthenticated } = useAuth();
   const location = useLocation();
+  const { t, i18n } = useTranslation();
+
+  const toggleLang = () => {
+    i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -39,12 +45,16 @@ const Navbar = () => {
                   location.pathname === link.to ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
-                {link.label}
+                {t(link.labelKey)}
               </Link>
             ))}
           </div>
 
           <div className="flex items-center gap-3">
+            <button onClick={toggleLang} className="p-2 text-muted-foreground hover:text-primary transition-colors text-xs font-bold flex items-center gap-1">
+              <Globe className="h-4 w-4" />
+              {i18n.language === 'vi' ? 'EN' : 'VI'}
+            </button>
             <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-muted-foreground hover:text-primary transition-colors">
               <ShoppingBag className="h-5 w-5" />
               {totalItems > 0 && (
@@ -81,7 +91,7 @@ const Navbar = () => {
                     location.pathname === link.to ? 'text-primary' : 'text-muted-foreground'
                   }`}
                 >
-                  {link.label}
+                  {t(link.labelKey)}
                 </Link>
               ))}
             </div>
