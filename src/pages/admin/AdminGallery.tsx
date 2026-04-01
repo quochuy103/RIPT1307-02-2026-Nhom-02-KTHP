@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { mockGallery, AdminGalleryImage } from '@/data/adminMockData';
+import { mockGallery } from '@/data/adminMockData';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
