@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Scissors } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -11,23 +11,39 @@ import { useTranslation } from 'react-i18next';
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
-  const { login, register } = useAuth();
+  const { login, register, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
+
+  // If redirected here from a protected page, go back there after login
+  const from = (location.state as { from?: Location })?.from?.pathname || null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.email || !form.password) { toast.error(t('auth.fillAll')); return; }
+
     if (!isLogin) {
+      // ── Register ────────────────────────────────────────────────────────────
       if (!form.name) { toast.error(t('auth.nameRequired')); return; }
       if (form.password !== form.confirmPassword) { toast.error(t('auth.passwordMismatch')); return; }
-      register(form.name, form.email, form.password);
+      const ok = register(form.name, form.email, form.password);
+      if (!ok) { toast.error('Email này đã được đăng ký.'); return; }
       toast.success(t('auth.accountCreated'));
+      navigate(from ?? '/');
     } else {
-      login(form.email, form.password);
+      // ── Login ────────────────────────────────────────────────────────────────
+      const ok = login(form.email, form.password);
+      if (!ok) { toast.error('Email hoặc mật khẩu không đúng.'); return; }
       toast.success(t('auth.welcomeBackToast'));
+
+      // Admins go to dashboard; everyone else goes back or home
+      if (form.email.toLowerCase() === 'phamhuy1032006@gmail.com') {
+        navigate('/admin');
+      } else {
+        navigate(from ?? '/');
+      }
     }
-    navigate('/');
   };
 
   return (

@@ -17,8 +17,18 @@ import GalleryPage from "./pages/GalleryPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import AuthPage from "./pages/AuthPage";
-import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
+import AdminLayout from "@/components/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminServices from "./pages/admin/AdminServices";
+import AdminBarbers from "./pages/admin/AdminBarbers";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminGallery from "./pages/admin/AdminGallery";
+import AdminReviews from "./pages/admin/AdminReviews";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -30,24 +40,44 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Navbar />
-            <CartSidebar />
-            <main className="min-h-screen">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/services" element={<ServicesPage />} />
-                <Route path="/booking" element={<BookingPage />} />
-                <Route path="/shop" element={<ShopPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/gallery" element={<GalleryPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/admin" element={<AdminPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <Footer />
+            <Routes>
+              {/* Admin routes — own layout, no Navbar/Footer */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="bookings" element={<AdminBookings />} />
+                <Route path="services" element={<AdminServices />} />
+                <Route path="barbers" element={<AdminBarbers />} />
+                <Route path="products" element={<AdminProducts />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="gallery" element={<AdminGallery />} />
+                <Route path="reviews" element={<AdminReviews />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+
+              {/* Public routes */}
+              <Route path="*" element={
+                <>
+                  <Navbar />
+                  <CartSidebar />
+                  <main className="min-h-screen">
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/services" element={<ServicesPage />} />
+                      <Route path="/booking" element={<BookingPage />} />
+                      <Route path="/shop" element={<ShopPage />} />
+                      <Route path="/checkout" element={<CheckoutPage />} />
+                      <Route path="/gallery" element={<GalleryPage />} />
+                      <Route path="/about" element={<AboutPage />} />
+                      <Route path="/contact" element={<ContactPage />} />
+                      <Route path="/auth" element={<AuthPage />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </main>
+                  <Footer />
+                </>
+              } />
+            </Routes>
           </BrowserRouter>
         </TooltipProvider>
       </CartProvider>
