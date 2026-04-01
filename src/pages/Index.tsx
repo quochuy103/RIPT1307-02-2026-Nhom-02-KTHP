@@ -141,7 +141,7 @@ const Index = () => {
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.galleryTitle')} <span className="text-gradient-gold">{t('home.galleryHighlight')}</span></h2>
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {['https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
+            {['https://drive.google.com/file/d/1ANsyPROhblEb8VmYFI6MgE4uk0VZt3k5/view?usp=sharing',
               'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=400',
               'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400',
               'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400',
