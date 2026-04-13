@@ -28,6 +28,19 @@ const BookingPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [loadedServices, loadedBarbers] = await Promise.all([api.getServices(), api.getBarbers()]);
+        setServiceList(loadedServices);
+        setBarberList(loadedBarbers);
+      } catch {
+        // keep fallback
+      }
+    };
+    void load();
+  }, []);
+
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = t('booking.errors.nameRequired');
@@ -162,15 +175,3 @@ const BookingPage = () => {
 };
 
 export default BookingPage;
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [loadedServices, loadedBarbers] = await Promise.all([api.getServices(), api.getBarbers()]);
-        setServiceList(loadedServices);
-        setBarberList(loadedBarbers);
-      } catch {
-        // keep fallback
-      }
-    };
-    void load();
-  }, []);

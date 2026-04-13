@@ -31,6 +31,17 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const getStoredUser = () => {
+  try {
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as User;
+  } catch {
+    localStorage.removeItem(USER_STORAGE_KEY);
+    return null;
+  }
+};
+
 const getErrorMessage = async (response: Response) => {
   try {
     const data = (await response.json()) as ApiErrorResponse;
@@ -41,10 +52,7 @@ const getErrorMessage = async (response: Response) => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem(USER_STORAGE_KEY);
-    return savedUser ? JSON.parse(savedUser) as User : null;
-  });
+  const [user, setUser] = useState<User | null>(() => getStoredUser());
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
   const [isLoading, setIsLoading] = useState(true);
 
