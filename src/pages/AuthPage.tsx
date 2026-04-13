@@ -11,23 +11,35 @@ import { useTranslation } from 'react-i18next';
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!form.email || !form.password) { toast.error(t('auth.fillAll')); return; }
-    if (!isLogin) {
-      if (!form.name) { toast.error(t('auth.nameRequired')); return; }
-      if (form.password !== form.confirmPassword) { toast.error(t('auth.passwordMismatch')); return; }
-      register(form.name, form.email, form.password);
-      toast.success(t('auth.accountCreated'));
-    } else {
-      login(form.email, form.password);
-      toast.success(t('auth.welcomeBackToast'));
+
+    try {
+      setIsSubmitting(true);
+
+      if (!isLogin) {
+        if (!form.name) { toast.error(t('auth.nameRequired')); return; }
+        if (form.password !== form.confirmPassword) { toast.error(t('auth.passwordMismatch')); return; }
+        await register(form.name, form.email, form.password);
+        toast.success(t('auth.accountCreated'));
+      } else {
+        await login(form.email, form.password);
+        toast.success(t('auth.welcomeBackToast'));
+      }
+
+      navigate('/');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Authentication failed');
+    } finally {
+      setIsSubmitting(false);
     }
-    navigate('/');
   };
 
   return (
@@ -48,12 +60,12 @@ const AuthPage = () => {
           {!isLogin && (
             <Input type="password" placeholder={t('auth.confirmPassword')} value={form.confirmPassword} onChange={e => setForm(p => ({ ...p, confirmPassword: e.target.value }))} className="bg-secondary border-border" />
           )}
-          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            {isLogin ? t('auth.signIn') : t('auth.signUp')}
+          <Button type="submit" disabled={isSubmitting} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+            {isSubmitting ? 'Please wait...' : isLogin ? t('auth.signIn') : t('auth.signUp')}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
-            <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline font-medium">
+            <button type="button" disabled={isSubmitting} onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline font-medium disabled:opacity-50">
               {isLogin ? t('auth.signUp') : t('auth.signIn')}
             </button>
           </p>

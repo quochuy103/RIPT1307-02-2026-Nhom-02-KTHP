@@ -5,8 +5,12 @@ import AdminTopbar from './AdminTopbar';
 import { useState } from 'react';
 
 const AdminLayout = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;

@@ -1,37 +1,130 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 interface User {
+  id: number;
   name: string;
   email: string;
 }
 
+interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+interface ApiErrorResponse {
+  message?: string;
+}
+
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => boolean;
-  register: (name: string, email: string, password: string) => boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
+const TOKEN_STORAGE_KEY = 'cutie_cuts_token';
+const USER_STORAGE_KEY = 'cutie_cuts_user';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8081';
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const getErrorMessage = async (response: Response) => {
+  try {
+    const data = (await response.json()) as ApiErrorResponse;
+    return data.message || 'Request failed';
+  } catch {
+    return 'Request failed';
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+    return savedUser ? JSON.parse(savedUser) as User : null;
+  });
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = useCallback((email: string, _password: string) => {
-    setUser({ name: email.split('@')[0], email });
-    return true;
+  const persistAuth = useCallback((auth: AuthResponse) => {
+    setUser(auth.user);
+    setToken(auth.token);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(auth.user));
+    localStorage.setItem(TOKEN_STORAGE_KEY, auth.token);
   }, []);
 
-  const register = useCallback((name: string, email: string, _password: string) => {
-    setUser({ name, email });
-    return true;
+  const clearAuth = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
   }, []);
 
-  const logout = useCallback(() => setUser(null), []);
+  const login = useCallback(async (email: string, password: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response));
+    }
+
+    persistAuth(await response.json() as AuthResponse);
+  }, [persistAuth]);
+
+  const register = useCallback(async (name: string, email: string, password: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response));
+    }
+
+    persistAuth(await response.json() as AuthResponse);
+  }, [persistAuth]);
+
+  const logout = useCallback(() => {
+    clearAuth();
+  }, [clearAuth]);
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/user/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+          throw new Error('Session expired');
+        }
+
+        const currentUser = await response.json() as User;
+        setUser(currentUser);
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
+      } catch {
+        clearAuth();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void restoreSession();
+  }, [clearAuth, token]);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
