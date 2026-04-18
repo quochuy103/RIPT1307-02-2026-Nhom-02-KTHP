@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
 
 interface Props {
   onToggleSidebar: () => void;
@@ -17,9 +16,7 @@ const AdminTopbar = ({ onToggleSidebar }: Props) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();
-    toast.success('Logged out successfully');
-    navigate('/');
+    logout({ redirectTo: '/', showToast: true });
   };
 
   return (

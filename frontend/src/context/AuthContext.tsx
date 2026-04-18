@@ -1,10 +1,36 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { AUTH_UNAUTHORIZED_EVENT } from '@/lib/auth-events';
 
 interface User {
   id: number;
   name: string;
   email: string;
+  role: 'user' | 'admin';
 }
+
+const isValidRole = (role: unknown): role is User['role'] => role === 'user' || role === 'admin';
+
+const normalizeStoredUser = (value: unknown): User | null => {
+  if (!value || typeof value !== 'object') return null;
+
+  const candidate = value as Partial<User>;
+  if (typeof candidate.id !== 'number' || typeof candidate.name !== 'string' || typeof candidate.email !== 'string') {
+    return null;
+  }
+
+  if (!isValidRole(candidate.role)) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    email: candidate.email,
+    role: candidate.role,
+  };
+};
 
 interface AuthResponse {
   token: string;
@@ -22,7 +48,13 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: (options?: LogoutOptions) => void;
+}
+
+interface LogoutOptions {
+  redirectTo?: string;
+  showToast?: boolean;
+  message?: string;
 }
 
 const TOKEN_STORAGE_KEY = 'cutie_cuts_token';
@@ -35,7 +67,11 @@ const getStoredUser = () => {
   try {
     const raw = localStorage.getItem(USER_STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as User;
+    const user = normalizeStoredUser(JSON.parse(raw));
+    if (!user) {
+      localStorage.removeItem(USER_STORAGE_KEY);
+    }
+    return user;
   } catch {
     localStorage.removeItem(USER_STORAGE_KEY);
     return null;
@@ -55,6 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(() => getStoredUser());
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const persistAuth = useCallback((auth: AuthResponse) => {
     setUser(auth.user);
@@ -98,9 +136,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     persistAuth(await response.json() as AuthResponse);
   }, [persistAuth]);
 
-  const logout = useCallback(() => {
+  const logout = useCallback((options?: LogoutOptions) => {
     clearAuth();
-  }, [clearAuth]);
+
+    if (options?.showToast) {
+      toast.success(options.message ?? 'Logged out successfully');
+    }
+
+    if (options?.redirectTo && location.pathname !== options.redirectTo) {
+      navigate(options.redirectTo, { replace: true });
+    }
+  }, [clearAuth, location.pathname, navigate]);
 
   useEffect(() => {
     const restoreSession = async () => {
@@ -130,6 +176,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     void restoreSession();
   }, [clearAuth, token]);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout({
+        redirectTo: '/auth',
+        showToast: true,
+        message: 'Session expired. Please sign in again.',
+      });
+    };
+
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, isLoading, login, register, logout }}>

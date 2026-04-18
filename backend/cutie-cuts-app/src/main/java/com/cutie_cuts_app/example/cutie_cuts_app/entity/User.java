@@ -24,6 +24,12 @@ public class User {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserAuth> authMethods;
 
@@ -36,6 +42,10 @@ public class User {
     public void setRole(String role) { this.role = role; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Boolean getDeleted() { return deleted; }
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
     public List<UserAuth> getAuthMethods() { return authMethods; }
     public void setAuthMethods(List<UserAuth> authMethods) { this.authMethods = authMethods; }
 
@@ -46,6 +56,9 @@ public class User {
         }
         if (role == null || role.isBlank()) {
             role = "USER";
+        }
+        if (deleted == null) {
+            deleted = false;
         }
     }
 }

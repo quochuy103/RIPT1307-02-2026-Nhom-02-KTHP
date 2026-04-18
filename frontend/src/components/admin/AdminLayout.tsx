@@ -5,7 +5,7 @@ import AdminTopbar from './AdminTopbar';
 import { useState } from 'react';
 
 const AdminLayout = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   if (isLoading) {
@@ -14,6 +14,10 @@ const AdminLayout = () => {
 
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (user?.role?.toLowerCase() !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return (
