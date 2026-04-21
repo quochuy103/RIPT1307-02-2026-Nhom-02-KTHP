@@ -48,6 +48,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  oauthLogin: (provider: string, token: string) => Promise<void>;
   logout: (options?: LogoutOptions) => void;
 }
 
@@ -136,6 +137,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     persistAuth(await response.json() as AuthResponse);
   }, [persistAuth]);
 
+  const oauthLogin = useCallback(async (provider: string, oauthToken: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/oauth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, token: oauthToken }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response));
+    }
+
+    persistAuth(await response.json() as AuthResponse);
+  }, [persistAuth]);
+
   const logout = useCallback((options?: LogoutOptions) => {
     clearAuth();
 
@@ -191,7 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [logout]);
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, isLoading, login, register, oauthLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );
