@@ -1,0 +1,28 @@
+# Graphify outputs (keep local only)
+graphify-out/
+
+# Claude settings (local config)
+.claude/
+
+# Graphify python path marker
+.graphify_python
+
+# Java build output
+backend/cutie-cuts-app/target/
+backend/cutie-cuts-app/build/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/dist/
+
+# IDE
+backend/.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
