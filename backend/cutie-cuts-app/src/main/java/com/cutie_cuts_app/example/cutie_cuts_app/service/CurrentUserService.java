@@ -22,6 +22,10 @@ public class CurrentUserService {
                 .findByAuthTypeAndAuthValue("email", email.trim().toLowerCase())
                 .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "User not found"));
 
+        if (Boolean.TRUE.equals(auth.getUser().getDeleted())) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Account has been deactivated");
+        }
+
         return auth.getUser();
     }
 }
