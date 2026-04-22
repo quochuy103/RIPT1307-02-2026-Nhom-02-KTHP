@@ -9,6 +9,7 @@ import type {
   AdminService,
   AdminUser,
 } from '@/data/adminMockData';
+import { dispatchUnauthorizedEvent } from '@/lib/auth-events';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8081';
 
@@ -26,6 +27,10 @@ async function request<T>(path: string, init?: RequestInit, auth = false): Promi
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+
+  if (auth && response.status === 401) {
+    dispatchUnauthorizedEvent();
+  }
 
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
@@ -180,10 +185,11 @@ export const api = {
     deleteGalleryImage: async (id: string) => request(`/gallery/${id}`, { method: 'DELETE' }),
 
     getUsers: async (): Promise<AdminUser[]> => {
-      const rows = await request<Array<{ id: number; name: string; email: string; phone: string; role: 'user' | 'admin'; createdAt: string }>>('/users');
+      const rows = await request<Array<{ id: number; name: string; email: string; phone: string; role: 'user' | 'admin'; createdAt: string; deleted: boolean; deletedAt: string }>>('/users', undefined, true);
       return rows.map((r) => ({ ...r, id: String(r.id), role: (r.role ?? 'user') as 'user' | 'admin' }));
     },
-    updateUserRole: async (id: string, role: 'user' | 'admin') => request(`/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
-    deleteUser: async (id: string) => request(`/users/${id}`, { method: 'DELETE' }),
+    updateUser: async (id: string, payload: { name: string; phone: string }) => request(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }, true),
+    updateUserRole: async (id: string, role: 'user' | 'admin') => request(`/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }, true),
+    deleteUser: async (id: string) => request(`/users/${id}`, { method: 'DELETE' }, true),
   },
 };

@@ -76,6 +76,8 @@ public class AuthService {
             throw new ResponseStatusException(UNAUTHORIZED, "Invalid email or password");
         }
 
+        ensureActiveUser(auth.getUser());
+
         return new AuthResponse(jwtUtil.generateToken(email), UserResponse.from(auth.getUser(), email));
     }
 
@@ -84,7 +86,15 @@ public class AuthService {
                 .findByAuthTypeAndAuthValue("email", normalizeEmail(email))
                 .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "User not found"));
 
+        ensureActiveUser(auth.getUser());
+
         return UserResponse.from(auth.getUser(), auth.getAuthValue());
+    }
+
+    private void ensureActiveUser(User user) {
+        if (Boolean.TRUE.equals(user.getDeleted())) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Account has been deactivated");
+        }
     }
 
     private String normalizeEmail(String email) {
