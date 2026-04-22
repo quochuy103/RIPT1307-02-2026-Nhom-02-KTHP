@@ -5,6 +5,8 @@ export interface AdminUser {
   phone: string;
   role: 'user' | 'admin';
   createdAt: string;
+  deleted: boolean;
+  deletedAt?: string;
 }
 
 export interface AdminBooking {
@@ -75,14 +77,14 @@ export interface AdminBarber {
 }
 
 export const mockUsers: AdminUser[] = [
-  { id: '1', name: 'John Doe', email: 'john@example.com', phone: '0901234567', role: 'user', createdAt: '2024-01-15' },
-  { id: '2', name: 'Jane Smith', email: 'jane@example.com', phone: '0912345678', role: 'admin', createdAt: '2024-01-10' },
-  { id: '3', name: 'Mike Johnson', email: 'mike@example.com', phone: '0923456789', role: 'user', createdAt: '2024-02-01' },
-  { id: '4', name: 'Sarah Williams', email: 'sarah@example.com', phone: '0934567890', role: 'user', createdAt: '2024-02-15' },
-  { id: '5', name: 'Tom Brown', email: 'tom@example.com', phone: '0945678901', role: 'user', createdAt: '2024-03-01' },
-  { id: '6', name: 'Emily Davis', email: 'emily@example.com', phone: '0956789012', role: 'user', createdAt: '2024-03-10' },
-  { id: '7', name: 'Chris Wilson', email: 'chris@example.com', phone: '0967890123', role: 'admin', createdAt: '2024-03-15' },
-  { id: '8', name: 'Lisa Anderson', email: 'lisa@example.com', phone: '0978901234', role: 'user', createdAt: '2024-03-20' },
+  { id: '1', name: 'John Doe', email: 'john@example.com', phone: '0901234567', role: 'user', createdAt: '2024-01-15', deleted: false, deletedAt: '' },
+  { id: '2', name: 'Jane Smith', email: 'jane@example.com', phone: '0912345678', role: 'admin', createdAt: '2024-01-10', deleted: false, deletedAt: '' },
+  { id: '3', name: 'Mike Johnson', email: 'mike@example.com', phone: '0923456789', role: 'user', createdAt: '2024-02-01', deleted: false, deletedAt: '' },
+  { id: '4', name: 'Sarah Williams', email: 'sarah@example.com', phone: '0934567890', role: 'user', createdAt: '2024-02-15', deleted: false, deletedAt: '' },
+  { id: '5', name: 'Tom Brown', email: 'tom@example.com', phone: '0945678901', role: 'user', createdAt: '2024-03-01', deleted: false, deletedAt: '' },
+  { id: '6', name: 'Emily Davis', email: 'emily@example.com', phone: '0956789012', role: 'user', createdAt: '2024-03-10', deleted: false, deletedAt: '' },
+  { id: '7', name: 'Chris Wilson', email: 'chris@example.com', phone: '0967890123', role: 'admin', createdAt: '2024-03-15', deleted: false, deletedAt: '' },
+  { id: '8', name: 'Lisa Anderson', email: 'lisa@example.com', phone: '0978901234', role: 'user', createdAt: '2024-03-20', deleted: false, deletedAt: '' },
 ];
 
 export const mockBookings: AdminBooking[] = [

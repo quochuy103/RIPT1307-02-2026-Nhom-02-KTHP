@@ -3,7 +3,7 @@ import DataTable, { Column } from '@/components/admin/DataTable';
 import { mockUsers, AdminUser } from '@/data/adminMockData';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Shield } from 'lucide-react';
+import { Edit, Shield, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
@@ -27,22 +27,53 @@ const AdminUsers = () => {
 
   const toggleRole = async (id: string) => {
     const user = users.find((u) => u.id === id);
-    if (!user) return;
+    if (!user || user.deleted) return;
     const role: AdminUser['role'] = user.role === 'admin' ? 'user' : 'admin';
     try {
-      await api.admin.updateUserRole(id, role);
-      setUsers((prev) => prev.map((u) => u.id === id ? { ...u, role } as AdminUser : u));
+      const updated = await api.admin.updateUserRole(id, role) as AdminUser;
+      setUsers((prev) => prev.map((u) => u.id === id ? { ...u, ...updated, id } as AdminUser : u));
       toast.success('User role updated');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Update failed');
     }
   };
 
-  const deleteUser = async (id: string) => {
+  const editUser = async (user: AdminUser) => {
+    if (user.deleted) {
+      toast.error('Deleted users cannot be edited');
+      return;
+    }
+
+    const name = window.prompt('Update user name', user.name);
+    if (name === null) return;
+
+    const phone = window.prompt('Update user phone', user.phone);
+    if (phone === null) return;
+
     try {
-      await api.admin.deleteUser(id);
-      setUsers((prev) => prev.filter((u) => u.id !== id));
-      toast.success('User deleted');
+      const updated = await api.admin.updateUser(user.id, { name, phone }) as AdminUser;
+      setUsers((prev) => prev.map((item) => item.id === user.id ? { ...item, ...updated, id: user.id } as AdminUser : item));
+      toast.success('User updated');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Update failed');
+    }
+  };
+
+  const deleteUser = async (user: AdminUser) => {
+    if (user.deleted) {
+      toast.info('User already deleted');
+      return;
+    }
+
+    if (!window.confirm(`Soft delete user ${user.name}?`)) {
+      return;
+    }
+
+    try {
+      await api.admin.deleteUser(user.id);
+      const deletedAt = new Date().toISOString().slice(0, 10);
+      setUsers((prev) => prev.map((item) => item.id === user.id ? { ...item, deleted: true, deletedAt } : item));
+      toast.success('User soft deleted');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Delete failed');
     }
@@ -53,6 +84,12 @@ const AdminUsers = () => {
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
     { key: 'role', label: 'Role', render: (u) => <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>{u.role}</Badge> },
+    {
+      key: 'deleted',
+      label: 'Status',
+      render: (u) => <Badge variant={u.deleted ? 'destructive' : 'secondary'}>{u.deleted ? 'deleted' : 'active'}</Badge>,
+      searchable: false,
+    },
     { key: 'createdAt', label: 'Joined' },
   ];
 
@@ -79,9 +116,9 @@ const AdminUsers = () => {
         searchPlaceholder="Search users..."
         actions={(u) => (
           <div className="flex items-center justify-end gap-1">
-            <Button size="sm" variant="ghost" onClick={() => toggleRole(u.id)} title="Toggle role"><Shield className="h-4 w-4" /></Button>
-            <Button size="sm" variant="ghost" onClick={() => toast.info('Edit user')}><Edit className="h-4 w-4" /></Button>
-            <Button size="sm" variant="ghost" onClick={() => deleteUser(u.id)} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" onClick={() => toggleRole(u.id)} title="Toggle role" disabled={u.deleted}><Shield className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" onClick={() => editUser(u)} disabled={u.deleted}><Edit className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" onClick={() => deleteUser(u)} className="text-destructive" disabled={u.deleted}><Trash2 className="h-4 w-4" /></Button>
           </div>
         )}
       />
