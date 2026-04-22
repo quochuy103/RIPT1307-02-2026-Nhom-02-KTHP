@@ -75,11 +75,19 @@
 			<optional>true</optional>
 		</dependency>
 
+
+		<!-- OPENAPI / SWAGGER -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.3.0</version>
+
 		<!-- GOOGLE OAUTH -->
 		<dependency>
 			<groupId>com.google.api-client</groupId>
 			<artifactId>google-api-client</artifactId>
 			<version>2.2.0</version>
+
 		</dependency>
 
 		<!-- TEST -->
