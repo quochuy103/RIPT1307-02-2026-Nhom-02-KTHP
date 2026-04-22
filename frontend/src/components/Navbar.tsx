@@ -1,10 +1,19 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingBag, User, Scissors, Globe } from 'lucide-react';
+import { Menu, X, ShoppingBag, User, Scissors, Globe, LogOut } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const navLinks = [
   { to: '/', labelKey: 'nav.home' },
@@ -19,12 +28,17 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { totalItems, setIsCartOpen } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
   const { t, i18n } = useTranslation();
 
   const toggleLang = () => {
     i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
+  };
+
+  const handleLogout = () => {
+    setIsOpen(false);
+    logout({ redirectTo: '/', showToast: true });
   };
 
   return (
@@ -41,9 +55,8 @@ const Navbar = () => {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === link.to ? 'text-primary' : 'text-muted-foreground'
-                }`}
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === link.to ? 'text-primary' : 'text-muted-foreground'
+                  }`}
               >
                 {t(link.labelKey)}
               </Link>
@@ -63,9 +76,36 @@ const Navbar = () => {
                 </span>
               )}
             </button>
-            <Link to={isAuthenticated ? '/' : '/auth'} className="p-2 text-muted-foreground hover:text-primary transition-colors">
-              <User className="h-5 w-5" />
-            </Link>
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="space-y-1">
+                    <span className="block font-medium text-foreground">{user?.name}</span>
+                    <span className="block text-xs font-normal text-muted-foreground">{user?.email}</span>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {user?.role === 'admin' && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin">Admin Dashboard</Link>
+                    </DropdownMenuItem>
+                  )}
+                  {user?.role === 'admin' && <DropdownMenuSeparator />}
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth" className="p-2 text-muted-foreground hover:text-primary transition-colors">
+                <User className="h-5 w-5" />
+              </Link>
+            )}
             <button onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2 text-muted-foreground hover:text-primary transition-colors">
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -87,13 +127,30 @@ const Navbar = () => {
                   key={link.to}
                   to={link.to}
                   onClick={() => setIsOpen(false)}
-                  className={`py-2 text-sm font-medium transition-colors ${
-                    location.pathname === link.to ? 'text-primary' : 'text-muted-foreground'
-                  }`}
+                  className={`py-2 text-sm font-medium transition-colors ${location.pathname === link.to ? 'text-primary' : 'text-muted-foreground'
+                    }`}
                 >
                   {t(link.labelKey)}
                 </Link>
               ))}
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 py-2 text-sm font-medium text-destructive transition-colors hover:text-destructive/80"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              ) : (
+                <Link
+                  to="/auth"
+                  onClick={() => setIsOpen(false)}
+                  className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                >
+                  {t('auth.signIn')}
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

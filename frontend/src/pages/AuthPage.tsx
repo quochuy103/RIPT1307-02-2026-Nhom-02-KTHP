@@ -7,6 +7,20 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import SocialLoginButtons from '@/components/SocialLoginButtons';
+
+const USER_STORAGE_KEY = 'cutie_cuts_user';
+
+const getRedirectPath = () => {
+  try {
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    if (!raw) return '/';
+    const user = JSON.parse(raw) as { role?: string };
+    return user.role === 'admin' ? '/admin' : '/';
+  } catch {
+    return '/';
+  }
+};
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -34,7 +48,7 @@ const AuthPage = () => {
         toast.success(t('auth.welcomeBackToast'));
       }
 
-      navigate('/');
+      navigate(getRedirectPath());
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Authentication failed');
     } finally {
@@ -63,6 +77,7 @@ const AuthPage = () => {
           <Button type="submit" disabled={isSubmitting} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
             {isSubmitting ? 'Please wait...' : isLogin ? t('auth.signIn') : t('auth.signUp')}
           </Button>
+          <SocialLoginButtons disabled={isSubmitting} />
           <p className="text-center text-sm text-muted-foreground">
             {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
             <button type="button" disabled={isSubmitting} onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline font-medium disabled:opacity-50">

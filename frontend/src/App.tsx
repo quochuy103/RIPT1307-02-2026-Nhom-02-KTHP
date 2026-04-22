@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -32,57 +33,61 @@ import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Admin routes — own layout, no Navbar/Footer */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="bookings" element={<AdminBookings />} />
-                <Route path="services" element={<AdminServices />} />
-                <Route path="barbers" element={<AdminBarbers />} />
-                <Route path="products" element={<AdminProducts />} />
-                <Route path="orders" element={<AdminOrders />} />
-                <Route path="gallery" element={<AdminGallery />} />
-                <Route path="reviews" element={<AdminReviews />} />
-                <Route path="settings" element={<AdminSettings />} />
-              </Route>
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
-              {/* Public routes */}
-              <Route path="*" element={
-                <>
-                  <Navbar />
-                  <CartSidebar />
-                  <main className="min-h-screen">
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/services" element={<ServicesPage />} />
-                      <Route path="/booking" element={<BookingPage />} />
-                      <Route path="/shop" element={<ShopPage />} />
-                      <Route path="/checkout" element={<CheckoutPage />} />
-                      <Route path="/gallery" element={<GalleryPage />} />
-                      <Route path="/about" element={<AboutPage />} />
-                      <Route path="/contact" element={<ContactPage />} />
-                      <Route path="/auth" element={<AuthPage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </main>
-                  <Footer />
-                </>
-              } />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </CartProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+const App = () => (
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <GoogleOAuthProvider clientId={googleClientId || 'not-configured'}>
+        <AuthProvider>
+          <CartProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
+                {/* Admin routes -- own layout, no Navbar/Footer */}
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="bookings" element={<AdminBookings />} />
+                  <Route path="services" element={<AdminServices />} />
+                  <Route path="barbers" element={<AdminBarbers />} />
+                  <Route path="products" element={<AdminProducts />} />
+                  <Route path="orders" element={<AdminOrders />} />
+                  <Route path="gallery" element={<AdminGallery />} />
+                  <Route path="reviews" element={<AdminReviews />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                </Route>
+
+                {/* Public routes */}
+                <Route path="*" element={
+                  <>
+                    <Navbar />
+                    <CartSidebar />
+                    <main className="min-h-screen">
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/services" element={<ServicesPage />} />
+                        <Route path="/booking" element={<BookingPage />} />
+                        <Route path="/shop" element={<ShopPage />} />
+                        <Route path="/checkout" element={<CheckoutPage />} />
+                        <Route path="/gallery" element={<GalleryPage />} />
+                        <Route path="/about" element={<AboutPage />} />
+                        <Route path="/contact" element={<ContactPage />} />
+                        <Route path="/auth" element={<AuthPage />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </main>
+                    <Footer />
+                  </>
+                } />
+              </Routes>
+            </TooltipProvider>
+          </CartProvider>
+        </AuthProvider>
+      </GoogleOAuthProvider>
+    </QueryClientProvider>
+  </BrowserRouter>
 );
 
 export default App;
