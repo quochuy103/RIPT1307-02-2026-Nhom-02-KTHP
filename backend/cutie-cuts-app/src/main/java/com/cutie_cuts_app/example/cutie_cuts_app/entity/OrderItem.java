@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "order_items")
+@Table(name = "order_items", indexes = {
+    @Index(name = "idx_item_order", columnList = "order_id"),
+    @Index(name = "idx_item_product", columnList = "product_id")
+})
 public class OrderItem {
 
     @Id

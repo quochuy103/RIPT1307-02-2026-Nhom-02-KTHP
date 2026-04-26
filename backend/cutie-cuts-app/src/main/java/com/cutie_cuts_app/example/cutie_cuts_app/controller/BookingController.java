@@ -67,7 +67,7 @@ public class BookingController {
         booking.setBarber(barber);
         booking.setDate(request.getDate());
         booking.setTime(request.getTime());
-        booking.setPrice(service.getPrice());
+        booking.setPrice(service.getPrice().doubleValue());
 
         return toResponse(bookingRepository.save(booking));
     }

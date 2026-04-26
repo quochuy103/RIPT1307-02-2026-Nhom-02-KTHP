@@ -23,7 +23,7 @@ public class BarberService {
 
     @Transactional(readOnly = true)
     public List<BarberResponse> findAll() {
-        return barberRepository.findAll().stream()
+        return barberRepository.findByDeletedFalse().stream()
                 .map(BarberResponse::from)
                 .collect(Collectors.toList());
     }
@@ -72,10 +72,10 @@ public class BarberService {
 
     @Transactional
     public void delete(Long id) {
-        if (!barberRepository.existsById(id)) {
-            throw new BarberNotFoundException(id);
-        }
-        barberRepository.deleteById(id);
+        Barber barber = barberRepository.findById(id)
+                .orElseThrow(() -> new BarberNotFoundException(id));
+        barber.setDeleted(true);
+        barber.setDeletedAt(java.time.LocalDateTime.now());
     }
 
     @Transactional(readOnly = true)

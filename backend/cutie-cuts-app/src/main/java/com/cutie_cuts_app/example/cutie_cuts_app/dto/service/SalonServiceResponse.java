@@ -11,16 +11,18 @@ public class SalonServiceResponse {
     private final Integer duration;
     private final String category;
     private final String description;
+    private final String image;
     private final LocalDateTime createdAt;
 
     public SalonServiceResponse(Long id, String name, Integer price, Integer duration,
-                                 String category, String description, LocalDateTime createdAt) {
+                                 String category, String description, String image, LocalDateTime createdAt) {
         this.id = id;
         this.name = name;
         this.price = price;
         this.duration = duration;
         this.category = category;
         this.description = description;
+        this.image = image;
         this.createdAt = createdAt;
     }
 
@@ -32,6 +34,7 @@ public class SalonServiceResponse {
                 service.getDuration(),
                 service.getCategory(),
                 service.getDescription(),
+                service.getImage(),
                 service.getCreatedAt()
         );
     }
@@ -42,5 +45,6 @@ public class SalonServiceResponse {
     public Integer getDuration() { return duration; }
     public String getCategory() { return category; }
     public String getDescription() { return description; }
+    public String getImage() { return image; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
