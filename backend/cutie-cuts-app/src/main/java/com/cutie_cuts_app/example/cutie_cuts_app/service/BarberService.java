@@ -8,9 +8,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 public class BarberService {
@@ -39,6 +42,11 @@ public class BarberService {
         Barber barber = barberRepository.findById(id)
                 .orElseThrow(() -> new BarberNotFoundException(id));
         return BarberResponse.from(barber);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsById(Long id) {
+        return barberRepository.existsById(id);
     }
 
     @Transactional
@@ -92,9 +100,9 @@ public class BarberService {
                 .collect(Collectors.toList());
     }
 
-    public static class BarberNotFoundException extends RuntimeException {
+    public static class BarberNotFoundException extends ResponseStatusException {
         public BarberNotFoundException(Long id) {
-            super("Barber not found: id=" + id);
+            super(NOT_FOUND, "Barber not found: id=" + id);
         }
     }
 }
