@@ -3,9 +3,14 @@ package com.cutie_cuts_app.example.cutie_cuts_app.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
-@Table(name = "bookings")
+@Table(name = "bookings", indexes = {
+    @Index(name = "idx_booking_user", columnList = "user_id"),
+    @Index(name = "idx_booking_barber", columnList = "barber_id"),
+    @Index(name = "idx_booking_service", columnList = "service_id")
+})
 public class Booking {
 
     @Id
@@ -28,13 +33,13 @@ public class Booking {
     private LocalDate date;
 
     @Column(nullable = false)
-    private String time;
+    private LocalTime time;
 
     @Column(nullable = false)
     private String status = "pending";
 
     @Column(nullable = false)
-    private Integer price;
+    private Double price;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -48,12 +53,12 @@ public class Booking {
     public void setBarber(Barber barber) { this.barber = barber; }
     public LocalDate getDate() { return date; }
     public void setDate(LocalDate date) { this.date = date; }
-    public String getTime() { return time; }
-    public void setTime(String time) { this.time = time; }
+    public LocalTime getTime() { return time; }
+    public void setTime(LocalTime time) { this.time = time; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-    public Integer getPrice() { return price; }
-    public void setPrice(Integer price) { this.price = price; }
+    public Double getPrice() { return price; }
+    public void setPrice(Double price) { this.price = price; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     @PrePersist

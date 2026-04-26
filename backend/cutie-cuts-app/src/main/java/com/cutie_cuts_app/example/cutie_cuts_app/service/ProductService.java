@@ -23,7 +23,7 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<ProductResponse> findAll() {
-        return productRepository.findAll().stream()
+        return productRepository.findByDeletedFalse().stream()
                 .map(ProductResponse::from)
                 .collect(Collectors.toList());
     }
@@ -87,10 +87,10 @@ public class ProductService {
 
     @Transactional
     public void delete(Long id) {
-        if (!productRepository.existsById(id)) {
-            throw new ProductNotFoundException(id);
-        }
-        productRepository.deleteById(id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+        product.setDeleted(true);
+        product.setDeletedAt(java.time.LocalDateTime.now());
     }
 
     public static class ProductNotFoundException extends ResponseStatusException {

@@ -24,6 +24,8 @@ public class SalonServiceRequest {
     @Size(max = 1000)
     private String description;
 
+    private String image;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public Integer getPrice() { return price; }
@@ -34,4 +36,6 @@ public class SalonServiceRequest {
     public void setCategory(String category) { this.category = category; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
 }

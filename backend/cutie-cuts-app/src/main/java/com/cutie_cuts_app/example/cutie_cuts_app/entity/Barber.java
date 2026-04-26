@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "barbers")
+@Table(name = "barbers", indexes = {
+    @Index(name = "idx_barber_deleted", columnList = "deleted")
+})
 public class Barber {
 
     @Id
@@ -32,6 +34,12 @@ public class Barber {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public Long getId() { return id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -46,6 +54,10 @@ public class Barber {
     public Double getRating() { return rating; }
     public void setRating(Double rating) { this.rating = rating; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public Boolean getDeleted() { return deleted; }
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
 
     @PrePersist
     public void prePersist() {
@@ -54,6 +66,9 @@ public class Barber {
         }
         if (rating == null) {
             rating = 4.8;
+        }
+        if (deleted == null) {
+            deleted = false;
         }
     }
 }
