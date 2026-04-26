@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_auth", uniqueConstraints = @UniqueConstraint(columnNames = {"auth_type", "auth_value"}))
+@Table(name = "user_auth", uniqueConstraints = @UniqueConstraint(columnNames = {"auth_type", "auth_value"}), indexes = {
+    @Index(name = "idx_user_auth_user", columnList = "user_id")
+})
 public class UserAuth {
 
     @Id

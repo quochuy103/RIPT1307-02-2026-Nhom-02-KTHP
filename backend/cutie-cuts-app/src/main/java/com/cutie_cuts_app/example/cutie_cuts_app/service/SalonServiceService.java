@@ -21,7 +21,7 @@ public class SalonServiceService {
 
     @Transactional(readOnly = true)
     public List<SalonServiceResponse> findAll() {
-        return repository.findAll().stream()
+        return repository.findByDeletedFalse().stream()
                 .map(SalonServiceResponse::from)
                 .collect(Collectors.toList());
     }
@@ -55,6 +55,7 @@ public class SalonServiceService {
         service.setDuration(request.getDuration());
         service.setCategory(request.getCategory());
         service.setDescription(request.getDescription());
+        service.setImage(request.getImage());
         SalonService saved = repository.save(service);
         return SalonServiceResponse.from(saved);
     }
@@ -68,16 +69,19 @@ public class SalonServiceService {
         service.setDuration(request.getDuration());
         service.setCategory(request.getCategory());
         service.setDescription(request.getDescription());
+        if (request.getImage() != null) {
+            service.setImage(request.getImage());
+        }
         SalonService saved = repository.save(service);
         return SalonServiceResponse.from(saved);
     }
 
     @Transactional
     public void delete(Long id) {
-        if (!repository.existsById(id)) {
-            throw new SalonServiceNotFoundException(id);
-        }
-        repository.deleteById(id);
+        SalonService service = repository.findById(id)
+                .orElseThrow(() -> new SalonServiceNotFoundException(id));
+        service.setDeleted(true);
+        service.setDeletedAt(java.time.LocalDateTime.now());
     }
 
     public static class SalonServiceNotFoundException extends RuntimeException {

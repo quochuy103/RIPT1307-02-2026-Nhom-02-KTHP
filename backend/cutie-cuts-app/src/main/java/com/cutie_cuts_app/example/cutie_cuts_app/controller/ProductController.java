@@ -1,66 +1,70 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.controller;
 
-import com.cutie_cuts_app.example.cutie_cuts_app.entity.Product;
-import com.cutie_cuts_app.example.cutie_cuts_app.repository.ProductRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.dto.product.ProductRequest;
+import com.cutie_cuts_app.example.cutie_cuts_app.dto.product.ProductResponse;
+import com.cutie_cuts_app.example.cutie_cuts_app.service.ProductService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-
 @RestController
-@RequestMapping("/products")
+@RequestMapping("/api/products")
 @CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class ProductController {
 
-    private final ProductRepository productRepository;
+    private final ProductService productService;
 
-    public ProductController(ProductRepository productRepository) {
-        this.productRepository = productRepository;
+    public ProductController(ProductService productService) {
+        this.productService = productService;
     }
 
     @GetMapping
-    public List<Product> getAll() {
-        return productRepository.findAll();
+    public ResponseEntity<List<ProductResponse>> getAll() {
+        return ResponseEntity.ok(productService.findAll());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.findById(id));
+    }
+
+    @GetMapping("/category/{category}")
+    public ResponseEntity<List<ProductResponse>> getByCategory(@PathVariable String category) {
+        return ResponseEntity.ok(productService.findByCategory(category));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<ProductResponse>> search(@RequestParam String name) {
+        return ResponseEntity.ok(productService.search(name));
+    }
+
+    @GetMapping("/exists/{id}")
+    public ResponseEntity<Void> exists(@PathVariable Long id) {
+        if (productService.existsById(id)) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @PostMapping
-    public Product create(@RequestBody Product body) {
-        if (body.getRating() == null) {
-            body.setRating(4.5);
-        }
-        if (body.getStock() == null) {
-            body.setStock(0);
-        }
-        return productRepository.save(body);
+    public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductRequest request) {
+        ProductResponse created = productService.create(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
-    public Product update(@PathVariable Long id, @RequestBody Product body) {
-        Product existing = productRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Product not found"));
-
-        existing.setName(body.getName());
-        existing.setCategory(body.getCategory());
-        existing.setDescription(body.getDescription());
-        existing.setImage(body.getImage());
-        existing.setPrice(body.getPrice());
-        if (body.getRating() != null) {
-            existing.setRating(body.getRating());
-        }
-        if (body.getStock() != null) {
-            existing.setStock(body.getStock());
-        }
-
-        return productRepository.save(existing);
+    public ResponseEntity<ProductResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody ProductRequest request) {
+        return ResponseEntity.ok(productService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        if (!productRepository.existsById(id)) {
-            throw new ResponseStatusException(NOT_FOUND, "Product not found");
-        }
-        productRepository.deleteById(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        productService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
