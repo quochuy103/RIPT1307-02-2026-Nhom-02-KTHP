@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/reviews/**").authenticated()
                         .requestMatchers("/api/gallery/**").permitAll()
                         .requestMatchers("/api/orders/**").authenticated()
+                        .requestMatchers("/notifications/**").authenticated()
                         .requestMatchers("/users/**").hasRole("ADMIN")
                         .requestMatchers("/user/register").permitAll()
                         .requestMatchers("/user/**").authenticated()

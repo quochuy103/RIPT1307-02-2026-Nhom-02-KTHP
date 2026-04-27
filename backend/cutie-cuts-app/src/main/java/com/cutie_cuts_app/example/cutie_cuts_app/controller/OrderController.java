@@ -9,6 +9,8 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ProductRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
+import com.cutie_cuts_app.example.cutie_cuts_app.service.NotificationService;
+import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -30,11 +32,17 @@ public class OrderController {
     private final ShopOrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final CurrentUserService currentUserService;
+    private final NotificationService notificationService;
 
-    public OrderController(ShopOrderRepository orderRepository, ProductRepository productRepository, CurrentUserService currentUserService) {
+    public OrderController(
+            ShopOrderRepository orderRepository,
+            ProductRepository productRepository,
+            CurrentUserService currentUserService,
+            NotificationService notificationService) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.currentUserService = currentUserService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping
@@ -91,16 +99,23 @@ public class OrderController {
         order.setItems(items);
         order.setTotalPrice(total);
 
-        return toResponse(orderRepository.save(order));
+        ShopOrder saved = orderRepository.save(order);
+        notificationService.notify(user, NotificationType.ORDER_PLACED,
+                "Order placed for $" + String.format("%.2f", total),
+                "order", saved.getId());
+        return toResponse(saved);
     }
 
     @PatchMapping("/{id}/status")
     public Map<String, Object> updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request) {
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
-
         order.setStatus(request.getStatus());
-        return toResponse(orderRepository.save(order));
+        ShopOrder saved = orderRepository.save(order);
+        notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
+                "Order status updated to: " + request.getStatus(),
+                "order", saved.getId());
+        return toResponse(saved);
     }
 
     private Map<String, Object> toResponse(ShopOrder order) {
