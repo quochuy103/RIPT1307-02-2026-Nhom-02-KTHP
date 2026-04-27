@@ -2,10 +2,9 @@ package com.cutie_cuts_app.example.cutie_cuts_app.controller;
 
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.CreateBookingRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.UpdateStatusRequest;
-import com.cutie_cuts_app.example.cutie_cuts_app.entity.*;
-import com.cutie_cuts_app.example.cutie_cuts_app.repository.BarberRepository;
-import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
-import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.Booking;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
+import com.cutie_cuts_app.example.cutie_cuts_app.service.BookingService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
@@ -23,21 +21,17 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class BookingController {
 
-    private final BookingRepository bookingRepository;
-    private final SalonServiceRepository salonServiceRepository;
-    private final BarberRepository barberRepository;
+    private final BookingService bookingService;
     private final CurrentUserService currentUserService;
 
-    public BookingController(BookingRepository bookingRepository, SalonServiceRepository salonServiceRepository, BarberRepository barberRepository, CurrentUserService currentUserService) {
-        this.bookingRepository = bookingRepository;
-        this.salonServiceRepository = salonServiceRepository;
-        this.barberRepository = barberRepository;
+    public BookingController(BookingService bookingService, CurrentUserService currentUserService) {
+        this.bookingService = bookingService;
         this.currentUserService = currentUserService;
     }
 
     @GetMapping
     public List<Map<String, Object>> getAll() {
-        return bookingRepository.findAll().stream().map(this::toResponse).toList();
+        return bookingService.getBookings().stream().map(this::toResponse).toList();
     }
 
     @GetMapping("/my")
@@ -46,7 +40,7 @@ public class BookingController {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
         User user = currentUserService.getByEmail(authentication.getName());
-        return bookingRepository.findByUser(user).stream().map(this::toResponse).toList();
+        return bookingService.getBookingsByUser(user).stream().map(this::toResponse).toList();
     }
 
     @PostMapping
@@ -54,31 +48,15 @@ public class BookingController {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
-
         User user = currentUserService.getByEmail(authentication.getName());
-        SalonService service = salonServiceRepository.findById(request.getServiceId())
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Service not found"));
-        Barber barber = barberRepository.findById(request.getBarberId())
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Barber not found"));
-
-        Booking booking = new Booking();
-        booking.setUser(user);
-        booking.setService(service);
-        booking.setBarber(barber);
-        booking.setDate(request.getDate());
-        booking.setTime(request.getTime());
-        booking.setPrice(service.getPrice().doubleValue());
-
-        return toResponse(bookingRepository.save(booking));
+        Booking booking = bookingService.createBooking(user, request);
+        return toResponse(booking);
     }
 
     @PatchMapping("/{id}/status")
     public Map<String, Object> updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Booking not found"));
-
-        booking.setStatus(request.getStatus());
-        return toResponse(bookingRepository.save(booking));
+        Booking booking = bookingService.updateStatus(id, request.getStatus());
+        return toResponse(booking);
     }
 
     private Map<String, Object> toResponse(Booking booking) {
