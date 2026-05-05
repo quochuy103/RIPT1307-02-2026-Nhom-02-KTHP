@@ -9,6 +9,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.exception.SlotAlreadyBookedExce
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BarberRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -22,14 +23,17 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final SalonServiceRepository salonServiceRepository;
     private final BarberRepository barberRepository;
+    private final NotificationService notificationService;
 
     public BookingService(
             BookingRepository bookingRepository,
             SalonServiceRepository salonServiceRepository,
-            BarberRepository barberRepository) {
+            BarberRepository barberRepository,
+            NotificationService notificationService) {
         this.bookingRepository = bookingRepository;
         this.salonServiceRepository = salonServiceRepository;
         this.barberRepository = barberRepository;
+        this.notificationService = notificationService;
     }
 
     public List<Booking> getBookings() {
@@ -58,13 +62,21 @@ public class BookingService {
         booking.setTime(request.getTime());
         booking.setPrice(service.getPrice().doubleValue());
 
-        return bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+        notificationService.notify(user, NotificationType.BOOKING_CREATED,
+                "Booking created for " + service.getName() + " with " + barber.getName() + " on " + request.getDate() + " at " + request.getTime(),
+                "booking", saved.getId());
+        return saved;
     }
 
     public Booking updateStatus(Long id, String status) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Booking not found"));
         booking.setStatus(status);
-        return bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+        notificationService.notify(booking.getUser(), NotificationType.BOOKING_STATUS_UPDATED,
+                "Booking status updated to: " + status,
+                "booking", saved.getId());
+        return saved;
     }
 }
