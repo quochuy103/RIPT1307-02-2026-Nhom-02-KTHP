@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/barbers")
@@ -38,6 +39,11 @@ public class BarberController {
     @GetMapping("/{id}")
     public ResponseEntity<BarberResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(barberService.findById(id));
+    }
+
+    @GetMapping("/exists/{id}")
+    public ResponseEntity<Map<String, Boolean>> exists(@PathVariable Long id) {
+        return ResponseEntity.ok(Map.of("exists", barberService.existsById(id)));
     }
 
     @GetMapping("/top")
