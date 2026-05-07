@@ -18,6 +18,9 @@ public class User {
     @Column(nullable = true)
     private String phone;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Column(nullable = false)
     private String role = "USER";
 
@@ -38,6 +41,8 @@ public class User {
     public void setName(String name) { this.name = name; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
     public LocalDateTime getCreatedAt() { return createdAt; }
