@@ -3,6 +3,8 @@ package com.cutie_cuts_app.example.cutie_cuts_app.security;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.auth.OAuthUserInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,19 +20,16 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @Component
 public class FacebookTokenVerifier {
 
-    private static final String DEBUG_TOKEN_URL = "https://graph.facebook.com/debug_token";
+    private static final Logger log = LoggerFactory.getLogger(FacebookTokenVerifier.class);
     private static final String ME_URL = "https://graph.facebook.com/me?fields=id,name,email";
 
     private final String appId;
-    private final String appSecret;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
 
     public FacebookTokenVerifier(
-            @Value("${app.oauth.facebook.app-id}") String appId,
-            @Value("${app.oauth.facebook.app-secret}") String appSecret) {
+            @Value("${app.oauth.facebook.app-id}") String appId) {
         this.appId = appId;
-        this.appSecret = appSecret;
         this.objectMapper = new ObjectMapper();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
@@ -39,31 +38,7 @@ public class FacebookTokenVerifier {
 
     public OAuthUserInfo verify(String accessToken) {
         try {
-            // Step 1: Debug token to verify it's valid and belongs to our app
-            String debugUrl = DEBUG_TOKEN_URL
-                    + "?input_token=" + accessToken
-                    + "&access_token=" + appId + "|" + appSecret;
-
-            HttpRequest debugRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(debugUrl))
-                    .GET()
-                    .timeout(Duration.ofSeconds(10))
-                    .build();
-
-            HttpResponse<String> debugResponse = httpClient.send(debugRequest, HttpResponse.BodyHandlers.ofString());
-            JsonNode debugJson = objectMapper.readTree(debugResponse.body());
-
-            JsonNode data = debugJson.path("data");
-            boolean isValid = data.path("is_valid").asBoolean(false);
-            String applicationId = data.path("app_id").asText("");
-
-            if (!isValid || !applicationId.equals(appId)) {
-                throw new ResponseStatusException(UNAUTHORIZED, "Invalid Facebook token");
-            }
-
-            String fbUserId = data.path("user_id").asText("");
-
-            // Step 2: Get user info from /me endpoint
+            // Call /me endpoint directly with user's access token (same approach as Google)
             String meUrl = ME_URL + "&access_token=" + accessToken;
 
             HttpRequest meRequest = HttpRequest.newBuilder()
@@ -73,16 +48,34 @@ public class FacebookTokenVerifier {
                     .build();
 
             HttpResponse<String> meResponse = httpClient.send(meRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (meResponse.statusCode() != 200) {
+                log.error("Facebook token verification failed: status={}, body={}", meResponse.statusCode(),
+                        meResponse.body());
+                throw new ResponseStatusException(UNAUTHORIZED, "Invalid Facebook token");
+            }
+
             JsonNode meJson = objectMapper.readTree(meResponse.body());
 
+            // Check for error response
+            if (meJson.has("error")) {
+                log.error("Facebook /me error: {}", meJson.get("error"));
+                throw new ResponseStatusException(UNAUTHORIZED, "Invalid Facebook token");
+            }
+
+            String fbUserId = meJson.path("id").asText("");
             String name = meJson.path("name").asText("");
             String email = meJson.path("email").asText(null);
 
-            // Use user_id from debug_token as it's more reliable
+            if (fbUserId.isEmpty()) {
+                throw new ResponseStatusException(UNAUTHORIZED, "Invalid Facebook token: missing user id");
+            }
+
             return new OAuthUserInfo(fbUserId, email, name, "facebook");
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Facebook token verification error", e);
             throw new ResponseStatusException(UNAUTHORIZED, "Facebook token verification failed", e);
         }
     }
