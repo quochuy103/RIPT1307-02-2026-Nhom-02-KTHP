@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Graphify outputs (keep local only)
 graphify-out/
 
@@ -26,3 +27,6 @@ Thumbs.db
 
 # Logs
 *.log
+=======
+node_modules
+>>>>>>> 94fde6caefe782081c068e43ee1bec5e8ebc0ebd
