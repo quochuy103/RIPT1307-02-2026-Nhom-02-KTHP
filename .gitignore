@@ -2,6 +2,19 @@
 .claude/
 .claude-flow/
 
+# MCP and swarm config (local only)
+.mcp.json
+.swarm/
+.hive-mind/
+.ruvector.db
+.graphify_incremental.json
+
+# Temp/test files
+test_image.txt
+graphify-out/
+backend/graphify-out/
+backend/cutie-cuts-app/graphify-out/
+
 # Graphify python path marker
 .graphify_python
 
