@@ -30,6 +30,8 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminGallery from "./pages/admin/AdminGallery";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminRoute from "@/components/AdminRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -45,18 +47,20 @@ const App = () => (
               <Toaster />
               <Sonner />
               <Routes>
-                {/* Admin routes -- own layout, no Navbar/Footer */}
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="users" element={<AdminUsers />} />
-                  <Route path="bookings" element={<AdminBookings />} />
-                  <Route path="services" element={<AdminServices />} />
-                  <Route path="barbers" element={<AdminBarbers />} />
-                  <Route path="products" element={<AdminProducts />} />
-                  <Route path="orders" element={<AdminOrders />} />
-                  <Route path="gallery" element={<AdminGallery />} />
-                  <Route path="reviews" element={<AdminReviews />} />
-                  <Route path="settings" element={<AdminSettings />} />
+                {/* Admin routes -- protected by AdminRoute, own layout, no Navbar/Footer */}
+                <Route element={<AdminRoute />}>
+                  <Route path="/admin" element={<AdminLayout />}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="users" element={<AdminUsers />} />
+                    <Route path="bookings" element={<AdminBookings />} />
+                    <Route path="services" element={<AdminServices />} />
+                    <Route path="barbers" element={<AdminBarbers />} />
+                    <Route path="products" element={<AdminProducts />} />
+                    <Route path="orders" element={<AdminOrders />} />
+                    <Route path="gallery" element={<AdminGallery />} />
+                    <Route path="reviews" element={<AdminReviews />} />
+                    <Route path="settings" element={<AdminSettings />} />
+                  </Route>
                 </Route>
 
                 {/* Public routes */}
@@ -68,13 +72,16 @@ const App = () => (
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/services" element={<ServicesPage />} />
-                        <Route path="/booking" element={<BookingPage />} />
                         <Route path="/shop" element={<ShopPage />} />
-                        <Route path="/checkout" element={<CheckoutPage />} />
                         <Route path="/gallery" element={<GalleryPage />} />
                         <Route path="/about" element={<AboutPage />} />
                         <Route path="/contact" element={<ContactPage />} />
                         <Route path="/auth" element={<AuthPage />} />
+                        {/* Routes requiring authentication */}
+                        <Route element={<ProtectedRoute />}>
+                          <Route path="/booking" element={<BookingPage />} />
+                          <Route path="/checkout" element={<CheckoutPage />} />
+                        </Route>
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </main>
