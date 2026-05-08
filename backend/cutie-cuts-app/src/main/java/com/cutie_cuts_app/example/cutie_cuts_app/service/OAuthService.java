@@ -7,7 +7,6 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.UserAuth;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserAuthRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserRepository;
-import com.cutie_cuts_app.example.cutie_cuts_app.security.FacebookTokenVerifier;
 import com.cutie_cuts_app.example.cutie_cuts_app.security.GoogleTokenVerifier;
 import com.cutie_cuts_app.example.cutie_cuts_app.security.JwtUtil;
 import org.springframework.stereotype.Service;
@@ -23,19 +22,16 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 public class OAuthService {
 
     private final GoogleTokenVerifier googleTokenVerifier;
-    private final FacebookTokenVerifier facebookTokenVerifier;
     private final UserAuthRepository userAuthRepository;
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
 
     public OAuthService(
             GoogleTokenVerifier googleTokenVerifier,
-            FacebookTokenVerifier facebookTokenVerifier,
             UserAuthRepository userAuthRepository,
             UserRepository userRepository,
             JwtUtil jwtUtil) {
         this.googleTokenVerifier = googleTokenVerifier;
-        this.facebookTokenVerifier = facebookTokenVerifier;
         this.userAuthRepository = userAuthRepository;
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
@@ -111,7 +107,6 @@ public class OAuthService {
     private OAuthUserInfo verifyToken(String provider, String token) {
         return switch (provider) {
             case "google" -> googleTokenVerifier.verify(token);
-            case "facebook" -> facebookTokenVerifier.verify(token);
             default -> throw new ResponseStatusException(BAD_REQUEST, "Unsupported OAuth provider: " + provider);
         };
     }
@@ -121,8 +116,8 @@ public class OAuthService {
             throw new ResponseStatusException(BAD_REQUEST, "Provider is required");
         }
         String normalized = provider.trim().toLowerCase();
-        if (!normalized.equals("google") && !normalized.equals("facebook")) {
-            throw new ResponseStatusException(BAD_REQUEST, "Unsupported provider. Use 'google' or 'facebook'");
+        if (!normalized.equals("google")) {
+            throw new ResponseStatusException(BAD_REQUEST, "Unsupported provider. Use 'google'");
         }
         return normalized;
     }

@@ -54,8 +54,14 @@ public class BookingController {
     }
 
     @PatchMapping("/{id}/status")
-    public Map<String, Object> updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request) {
-        Booking booking = bookingService.updateStatus(id, request.getStatus());
+    public Map<String, Object> updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request, Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        User user = currentUserService.getByEmail(authentication.getName());
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        Booking booking = bookingService.updateStatus(id, request.getStatus(), user, isAdmin);
         return toResponse(booking);
     }
 
