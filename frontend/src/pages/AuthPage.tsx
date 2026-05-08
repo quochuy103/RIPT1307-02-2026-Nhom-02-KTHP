@@ -3,24 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Scissors } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import SocialLoginButtons from '@/components/SocialLoginButtons';
 
-const USER_STORAGE_KEY = 'cutie_cuts_user';
-
-const getRedirectPath = () => {
-  try {
-    const raw = localStorage.getItem(USER_STORAGE_KEY);
-    if (!raw) return '/';
-    const user = JSON.parse(raw) as { role?: string };
-    return user.role === 'admin' ? '/admin' : '/';
-  } catch {
-    return '/';
-  }
-};
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -28,7 +16,23 @@ const AuthPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
+
+  // Redirect to the page that triggered the login, or home/admin depending on role.
+  // Role is read from localStorage because React state may not be flushed yet
+  // at the point navigate() is called (persistAuth writes to localStorage synchronously).
+  const getRedirectPath = () => {
+    const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
+    if (from && from !== '/auth') return from;
+    try {
+      const raw = localStorage.getItem('cutie_cuts_user');
+      const storedUser = raw ? (JSON.parse(raw) as { role?: string }) : null;
+      return storedUser?.role === 'admin' ? '/admin' : '/';
+    } catch {
+      return '/';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
