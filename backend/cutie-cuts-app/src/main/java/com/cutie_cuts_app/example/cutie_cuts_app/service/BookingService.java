@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
@@ -69,9 +70,12 @@ public class BookingService {
         return saved;
     }
 
-    public Booking updateStatus(Long id, String status) {
+    public Booking updateStatus(Long id, String status, User user, boolean isAdmin) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Booking not found"));
+        if (!isAdmin && !booking.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(FORBIDDEN, "You can only update your own bookings");
+        }
         booking.setStatus(status);
         Booking saved = bookingRepository.save(booking);
         notificationService.notify(booking.getUser(), NotificationType.BOOKING_STATUS_UPDATED,

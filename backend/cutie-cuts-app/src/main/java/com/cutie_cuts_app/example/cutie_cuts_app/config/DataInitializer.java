@@ -118,6 +118,21 @@ public class DataInitializer {
                 auth.setVerified(true);
                 userAuthRepository.save(auth);
             }
+
+            if (userAuthRepository.findByAuthTypeAndAuthValue("email", "user@cutiecuts.com").isEmpty()) {
+                User user = new User();
+                user.setName("Test User");
+                user.setRole("USER");
+                userRepository.save(user);
+
+                UserAuth auth = new UserAuth();
+                auth.setUser(user);
+                auth.setAuthType("email");
+                auth.setAuthValue("user@cutiecuts.com");
+                auth.setPasswordHash(passwordEncoder.encode("123456"));
+                auth.setVerified(true);
+                userAuthRepository.save(auth);
+            }
         };
     }
 }
