@@ -33,6 +33,9 @@ docker compose up --build -d
 
 PostgreSQL in Docker is exposed on `localhost:5433` so it does not conflict with a local PostgreSQL instance already using port `5432`.
 
+2.1 Open the frontend 
+npm install @react-oauth/google
+
 3. Stop containers when finished:
 
 ```bash
