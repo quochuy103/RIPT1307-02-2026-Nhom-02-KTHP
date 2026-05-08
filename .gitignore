@@ -1,8 +1,6 @@
-# Graphify outputs (keep local only)
-graphify-out/
-
-# Claude settings (local config)
+# Claude Code runtime files
 .claude/
+.claude-flow/
 
 # Graphify python path marker
 .graphify_python
