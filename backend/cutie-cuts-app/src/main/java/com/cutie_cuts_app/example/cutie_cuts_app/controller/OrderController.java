@@ -12,6 +12,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.NotificationService;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
@@ -60,6 +62,7 @@ public class OrderController {
     }
 
     @PostMapping
+    @Transactional
     public Map<String, Object> create(@RequestBody CreateOrderRequest request, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
@@ -85,6 +88,13 @@ public class OrderController {
             if (qty <= 0) {
                 throw new ResponseStatusException(BAD_REQUEST, "Quantity must be greater than 0");
             }
+            if (qty > product.getStock()) {
+                throw new ResponseStatusException(BAD_REQUEST, "Not enough stock for: " + product.getName());
+            }
+
+            // Deduct stock
+            product.setStock(product.getStock() - qty);
+            productRepository.save(product);
 
             OrderItem item = new OrderItem();
             item.setOrder(order);
@@ -107,13 +117,55 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/status")
-    public Map<String, Object> updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request) {
+    public Map<String, Object> updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request, Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        User user = currentUserService.getByEmail(authentication.getName());
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(FORBIDDEN, "You can only update your own orders");
+        }
         order.setStatus(request.getStatus());
         ShopOrder saved = orderRepository.save(order);
         notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
                 "Order status updated to: " + request.getStatus(),
+                "order", saved.getId());
+        return toResponse(saved);
+    }
+
+    @PostMapping("/{id}/cancel")
+    @Transactional
+    public Map<String, Object> cancel(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        User user = currentUserService.getByEmail(authentication.getName());
+        ShopOrder order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(FORBIDDEN, "You can only cancel your own orders");
+        }
+        String currentStatus = order.getStatus();
+        if ("cancelled".equals(currentStatus)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Order is already cancelled");
+        }
+        if ("shipped".equals(currentStatus) || "delivered".equals(currentStatus)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Cannot cancel an order that has been " + currentStatus);
+        }
+
+        // Restore stock for each item
+        for (OrderItem item : order.getItems()) {
+            Product product = item.getProduct();
+            product.setStock(product.getStock() + item.getQuantity());
+            productRepository.save(product);
+        }
+
+        order.setStatus("cancelled");
+        ShopOrder saved = orderRepository.save(order);
+        notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
+                "Order cancelled. Stock restored.",
                 "order", saved.getId());
         return toResponse(saved);
     }

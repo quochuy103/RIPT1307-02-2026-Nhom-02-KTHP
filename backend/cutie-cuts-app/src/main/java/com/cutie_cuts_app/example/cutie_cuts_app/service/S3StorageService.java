@@ -55,10 +55,12 @@ public class S3StorageService {
     }
 
     private void ensureBucketExists(String bucketName) {
+        boolean bucketExisted = true;
         try {
             s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
         } catch (Exception e) {
             log.info("Bucket {} not found, attempting to create...", bucketName);
+            bucketExisted = false;
             try {
                 s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
                 log.info("Successfully created bucket: {}", bucketName);
@@ -66,6 +68,8 @@ public class S3StorageService {
                 log.warn("Failed to create bucket {}: {}", bucketName, ex.getMessage());
             }
         }
+        // Always ensure public read policy is applied (covers new and pre-existing buckets)
+        applyPublicReadPolicy(bucketName);
     }
 
     public String uploadFile(MultipartFile file, String bucket, String path) throws IOException {
@@ -81,8 +85,8 @@ public class S3StorageService {
 
         s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-        // Return path-style URL using public endpoint
-        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
+        // Return path-style URL: {publicUrl}/{key} where key = avatars/2/file or gallery/images/file
+        return String.format("%s/%s", publicUrl.replaceAll("/+$", ""), key);
     }
 
     public String uploadAvatar(MultipartFile file, Long userId) throws IOException {
@@ -93,6 +97,33 @@ public class S3StorageService {
     public String uploadGalleryImage(MultipartFile file, String filename) throws IOException {
         String path = "images";
         return uploadFile(file, galleryBucket, path);
+    }
+
+    private void applyPublicReadPolicy(String bucketName) {
+        try {
+            String policy = """
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "PublicReadGetObject",
+                  "Effect": "Allow",
+                  "Principal": {"AWS": ["*"]},
+                  "Action": ["s3:GetObject"],
+                  "Resource": ["arn:aws:s3:::%s/*"]
+                }
+              ]
+            }
+            """.formatted(bucketName);
+
+            s3Client.putBucketPolicy(PutBucketPolicyRequest.builder()
+                    .bucket(bucketName)
+                    .policy(policy)
+                    .build());
+            log.info("Applied public read policy to bucket: {}", bucketName);
+        } catch (Exception e) {
+            log.warn("Failed to apply public read policy to bucket {}: {}", bucketName, e.getMessage());
+        }
     }
 
     public void deleteFile(String url) {
