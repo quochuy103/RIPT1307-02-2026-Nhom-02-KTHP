@@ -1,4 +1,9 @@
-# Claude Code runtime files
+
+# Graphify outputs (keep local only)
+graphify-out/
+
+# Claude settings (local config)
+
 .claude/
 .claude-flow/
 
@@ -38,5 +43,13 @@ Thumbs.db
 # Logs
 *.log
 
+
 # Payment Guide
 *.md
+
+node_modules
+
+
+# Agent
+.agent/
+.env
