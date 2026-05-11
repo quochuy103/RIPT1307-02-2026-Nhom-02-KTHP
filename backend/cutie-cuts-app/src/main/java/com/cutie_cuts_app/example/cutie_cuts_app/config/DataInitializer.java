@@ -20,8 +20,7 @@ public class DataInitializer {
             GalleryImageRepository galleryImageRepository,
             UserRepository userRepository,
             UserAuthRepository userAuthRepository,
-            PasswordEncoder passwordEncoder
-    ) {
+            PasswordEncoder passwordEncoder) {
         return args -> {
             if (salonServiceRepository.count() == 0) {
                 SalonService s1 = new SalonService();
@@ -71,7 +70,7 @@ public class DataInitializer {
             if (productRepository.count() == 0) {
                 Product p1 = new Product();
                 p1.setName("Premium Hair Wax");
-                p1.setPrice(24.99);
+                p1.setPrice(150000.0);
                 p1.setImage("https://images.unsplash.com/photo-1585751119414-ef2636f8aede?w=400");
                 p1.setCategory("Styling");
                 p1.setDescription("Strong hold matte finish wax");
