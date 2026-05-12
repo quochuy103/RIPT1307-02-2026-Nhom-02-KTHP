@@ -1,17 +1,26 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.dto.domain;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+@Schema(description = "Request body for creating a new booking")
 public class CreateBookingRequest {
     @NotNull
+    @Schema(type = "integer", format = "int64", example = "2", description = "ID of the service to book")
     private Long serviceId;
+
     @NotNull
+    @Schema(type = "integer", format = "int64", example = "1", description = "ID of the barber")
     private Long barberId;
+
     @NotNull
+    @Schema(type = "string", format = "date", example = "2026-05-20", description = "Booking date in ISO format YYYY-MM-DD")
     private LocalDate date;
+
     @NotNull
+    @Schema(type = "string", format = "time", example = "10:00", description = "Booking time in 24-hour format. Use HH:mm or HH:mm:ss. Example: 10:00")
     private LocalTime time;
 
     public Long getServiceId() { return serviceId; }
