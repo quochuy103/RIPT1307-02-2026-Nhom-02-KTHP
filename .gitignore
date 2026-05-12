@@ -62,7 +62,7 @@ Thumbs.db
 node_modules
 
 # Agent
-.agent/
+.agent
 .env
 <<<<<<< HEAD
 =======
