@@ -1,12 +1,17 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.dto.domain;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 public class CreateBookingRequest {
+    @NotNull
     private Long serviceId;
+    @NotNull
     private Long barberId;
+    @NotNull
     private LocalDate date;
+    @NotNull
     private LocalTime time;
 
     public Long getServiceId() { return serviceId; }

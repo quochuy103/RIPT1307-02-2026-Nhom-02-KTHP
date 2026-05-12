@@ -19,7 +19,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
-@RequestMapping("/reviews")
+@RequestMapping("/api/reviews")
 @CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class ReviewController {
 

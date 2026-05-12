@@ -17,7 +17,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 @RestController
-@RequestMapping("/gallery")
+@RequestMapping("/api/gallery")
 @CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class GalleryController {
 

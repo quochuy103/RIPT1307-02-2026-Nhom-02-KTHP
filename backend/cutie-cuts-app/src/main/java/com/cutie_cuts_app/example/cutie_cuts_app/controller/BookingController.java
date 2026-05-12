@@ -7,6 +7,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.BookingService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import org.springframework.security.core.Authentication;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -14,10 +15,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
-@RequestMapping("/bookings")
+@RequestMapping("/api/bookings")
 @CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class BookingController {
 
@@ -47,6 +49,10 @@ public class BookingController {
     public Map<String, Object> create(@RequestBody CreateBookingRequest request, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        if (request.getServiceId() == null || request.getBarberId() == null
+                || request.getDate() == null || request.getTime() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Missing required fields: serviceId, barberId, date, time");
         }
         User user = currentUserService.getByEmail(authentication.getName());
         Booking booking = bookingService.createBooking(user, request);
