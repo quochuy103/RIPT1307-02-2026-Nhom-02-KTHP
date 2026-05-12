@@ -1,28 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { services } from '@/data/mockData';
 import ServiceCard from '@/components/ServiceCard';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/api';
+import { Button } from '@/components/ui/button';
 
 const categories = ['all', 'haircut', 'styling', 'coloring', 'grooming'] as const;
 
 const ServicesPage = () => {
   const [category, setCategory] = useState<string>('all');
-  const [serviceList, setServiceList] = useState(services);
+  const [serviceList, setServiceList] = useState<typeof services>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { t } = useTranslation();
   const filtered = category === 'all' ? serviceList : serviceList.filter(s => s.category === category);
 
+  const loadServices = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const loadedServices = await api.services.getAll();
+      setServiceList(loadedServices);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('services.loadError'));
+      setServiceList(services);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [t]);
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        setServiceList(await api.getServices());
-      } catch {
-        // keep fallback
-      }
-    };
-    void load();
-  }, []);
+    void loadServices();
+  }, [loadServices]);
 
   return (
     <div className="pt-24 pb-20">
@@ -46,13 +56,38 @@ const ServicesPage = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((s, i) => (
-            <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <ServiceCard service={s} />
-            </motion.div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-44 rounded-lg border border-border bg-card animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <>
+            {error && (
+              <div className="mb-8 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-center">
+                <p className="text-sm text-destructive mb-3">{error}</p>
+                <Button variant="outline" size="sm" onClick={loadServices}>
+                  {t('common.retry')}
+                </Button>
+              </div>
+            )}
+
+            {filtered.length === 0 ? (
+              <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
+                {t('services.empty')}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filtered.map((s, i) => (
+                  <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                    <ServiceCard service={s} />
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
