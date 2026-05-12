@@ -55,15 +55,21 @@ Thumbs.db
 *.log
 <<<<<<< HEAD
 
-
 # Payment Guide
 *.md
 
+# node modules
 node_modules
-
 
 # Agent
 .agent/
 .env
+<<<<<<< HEAD
 =======
 >>>>>>> c97ad81 (cleanup gitignore)
+=======
+
+# Env files
+.env
+
+>>>>>>> 302fbd9 (fix: đồng bộ stk)
