@@ -3,6 +3,7 @@
     "home": "Home",
     "services": "Services",
     "bookNow": "Book Now",
+    "myBookings": "My Bookings",
     "shop": "Shop",
     "gallery": "Gallery",
     "about": "About",
@@ -52,7 +53,9 @@
       "styling": "Styling",
       "coloring": "Coloring",
       "grooming": "Grooming"
-    }
+    },
+    "empty": "No services are available right now.",
+    "loadError": "Unable to load services. Showing fallback services for now."
   },
   "serviceItems": {
     "classicHaircut": "Classic Haircut",
@@ -102,9 +105,27 @@
       "serviceRequired": "Select a service",
       "barberRequired": "Select a barber",
       "dateRequired": "Select a date",
-      "timeRequired": "Select a time"
+      "timeRequired": "Select a time",
+      "submitFailed": "Unable to create booking. Please try again."
     },
     "successToast": "Booking confirmed!"
+  },
+  "myBookings": {
+    "title": "My",
+    "highlight": "Bookings",
+    "subtitle": "Review and manage your upcoming appointments",
+    "empty": "You do not have any bookings yet.",
+    "loadError": "Unable to load your bookings.",
+    "cancel": "Cancel Booking",
+    "cancelConfirm": "Cancel this booking?",
+    "cancelSuccess": "Booking cancelled.",
+    "cancelError": "Unable to cancel booking.",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    }
   },
   "shop": {
     "title": "The",
@@ -243,7 +264,10 @@
     "copyright": "© {{year}} Blade & Co. All rights reserved."
   },
   "common": {
-    "yearsExperience": "years experience"
+    "yearsExperience": "years experience",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "saving": "Please wait..."
   },
   "reviews": {
     "r1": "Best fade I've ever had. Marcus is a true artist.",
