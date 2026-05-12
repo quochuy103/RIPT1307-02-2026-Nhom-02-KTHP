@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,7 +40,7 @@ public class AuthController {
     @ApiResponse(responseCode = "201", description = "User registered successfully",
             content = @Content(schema = @Schema(implementation = AuthResponse.class)))
     @ApiResponse(responseCode = "400", description = "Invalid input or email already exists")
-    public AuthResponse register(@RequestBody RegisterRequest request) {
+    public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
     }
 
@@ -48,7 +49,7 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "Login successful",
             content = @Content(schema = @Schema(implementation = AuthResponse.class)))
     @ApiResponse(responseCode = "401", description = "Invalid email or password")
-    public AuthResponse login(@RequestBody LoginRequest request) {
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
     }
 

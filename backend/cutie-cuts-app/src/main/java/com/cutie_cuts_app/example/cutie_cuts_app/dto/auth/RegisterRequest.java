@@ -1,9 +1,16 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.dto.auth;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class RegisterRequest {
 
+    @NotBlank
     private String name;
+
+    @NotBlank
     private String email;
+
+    @NotBlank
     private String password;
 
     public String getName() {
