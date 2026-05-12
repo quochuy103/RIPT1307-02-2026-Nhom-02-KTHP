@@ -1,9 +1,18 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> c97ad81 (cleanup gitignore)
 # Graphify outputs (keep local only)
 graphify-out/
+backend/graphify-out/
+backend/cutie-cuts-app/graphify-out/
 
+<<<<<<< HEAD
 # Claude settings (local config)
 
+=======
+# Claude Code runtime files
+>>>>>>> c97ad81 (cleanup gitignore)
 .claude/
 .claude-flow/
 
@@ -14,11 +23,12 @@ graphify-out/
 .ruvector.db
 .graphify_incremental.json
 
+# Agent
+.agent/
+.env
+
 # Temp/test files
 test_image.txt
-graphify-out/
-backend/graphify-out/
-backend/cutie-cuts-app/graphify-out/
 
 # Graphify python path marker
 .graphify_python
@@ -31,6 +41,7 @@ backend/cutie-cuts-app/build/
 frontend/node_modules/
 frontend/.next/
 frontend/dist/
+node_modules
 
 # IDE
 backend/.idea/
@@ -42,6 +53,7 @@ Thumbs.db
 
 # Logs
 *.log
+<<<<<<< HEAD
 
 
 # Payment Guide
@@ -53,3 +65,5 @@ node_modules
 # Agent
 .agent/
 .env
+=======
+>>>>>>> c97ad81 (cleanup gitignore)

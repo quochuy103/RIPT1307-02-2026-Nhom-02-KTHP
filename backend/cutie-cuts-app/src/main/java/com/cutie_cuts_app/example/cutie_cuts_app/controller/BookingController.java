@@ -19,7 +19,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
-@RequestMapping("/api/bookings")
+@RequestMapping("/bookings")
 @CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class BookingController {
 
