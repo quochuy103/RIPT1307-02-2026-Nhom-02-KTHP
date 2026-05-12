@@ -297,10 +297,10 @@ export const api = {
     deleteBarber: async (id: string) => request(`/api/barbers/${id}`, { method: 'DELETE' }),
 
     getBookings: async (): Promise<AdminBooking[]> => {
-      const rows = await request<Array<{ id: number; userId: number; userName: string; serviceId: number; serviceName: string; barberId: number; barberName: string; date: string; time: string; status: AdminBooking['status']; price: number }>>('/api/bookings');
+      const rows = await requestWithNotFoundFallback<Array<{ id: number; userId: number; userName: string; serviceId: number; serviceName: string; barberId: number; barberName: string; date: string; time: string; status: AdminBooking['status']; price: number }>>('/api/bookings', '/bookings', undefined, true);
       return rows.map((r) => ({ ...r, id: String(r.id), userId: String(r.userId), serviceId: String(r.serviceId), barberId: String(r.barberId) }));
     },
-    updateBookingStatus: async (id: string, status: AdminBooking['status']) => request(`/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    updateBookingStatus: async (id: string, status: AdminBooking['status']) => requestWithNotFoundFallback(`/api/bookings/${id}/status`, `/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
 
     getOrders: async (): Promise<AdminOrder[]> => {
       const rows = await request<Array<{ id: number; userId: number; customerName: string; products: AdminOrder['products']; totalPrice: number; address: string; status: AdminOrder['status']; createdAt: string }>>('/api/orders');
