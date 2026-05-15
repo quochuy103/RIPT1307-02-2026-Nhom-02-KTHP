@@ -45,6 +45,7 @@ Thumbs.db
 
 # Payment Guide
 *.md
+!README.md
 
 # node modules
 node_modules
