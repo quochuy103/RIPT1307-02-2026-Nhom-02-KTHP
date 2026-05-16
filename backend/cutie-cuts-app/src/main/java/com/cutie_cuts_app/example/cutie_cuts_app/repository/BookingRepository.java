@@ -13,5 +13,5 @@ import java.util.Optional;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUser(User user);
     Optional<Booking> findByBarberAndDateAndTime(Barber barber, LocalDate date, LocalTime time);
-    boolean existsByBarberAndDateAndTime(Barber barber, LocalDate date, LocalTime time);
+    boolean existsByBarberAndDateAndTimeAndStatusNot(Barber barber, LocalDate date, LocalTime time, String status);
 }

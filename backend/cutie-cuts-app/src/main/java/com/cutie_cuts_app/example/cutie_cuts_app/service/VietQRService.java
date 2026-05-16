@@ -20,7 +20,7 @@ public class VietQRService {
     @Value("${vietqr.bank.id:970422}")
     private String bankId;
 
-    @Value("${vietqr.account.no:0123456789}")
+    @Value("${vietqr.account.no:100845448666}")
     private String accountNo;
 
     @Value("${vietqr.account.name:CUTIE CUTS SALON}")

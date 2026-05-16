@@ -9,8 +9,10 @@ import com.cutie_cuts_app.example.cutie_cuts_app.exception.SlotAlreadyBookedExce
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BarberRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -51,7 +53,11 @@ public class BookingService {
         Barber barber = barberRepository.findById(request.getBarberId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Barber not found"));
 
-        if (bookingRepository.existsByBarberAndDateAndTime(barber, request.getDate(), request.getTime())) {
+        if (bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
+                barber,
+                request.getDate(),
+                request.getTime(),
+                "cancelled")) {
             throw new SlotAlreadyBookedException();
         }
 
@@ -71,15 +77,37 @@ public class BookingService {
     }
 
     public Booking updateStatus(Long id, String status, User user, boolean isAdmin) {
+        if (!isAdmin) {
+            throw new ResponseStatusException(FORBIDDEN, "Only admins can update booking status");
+        }
+
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Booking not found"));
+        String normalizedStatus = DomainStatusRules.normalizeBookingStatusForUpdate(status);
+
+        booking.setStatus(normalizedStatus);
+        Booking saved = bookingRepository.save(booking);
+        notificationService.notify(booking.getUser(), NotificationType.BOOKING_STATUS_UPDATED,
+                "Booking status updated to: " + normalizedStatus,
+                "booking", saved.getId());
+        return saved;
+    }
+
+    @Transactional
+    public Booking cancelBooking(Long id, User user, boolean isAdmin) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Booking not found"));
         if (!isAdmin && !booking.getUser().getId().equals(user.getId())) {
-            throw new ResponseStatusException(FORBIDDEN, "You can only update your own bookings");
+            throw new ResponseStatusException(FORBIDDEN, "You can only cancel your own bookings");
         }
-        booking.setStatus(status);
+
+        String currentStatus = DomainStatusRules.normalizeCurrentStatus(booking.getStatus(), "Booking");
+        DomainStatusRules.ensureBookingCanBeCancelled(currentStatus);
+
+        booking.setStatus("cancelled");
         Booking saved = bookingRepository.save(booking);
-        notificationService.notify(booking.getUser(), NotificationType.BOOKING_STATUS_UPDATED,
-                "Booking status updated to: " + status,
+        notificationService.notify(booking.getUser(), NotificationType.BOOKING_CANCELLED,
+                "Booking cancelled for " + booking.getService().getName() + " with " + booking.getBarber().getName(),
                 "booking", saved.getId());
         return saved;
     }
