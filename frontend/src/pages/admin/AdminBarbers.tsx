@@ -62,6 +62,15 @@ const AdminBarbers = () => {
 
   const handleSubmit = () => {
     if (!form.name) { toast.error('Name is required'); return; }
+    if (!form.avatar) { toast.error('Avatar URL is required'); return; }
+    if (form.avatar.startsWith('data:')) {
+      toast.error('Please enter a URL (e.g. https://...), not a base64 image');
+      return;
+    }
+    if (form.avatar.length > 255) {
+      toast.error('Avatar URL is too long (max 255 characters). Use a shorter URL.');
+      return;
+    }
     if (editing) updateMutation.mutate({ id: editing.id, payload: form });
     else createMutation.mutate(form);
   };
@@ -105,7 +114,7 @@ const AdminBarbers = () => {
         <div className="space-y-3">
           <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div><Label>Experience (years)</Label><Input type="number" value={form.experience} onChange={(e) => setForm({ ...form, experience: Number(e.target.value) })} /></div>
-          <div><Label>Avatar URL</Label><Input value={form.avatar} onChange={(e) => setForm({ ...form, avatar: e.target.value })} /></div>
+          <div><Label>Avatar URL</Label><Input value={form.avatar} placeholder="https://example.com/avatar.jpg" onChange={(e) => setForm({ ...form, avatar: e.target.value })} /></div>
           <div><Label>Specialties (comma-separated)</Label><Input value={form.specialties.join(', ')} onChange={(e) => setForm({ ...form, specialties: e.target.value.split(',').map((s) => s.trim()) })} /></div>
         </div>
       </FormModal>
