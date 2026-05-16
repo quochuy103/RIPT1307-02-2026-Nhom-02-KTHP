@@ -12,8 +12,9 @@ public class BarberRequest {
     @Size(max = 100)
     private String role;
 
-    @NotBlank(message = "Image is required")
     private String image;
+
+    private String avatar;
 
     @NotNull(message = "Experience is required")
     @Min(value = 0, message = "Experience must be non-negative")
@@ -32,6 +33,8 @@ public class BarberRequest {
     public void setRole(String role) { this.role = role; }
     public String getImage() { return image; }
     public void setImage(String image) { this.image = image; }
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
     public Integer getExperience() { return experience; }
     public void setExperience(Integer experience) { this.experience = experience; }
     public String getSpecialties() { return specialties; }

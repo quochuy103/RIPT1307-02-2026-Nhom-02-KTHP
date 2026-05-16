@@ -31,6 +31,9 @@ alter table if exists products
 alter table if exists products
     add column if not exists deleted_at timestamp;
 
+alter table if exists barbers
+    alter column image type text;
+
 -- Payment tables
 create table if not exists payments
 (

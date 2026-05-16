@@ -54,7 +54,8 @@ public class BarberService {
         Barber barber = new Barber();
         barber.setName(request.getName());
         barber.setRole(request.getRole());
-        barber.setImage(request.getImage());
+        String imageUrl = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
+        barber.setImage(imageUrl != null ? imageUrl : "");
         barber.setExperience(request.getExperience());
         barber.setSpecialties(request.getSpecialties());
         barber.setRating(request.getRating() != null ? request.getRating() : 4.8);
@@ -68,7 +69,8 @@ public class BarberService {
                 .orElseThrow(() -> new BarberNotFoundException(id));
         barber.setName(request.getName());
         barber.setRole(request.getRole());
-        barber.setImage(request.getImage());
+        String imageUrl = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
+        barber.setImage(imageUrl != null ? imageUrl : barber.getImage());
         barber.setExperience(request.getExperience());
         barber.setSpecialties(request.getSpecialties());
         if (request.getRating() != null) {
