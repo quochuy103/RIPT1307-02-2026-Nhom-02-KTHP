@@ -134,8 +134,9 @@ public class OrderController {
         order.setStatus(normalizedStatus);
 
         ShopOrder saved = orderRepository.save(order);
+        String responseStatus = DomainStatusRules.normalizeOrderStatusForResponse(saved.getStatus());
         notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
-                "Order status updated to: " + normalizedStatus,
+                "Order status updated to: " + responseStatus,
                 "order", saved.getId());
         return toResponse(saved);
     }
