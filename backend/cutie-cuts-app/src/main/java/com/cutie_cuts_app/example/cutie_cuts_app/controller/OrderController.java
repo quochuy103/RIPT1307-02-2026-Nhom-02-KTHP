@@ -10,6 +10,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.ProductRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.NotificationService;
+import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -49,7 +50,13 @@ public class OrderController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> getAll() {
+    public List<Map<String, Object>> getAll(Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        if (!isAdmin(authentication)) {
+            throw new ResponseStatusException(FORBIDDEN, "Only admins can view all orders");
+        }
         return orderRepository.findAll().stream().map(this::toResponse).toList();
     }
 
@@ -122,9 +129,14 @@ public class OrderController {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
-        User user = currentUserService.getByEmail(authentication.getName());
+        if (!isAdmin(authentication)) {
+            throw new ResponseStatusException(FORBIDDEN, "Only admins can update order status");
+        }
+
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
+
+
         if (!order.getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(FORBIDDEN, "You can only update your own orders");
         }
@@ -133,9 +145,15 @@ public class OrderController {
             throw new ResponseStatusException(BAD_REQUEST, "Invalid status. Allowed: pending, paid, cancelled, shipped, delivered");
         }
         order.setStatus(newStatus);
+
+
+        String normalizedStatus = DomainStatusRules.normalizeOrderStatusForUpdate(request.getStatus());
+        order.setStatus(normalizedStatus);
+
         ShopOrder saved = orderRepository.save(order);
+        String responseStatus = DomainStatusRules.normalizeOrderStatusForResponse(saved.getStatus());
         notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
-                "Order status updated to: " + request.getStatus(),
+                "Order status updated to: " + responseStatus,
                 "order", saved.getId());
         return toResponse(saved);
     }
@@ -146,19 +164,15 @@ public class OrderController {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
+        boolean isAdmin = isAdmin(authentication);
         User user = currentUserService.getByEmail(authentication.getName());
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
-        if (!order.getUser().getId().equals(user.getId())) {
+        if (!isAdmin && !order.getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(FORBIDDEN, "You can only cancel your own orders");
         }
-        String currentStatus = order.getStatus();
-        if ("cancelled".equals(currentStatus)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Order is already cancelled");
-        }
-        if ("shipped".equals(currentStatus) || "delivered".equals(currentStatus)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Cannot cancel an order that has been " + currentStatus);
-        }
+        String currentStatus = DomainStatusRules.normalizeCurrentStatus(order.getStatus(), "Order");
+        DomainStatusRules.ensureOrderCanBeCancelled(currentStatus);
 
         // Restore stock for each item
         for (OrderItem item : order.getItems()) {
@@ -173,6 +187,11 @@ public class OrderController {
                 "Order cancelled. Stock restored.",
                 "order", saved.getId());
         return toResponse(saved);
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
     private Map<String, Object> toResponse(ShopOrder order) {
@@ -191,7 +210,7 @@ public class OrderController {
         map.put("products", products);
         map.put("totalPrice", order.getTotalPrice());
         map.put("address", order.getAddress());
-        map.put("status", order.getStatus());
+        map.put("status", DomainStatusRules.normalizeOrderStatusForResponse(order.getStatus()));
         map.put("createdAt", String.valueOf(order.getCreatedAt()).substring(0, 10));
         return map;
     }

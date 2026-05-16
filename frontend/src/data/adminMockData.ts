@@ -40,7 +40,7 @@ export interface AdminOrder {
   products: { name: string; qty: number; price: number }[];
   totalPrice: number;
   address: string;
-  status: 'pending' | 'shipping' | 'delivered';
+  status: 'pending' | 'paid' | 'shipping' | 'shipped' | 'cancelled';
   createdAt: string;
 }
 

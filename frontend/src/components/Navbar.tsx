@@ -94,6 +94,12 @@ const Navbar = () => {
                       <Link to="/admin">Admin Dashboard</Link>
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-bookings">{t('nav.myBookings')}</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-orders">{t('nav.myOrders')}</Link>
+                  </DropdownMenuItem>
                   {user?.role === 'admin' && <DropdownMenuSeparator />}
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
@@ -134,14 +140,16 @@ const Navbar = () => {
                 </Link>
               ))}
               {isAuthenticated ? (
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 py-2 text-sm font-medium text-destructive transition-colors hover:text-destructive/80"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 py-2 text-sm font-medium text-destructive transition-colors hover:text-destructive/80"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </button>
+                </>
               ) : (
                 <Link
                   to="/auth"

@@ -3,6 +3,8 @@
     "home": "Home",
     "services": "Services",
     "bookNow": "Book Now",
+    "myBookings": "My Bookings",
+    "myOrders": "My Orders",
     "shop": "Shop",
     "gallery": "Gallery",
     "about": "About",
@@ -52,7 +54,9 @@
       "styling": "Styling",
       "coloring": "Coloring",
       "grooming": "Grooming"
-    }
+    },
+    "empty": "No services are available right now.",
+    "loadError": "Unable to load services. Showing fallback services for now."
   },
   "serviceItems": {
     "classicHaircut": "Classic Haircut",
@@ -102,15 +106,34 @@
       "serviceRequired": "Select a service",
       "barberRequired": "Select a barber",
       "dateRequired": "Select a date",
-      "timeRequired": "Select a time"
+      "timeRequired": "Select a time",
+      "submitFailed": "Unable to create booking. Please try again."
     },
     "successToast": "Booking confirmed!"
+  },
+  "myBookings": {
+    "title": "My",
+    "highlight": "Bookings",
+    "subtitle": "Review and manage your upcoming appointments",
+    "empty": "You do not have any bookings yet.",
+    "loadError": "Unable to load your bookings.",
+    "cancel": "Cancel Booking",
+    "cancelConfirm": "Cancel this booking?",
+    "cancelSuccess": "Booking cancelled.",
+    "cancelError": "Unable to cancel booking.",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    }
   },
   "shop": {
     "title": "The",
     "highlight": "Shop",
     "subtitle": "Premium grooming products for home care",
-    "add": "Add"
+    "add": "Add",
+    "empty": "No products available right now."
   },
   "cart": {
     "title": "Cart",
@@ -136,7 +159,26 @@
     "thankYou": "Thank you, {{name}}. We'll contact you shortly.",
     "continueShopping": "Continue Shopping",
     "fillAll": "Please fill all fields",
-    "cartEmpty": "Cart is empty"
+    "cartEmpty": "Cart is empty",
+    "errorUnauthenticated": "Please sign in to place an order.",
+    "errorStock": "One or more items are out of stock.",
+    "errorValidation": "Invalid order details. Please check your cart.",
+    "errorServer": "Order failed. Please try again."
+  },
+  "myOrders": {
+    "title": "My",
+    "highlight": "Orders",
+    "subtitle": "Track and review your purchase history",
+    "empty": "You do not have any orders yet.",
+    "loadError": "Unable to load your orders.",
+    "orderId": "Order",
+    "products": "Products",
+    "total": "Total",
+    "status": {
+      "pending": "Pending",
+      "shipping": "Shipping",
+      "delivered": "Delivered"
+    }
   },
   "gallery": {
     "title": "Our",
@@ -243,7 +285,10 @@
     "copyright": "© {{year}} Blade & Co. All rights reserved."
   },
   "common": {
-    "yearsExperience": "years experience"
+    "yearsExperience": "years experience",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "saving": "Please wait..."
   },
   "reviews": {
     "r1": "Best fade I've ever had. Marcus is a true artist.",

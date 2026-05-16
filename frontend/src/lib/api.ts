@@ -15,6 +15,71 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?
 
 const getToken = () => localStorage.getItem('cutie_cuts_token');
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
+export interface Booking {
+  id: string;
+  userId?: string;
+  userName?: string;
+  serviceId?: string;
+  serviceName: string;
+  barberId?: string;
+  barberName: string;
+  date: string;
+  time: string;
+  status: 'pending' | 'confirmed' | 'done' | 'cancelled' | string;
+  price?: number;
+  duration?: number;
+}
+
+type ServiceRow = { id: number; name: string; description: string; price: number; duration: number; category: string };
+type BarberRow = { id: number; name: string; role: string; image: string; experience: number; specialties: string; rating: number };
+type ProductRow = { id: number; name: string; price: number; image: string; rating: number; category: string; description: string };
+export interface Order {
+  id: string;
+  userId?: string;
+  customerName?: string;
+  products: { name: string; qty: number; price: number }[];
+  totalPrice: number;
+  address: string;
+  status: 'pending' | 'paid' | 'shipping' | 'shipped' | 'cancelled' | string;
+  createdAt: string;
+}
+
+type OrderRow = {
+  id: number;
+  userId?: number;
+  customerName?: string;
+  products: { name: string; qty: number; price: number }[];
+  totalPrice: number;
+  address: string;
+  status: Order['status'];
+  createdAt: string;
+};
+
+type BookingRow = {
+  id: number;
+  userId?: number;
+  userName?: string;
+  serviceId?: number;
+  serviceName: string;
+  barberId?: number;
+  barberName: string;
+  date: string;
+  time: string;
+  status: Booking['status'];
+  price?: number;
+  duration?: number;
+};
+
 async function request<T>(path: string, init?: RequestInit, auth = false): Promise<T> {
   const headers = new Headers(init?.headers ?? {});
   headers.set('Content-Type', 'application/json');
@@ -35,12 +100,14 @@ async function request<T>(path: string, init?: RequestInit, auth = false): Promi
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
     try {
-      const body = await response.json() as { message?: string };
+      const body = await response.json() as { message?: string; error?: string; detail?: string };
       if (body.message) message = body.message;
+      else if (body.detail) message = body.detail;
+      else if (body.error) message = body.error;
     } catch {
       // ignore
     }
-    throw new Error(message);
+    throw new ApiError(message, response.status);
   }
 
   if (response.status === 204) {
@@ -50,11 +117,79 @@ async function request<T>(path: string, init?: RequestInit, auth = false): Promi
   return await response.json() as T;
 }
 
+async function requestWithNotFoundFallback<T>(path: string, fallbackPath: string, init?: RequestInit, auth = false): Promise<T> {
+  try {
+    return await request<T>(path, init, auth);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return await request<T>(fallbackPath, init, auth);
+    }
+    throw error;
+  }
+}
+
 const initials = (name: string) => {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 };
+
+const mapService = (row: ServiceRow): Service => ({
+  id: String(row.id),
+  nameKey: '',
+  descKey: '',
+  name: row.name,
+  description: row.description,
+  price: row.price,
+  duration: row.duration,
+  category: row.category as Service['category'],
+});
+
+const mapBarber = (row: BarberRow): Barber => ({
+  id: String(row.id),
+  name: row.name,
+  role: row.role,
+  image: row.image,
+  experience: row.experience,
+  specialties: row.specialties ? row.specialties.split(',').map((s) => s.trim()).filter(Boolean) : [],
+  rating: row.rating,
+});
+
+const mapProduct = (row: ProductRow): Product => ({
+  id: String(row.id),
+  name: row.name,
+  price: row.price,
+  image: row.image,
+  rating: row.rating,
+  category: row.category,
+  description: row.description,
+});
+
+const mapBooking = (row: BookingRow): Booking => ({
+  id: String(row.id),
+  userId: row.userId === undefined ? undefined : String(row.userId),
+  userName: row.userName,
+  serviceId: row.serviceId === undefined ? undefined : String(row.serviceId),
+  serviceName: row.serviceName,
+  barberId: row.barberId === undefined ? undefined : String(row.barberId),
+  barberName: row.barberName,
+  date: row.date,
+  time: row.time,
+  status: row.status,
+  price: row.price,
+  duration: row.duration,
+});
+
+const mapOrder = (row: OrderRow): Order => ({
+  id: String(row.id),
+  userId: row.userId === undefined ? undefined : String(row.userId),
+  customerName: row.customerName,
+  products: row.products ?? [],
+  totalPrice: row.totalPrice,
+  address: row.address,
+  status: row.status,
+  createdAt: row.createdAt,
+});
 
 export const api = {
   getServices: async (): Promise<Service[]> => {
@@ -122,54 +257,102 @@ export const api = {
 
   createBooking: async (payload: { serviceId: number; barberId: number; date: string; time: string }) => {
     return request('/api/bookings', { method: 'POST', body: JSON.stringify(payload) }, true);
+
   },
 
   createOrder: async (payload: { address: string; items: Array<{ productId: number; quantity: number }> }) => {
     return request('/api/orders', { method: 'POST', body: JSON.stringify(payload) }, true);
   },
 
+  services: {
+    getAll: async (): Promise<Service[]> => {
+      const rows = await request<ServiceRow[]>('/api/services');
+      return rows.map(mapService);
+    },
+  },
+
+  barbers: {
+    getAll: async (): Promise<Barber[]> => {
+      const rows = await request<BarberRow[]>('/api/barbers');
+      return rows.map(mapBarber);
+    },
+  },
+
+  products: {
+    getAll: async (): Promise<Product[]> => {
+      const rows = await request<ProductRow[]>('/api/products');
+      return rows.map(mapProduct);
+    },
+  },
+
+  bookings: {
+    getMine: async (): Promise<Booking[]> => {
+      const rows = await requestWithNotFoundFallback<BookingRow[]>('/bookings/my', '/api/bookings/my', undefined, true);
+      return rows.map(mapBooking);
+    },
+    create: async (payload: { serviceId: number; barberId: number; date: string; time: string }): Promise<Booking> => {
+      const row = await requestWithNotFoundFallback<BookingRow>('/bookings', '/api/bookings', { method: 'POST', body: JSON.stringify(payload) }, true);
+      return mapBooking(row);
+    },
+    cancel: async (id: string): Promise<Booking> => {
+      const row = await requestWithNotFoundFallback<BookingRow>(`/bookings/${id}/status`, `/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) }, true);
+      return mapBooking(row);
+    },
+  },
+
+  orders: {
+    getMyOrders: async (): Promise<Order[]> => {
+      const rows = await request<OrderRow[]>('/api/orders/my', undefined, true);
+      return rows.map(mapOrder);
+    },
+    create: async (payload: { address: string; items: Array<{ productId: number; quantity: number }> }): Promise<Order> => {
+      const row = await request<OrderRow>('/api/orders', { method: 'POST', body: JSON.stringify(payload) }, true);
+      return mapOrder(row);
+    },
+  },
+
   admin: {
     getServices: async (): Promise<AdminService[]> => {
-      const rows = await request<Array<{ id: number; name: string; category: string; price: number; duration: number; description: string }>>('/api/services');
+      const rows = await request<Array<{ id: number; name: string; category: string; price: number; duration: number; description: string }>>('/api/services', undefined, true);
       return rows.map((r) => ({ id: String(r.id), name: r.name, category: r.category, price: r.price, duration: r.duration, description: r.description }));
     },
-    createService: async (payload: Omit<AdminService, 'id'>) => request('/api/services', { method: 'POST', body: JSON.stringify(payload) }),
-    updateService: async (id: string, payload: Omit<AdminService, 'id'>) => request(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-    deleteService: async (id: string) => request(`/api/services/${id}`, { method: 'DELETE' }),
+    createService: async (payload: Omit<AdminService, 'id'>) => request('/api/services', { method: 'POST', body: JSON.stringify(payload) }, true),
+    updateService: async (id: string, payload: Omit<AdminService, 'id'>) => request(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, true),
+    deleteService: async (id: string) => request(`/api/services/${id}`, { method: 'DELETE' }, true),
 
     getProducts: async (): Promise<AdminProduct[]> => {
-      const rows = await request<Array<{ id: number; name: string; category: string; price: number; stock: number; image: string; description: string }>>('/api/products');
+      const rows = await request<Array<{ id: number; name: string; category: string; price: number; stock: number; image: string; description: string }>>('/api/products', undefined, true);
       return rows.map((r) => ({ id: String(r.id), name: r.name, category: r.category, price: r.price, stock: r.stock, image: r.image, description: r.description }));
     },
-    createProduct: async (payload: Omit<AdminProduct, 'id'>) => request('/api/products', { method: 'POST', body: JSON.stringify(payload) }),
-    updateProduct: async (id: string, payload: Omit<AdminProduct, 'id'>) => request(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-    deleteProduct: async (id: string) => request(`/api/products/${id}`, { method: 'DELETE' }),
+    createProduct: async (payload: Omit<AdminProduct, 'id'>) => request('/api/products', { method: 'POST', body: JSON.stringify(payload) }, true),
+    updateProduct: async (id: string, payload: Omit<AdminProduct, 'id'>) => request(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, true),
+    deleteProduct: async (id: string) => request(`/api/products/${id}`, { method: 'DELETE' }, true),
 
     getBarbers: async (): Promise<AdminBarber[]> => {
-      const rows = await request<Array<{ id: number; name: string; experience: number; image: string; specialties: string }>>('/api/barbers');
+      const rows = await request<Array<{ id: number; name: string; experience: number; image: string; specialties: string }>>('/api/barbers', undefined, true);
       return rows.map((r) => ({ id: String(r.id), name: r.name, experience: r.experience, avatar: r.image, specialties: r.specialties ? r.specialties.split(',').map((s) => s.trim()) : [] }));
     },
     createBarber: async (payload: Omit<AdminBarber, 'id'>) => {
       const body = { ...payload, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8 };
-      return request('/api/barbers', { method: 'POST', body: JSON.stringify(body) });
+      return request('/api/barbers', { method: 'POST', body: JSON.stringify(body) }, true);
     },
     updateBarber: async (id: string, payload: Omit<AdminBarber, 'id'>) => {
       const body = { ...payload, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8 };
-      return request(`/api/barbers/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+      return request(`/api/barbers/${id}`, { method: 'PUT', body: JSON.stringify(body) }, true);
     },
-    deleteBarber: async (id: string) => request(`/api/barbers/${id}`, { method: 'DELETE' }),
+    deleteBarber: async (id: string) => request(`/api/barbers/${id}`, { method: 'DELETE' }, true),
 
     getBookings: async (): Promise<AdminBooking[]> => {
-      const rows = await request<Array<{ id: number; userId: number; userName: string; serviceId: number; serviceName: string; barberId: number; barberName: string; date: string; time: string; status: AdminBooking['status']; price: number }>>('/api/bookings');
+      const rows = await requestWithNotFoundFallback<Array<{ id: number; userId: number; userName: string; serviceId: number; serviceName: string; barberId: number; barberName: string; date: string; time: string; status: AdminBooking['status']; price: number }>>('/bookings', '/api/bookings', undefined, true);
       return rows.map((r) => ({ ...r, id: String(r.id), userId: String(r.userId), serviceId: String(r.serviceId), barberId: String(r.barberId) }));
     },
-    updateBookingStatus: async (id: string, status: AdminBooking['status']) => request(`/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    updateBookingStatus: async (id: string, status: AdminBooking['status']) => requestWithNotFoundFallback(`/bookings/${id}/status`, `/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
 
     getOrders: async (): Promise<AdminOrder[]> => {
-      const rows = await request<Array<{ id: number; userId: number; customerName: string; products: AdminOrder['products']; totalPrice: number; address: string; status: AdminOrder['status']; createdAt: string }>>('/api/orders');
+      const rows = await request<Array<{ id: number; userId: number; customerName: string; products: AdminOrder['products']; totalPrice: number; address: string; status: AdminOrder['status']; createdAt: string }>>('/api/orders', undefined, true);
       return rows.map((r) => ({ ...r, id: String(r.id), userId: String(r.userId) }));
     },
-    updateOrderStatus: async (id: string, status: AdminOrder['status']) => request(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    updateOrderStatus: async (id: string, status: AdminOrder['status']) => request(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
 
     getReviews: async (): Promise<AdminReview[]> => {
       const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>('/api/reviews');

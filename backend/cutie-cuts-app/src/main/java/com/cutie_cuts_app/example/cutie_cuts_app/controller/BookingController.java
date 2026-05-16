@@ -19,7 +19,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
-@RequestMapping("/api/bookings")
+@RequestMapping("/bookings")
 @CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class BookingController {
 
@@ -69,10 +69,35 @@ public class BookingController {
             throw new ResponseStatusException(BAD_REQUEST, "Invalid status. Allowed: pending, confirmed, done, cancelled");
         }
         User user = currentUserService.getByEmail(authentication.getName());
+
+        boolean isAdmin = isAdmin(authentication);
+        Booking booking = bookingService.updateStatus(id, newStatus, user, isAdmin);
+
+
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         Booking booking = bookingService.updateStatus(id, newStatus, user, isAdmin);
+
+        boolean isAdmin = isAdmin(authentication);
+        Booking booking = bookingService.updateStatus(id, request.getStatus(), user, isAdmin);
+
+
         return toResponse(booking);
+    }
+
+    @PostMapping("/{id}/cancel")
+    public Map<String, Object> cancel(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        User user = currentUserService.getByEmail(authentication.getName());
+        Booking booking = bookingService.cancelBooking(id, user, isAdmin(authentication));
+        return toResponse(booking);
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
     private Map<String, Object> toResponse(Booking booking) {

@@ -31,8 +31,44 @@ alter table if exists products
 alter table if exists products
     add column if not exists deleted_at timestamp;
 
+
 alter table if exists barbers
     alter column image type text;
+
+-- Add deleted columns to barbers table
+alter table if exists barbers
+    add column if not exists deleted boolean;
+
+update barbers
+set deleted = false
+where deleted is null;
+
+alter table if exists barbers
+    alter column deleted set default false;
+
+alter table if exists barbers
+    alter column deleted set not null;
+
+alter table if exists barbers
+    add column if not exists deleted_at timestamp;
+
+-- Add deleted columns to services table
+alter table if exists services
+    add column if not exists deleted boolean;
+
+update services
+set deleted = false
+where deleted is null;
+
+alter table if exists services
+    alter column deleted set default false;
+
+alter table if exists services
+    alter column deleted set not null;
+
+alter table if exists services
+    add column if not exists deleted_at timestamp;
+
 
 -- Payment tables
 (
@@ -73,3 +109,16 @@ create index if not exists idx_payment_order on payments (order_id);
 create index if not exists idx_payment_status on payments (status);
 create index if not exists idx_transaction_payment on payment_transactions (payment_id);
 create index if not exists idx_transaction_code on payment_transactions (transaction_code);
+
+alter table if exists bookings
+    alter column "time" type time(6)
+    using "time"::time(6);
+
+alter table if exists bookings
+    drop constraint if exists uk_booking_barber_date_time;
+
+drop index if exists idx_booking_active_slot_unique;
+
+create unique index if not exists idx_booking_active_slot_unique
+    on bookings (barber_id, "date", "time")
+    where lower(status) <> 'cancelled';
