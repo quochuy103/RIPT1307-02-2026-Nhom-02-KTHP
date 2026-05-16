@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import ServicesPage from "./pages/ServicesPage";
 import BookingPage from "./pages/BookingPage";
 import MyBookingsPage from "./pages/MyBookingsPage";
+import MyOrdersPage from "./pages/MyOrdersPage";
 import ShopPage from "./pages/ShopPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import GalleryPage from "./pages/GalleryPage";
@@ -82,6 +83,7 @@ const App = () => (
                         <Route element={<ProtectedRoute />}>
                           <Route path="/booking" element={<BookingPage />} />
                           <Route path="/my-bookings" element={<MyBookingsPage />} />
+                          <Route path="/my-orders" element={<MyOrdersPage />} />
                           <Route path="/checkout" element={<CheckoutPage />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />

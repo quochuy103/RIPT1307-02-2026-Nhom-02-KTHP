@@ -43,6 +43,28 @@ export interface Booking {
 type ServiceRow = { id: number; name: string; description: string; price: number; duration: number; category: string };
 type BarberRow = { id: number; name: string; role: string; image: string; experience: number; specialties: string; rating: number };
 type ProductRow = { id: number; name: string; price: number; image: string; rating: number; category: string; description: string };
+export interface Order {
+  id: string;
+  userId?: string;
+  customerName?: string;
+  products: { name: string; qty: number; price: number }[];
+  totalPrice: number;
+  address: string;
+  status: 'pending' | 'shipping' | 'delivered' | string;
+  createdAt: string;
+}
+
+type OrderRow = {
+  id: number;
+  userId?: number;
+  customerName?: string;
+  products: { name: string; qty: number; price: number }[];
+  totalPrice: number;
+  address: string;
+  status: Order['status'];
+  createdAt: string;
+};
+
 type BookingRow = {
   id: number;
   userId?: number;
@@ -78,8 +100,10 @@ async function request<T>(path: string, init?: RequestInit, auth = false): Promi
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
     try {
-      const body = await response.json() as { message?: string };
+      const body = await response.json() as { message?: string; error?: string; detail?: string };
       if (body.message) message = body.message;
+      else if (body.detail) message = body.detail;
+      else if (body.error) message = body.error;
     } catch {
       // ignore
     }
@@ -154,6 +178,17 @@ const mapBooking = (row: BookingRow): Booking => ({
   status: row.status,
   price: row.price,
   duration: row.duration,
+});
+
+const mapOrder = (row: OrderRow): Order => ({
+  id: String(row.id),
+  userId: row.userId === undefined ? undefined : String(row.userId),
+  customerName: row.customerName,
+  products: row.products ?? [],
+  totalPrice: row.totalPrice,
+  address: row.address,
+  status: row.status,
+  createdAt: row.createdAt,
 });
 
 export const api = {
@@ -252,61 +287,72 @@ export const api = {
 
   bookings: {
     getMine: async (): Promise<Booking[]> => {
-      const rows = await requestWithNotFoundFallback<BookingRow[]>('/api/bookings/my', '/bookings/my', undefined, true);
+      const rows = await requestWithNotFoundFallback<BookingRow[]>('/bookings/my', '/api/bookings/my', undefined, true);
       return rows.map(mapBooking);
     },
     create: async (payload: { serviceId: number; barberId: number; date: string; time: string }): Promise<Booking> => {
-      const row = await requestWithNotFoundFallback<BookingRow>('/api/bookings', '/bookings', { method: 'POST', body: JSON.stringify(payload) }, true);
+      const row = await requestWithNotFoundFallback<BookingRow>('/bookings', '/api/bookings', { method: 'POST', body: JSON.stringify(payload) }, true);
       return mapBooking(row);
     },
     cancel: async (id: string): Promise<Booking> => {
-      const row = await requestWithNotFoundFallback<BookingRow>(`/api/bookings/${id}/status`, `/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) }, true);
+      const row = await requestWithNotFoundFallback<BookingRow>(`/bookings/${id}/status`, `/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) }, true);
       return mapBooking(row);
+    },
+  },
+
+  orders: {
+    getMyOrders: async (): Promise<Order[]> => {
+      const rows = await request<OrderRow[]>('/api/orders/my', undefined, true);
+      return rows.map(mapOrder);
+    },
+    create: async (payload: { address: string; items: Array<{ productId: number; quantity: number }> }): Promise<Order> => {
+      const row = await request<OrderRow>('/api/orders', { method: 'POST', body: JSON.stringify(payload) }, true);
+      return mapOrder(row);
     },
   },
 
   admin: {
     getServices: async (): Promise<AdminService[]> => {
-      const rows = await request<Array<{ id: number; name: string; category: string; price: number; duration: number; description: string }>>('/api/services');
+      const rows = await request<Array<{ id: number; name: string; category: string; price: number; duration: number; description: string }>>('/api/services', undefined, true);
       return rows.map((r) => ({ id: String(r.id), name: r.name, category: r.category, price: r.price, duration: r.duration, description: r.description }));
     },
-    createService: async (payload: Omit<AdminService, 'id'>) => request('/api/services', { method: 'POST', body: JSON.stringify(payload) }),
-    updateService: async (id: string, payload: Omit<AdminService, 'id'>) => request(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-    deleteService: async (id: string) => request(`/api/services/${id}`, { method: 'DELETE' }),
+    createService: async (payload: Omit<AdminService, 'id'>) => request('/api/services', { method: 'POST', body: JSON.stringify(payload) }, true),
+    updateService: async (id: string, payload: Omit<AdminService, 'id'>) => request(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, true),
+    deleteService: async (id: string) => request(`/api/services/${id}`, { method: 'DELETE' }, true),
 
     getProducts: async (): Promise<AdminProduct[]> => {
-      const rows = await request<Array<{ id: number; name: string; category: string; price: number; stock: number; image: string; description: string }>>('/api/products');
+      const rows = await request<Array<{ id: number; name: string; category: string; price: number; stock: number; image: string; description: string }>>('/api/products', undefined, true);
       return rows.map((r) => ({ id: String(r.id), name: r.name, category: r.category, price: r.price, stock: r.stock, image: r.image, description: r.description }));
     },
-    createProduct: async (payload: Omit<AdminProduct, 'id'>) => request('/api/products', { method: 'POST', body: JSON.stringify(payload) }),
-    updateProduct: async (id: string, payload: Omit<AdminProduct, 'id'>) => request(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-    deleteProduct: async (id: string) => request(`/api/products/${id}`, { method: 'DELETE' }),
+    createProduct: async (payload: Omit<AdminProduct, 'id'>) => request('/api/products', { method: 'POST', body: JSON.stringify(payload) }, true),
+    updateProduct: async (id: string, payload: Omit<AdminProduct, 'id'>) => request(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, true),
+    deleteProduct: async (id: string) => request(`/api/products/${id}`, { method: 'DELETE' }, true),
 
     getBarbers: async (): Promise<AdminBarber[]> => {
-      const rows = await request<Array<{ id: number; name: string; experience: number; image: string; specialties: string }>>('/api/barbers');
+      const rows = await request<Array<{ id: number; name: string; experience: number; image: string; specialties: string }>>('/api/barbers', undefined, true);
       return rows.map((r) => ({ id: String(r.id), name: r.name, experience: r.experience, avatar: r.image, specialties: r.specialties ? r.specialties.split(',').map((s) => s.trim()) : [] }));
     },
     createBarber: async (payload: Omit<AdminBarber, 'id'>) => {
       const body = { ...payload, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8 };
-      return request('/api/barbers', { method: 'POST', body: JSON.stringify(body) });
+      return request('/api/barbers', { method: 'POST', body: JSON.stringify(body) }, true);
     },
     updateBarber: async (id: string, payload: Omit<AdminBarber, 'id'>) => {
       const body = { ...payload, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8 };
-      return request(`/api/barbers/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+      return request(`/api/barbers/${id}`, { method: 'PUT', body: JSON.stringify(body) }, true);
     },
-    deleteBarber: async (id: string) => request(`/api/barbers/${id}`, { method: 'DELETE' }),
+    deleteBarber: async (id: string) => request(`/api/barbers/${id}`, { method: 'DELETE' }, true),
 
     getBookings: async (): Promise<AdminBooking[]> => {
-      const rows = await requestWithNotFoundFallback<Array<{ id: number; userId: number; userName: string; serviceId: number; serviceName: string; barberId: number; barberName: string; date: string; time: string; status: AdminBooking['status']; price: number }>>('/api/bookings', '/bookings', undefined, true);
+      const rows = await requestWithNotFoundFallback<Array<{ id: number; userId: number; userName: string; serviceId: number; serviceName: string; barberId: number; barberName: string; date: string; time: string; status: AdminBooking['status']; price: number }>>('/bookings', '/api/bookings', undefined, true);
       return rows.map((r) => ({ ...r, id: String(r.id), userId: String(r.userId), serviceId: String(r.serviceId), barberId: String(r.barberId) }));
     },
-    updateBookingStatus: async (id: string, status: AdminBooking['status']) => requestWithNotFoundFallback(`/api/bookings/${id}/status`, `/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
+    updateBookingStatus: async (id: string, status: AdminBooking['status']) => requestWithNotFoundFallback(`/bookings/${id}/status`, `/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
 
     getOrders: async (): Promise<AdminOrder[]> => {
-      const rows = await request<Array<{ id: number; userId: number; customerName: string; products: AdminOrder['products']; totalPrice: number; address: string; status: AdminOrder['status']; createdAt: string }>>('/api/orders');
+      const rows = await request<Array<{ id: number; userId: number; customerName: string; products: AdminOrder['products']; totalPrice: number; address: string; status: AdminOrder['status']; createdAt: string }>>('/api/orders', undefined, true);
       return rows.map((r) => ({ ...r, id: String(r.id), userId: String(r.userId) }));
     },
-    updateOrderStatus: async (id: string, status: AdminOrder['status']) => request(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    updateOrderStatus: async (id: string, status: AdminOrder['status']) => request(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
 
     getReviews: async (): Promise<AdminReview[]> => {
       const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>('/api/reviews');

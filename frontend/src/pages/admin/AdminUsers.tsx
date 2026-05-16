@@ -1,27 +1,54 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import DataTable, { Column } from '@/components/admin/DataTable';
-import { mockUsers, AdminUser } from '@/data/adminMockData';
+import type { AdminUser } from '@/data/adminMockData';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Shield, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+const usersQueryKey = ['admin', 'users'] as const;
 
 const AdminUsers = () => {
-  const [users, setUsers] = useState(mockUsers);
+  const queryClient = useQueryClient();
   const [roleFilter, setRoleFilter] = useState<string>('all');
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setUsers(await api.admin.getUsers());
-      } catch {
-        // keep fallback
-      }
-    };
-    void load();
-  }, []);
+  const { data: users = [], isLoading, isError, error } = useQuery({
+    queryKey: usersQueryKey,
+    queryFn: api.admin.getUsers,
+  });
+
+  const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: usersQueryKey });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: AdminUser['role'] }) => api.admin.updateUserRole(id, role),
+    onSuccess: async () => {
+      await invalidateUsers();
+      toast.success('User role updated');
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'Update failed'),
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { name: string; phone: string } }) => api.admin.updateUser(id, payload),
+    onSuccess: async () => {
+      await invalidateUsers();
+      toast.success('User updated');
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'Update failed'),
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: api.admin.deleteUser,
+    onSuccess: async () => {
+      await invalidateUsers();
+      toast.success('User soft deleted');
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'Delete failed'),
+  });
 
   const filtered = roleFilter === 'all' ? users : users.filter((u) => u.role === roleFilter);
 
@@ -29,13 +56,7 @@ const AdminUsers = () => {
     const user = users.find((u) => u.id === id);
     if (!user || user.deleted) return;
     const role: AdminUser['role'] = user.role === 'admin' ? 'user' : 'admin';
-    try {
-      const updated = await api.admin.updateUserRole(id, role) as AdminUser;
-      setUsers((prev) => prev.map((u) => u.id === id ? { ...u, ...updated, id } as AdminUser : u));
-      toast.success('User role updated');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Update failed');
-    }
+    updateRoleMutation.mutate({ id, role });
   };
 
   const editUser = async (user: AdminUser) => {
@@ -50,13 +71,7 @@ const AdminUsers = () => {
     const phone = window.prompt('Update user phone', user.phone);
     if (phone === null) return;
 
-    try {
-      const updated = await api.admin.updateUser(user.id, { name, phone }) as AdminUser;
-      setUsers((prev) => prev.map((item) => item.id === user.id ? { ...item, ...updated, id: user.id } as AdminUser : item));
-      toast.success('User updated');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Update failed');
-    }
+    updateUserMutation.mutate({ id: user.id, payload: { name, phone } });
   };
 
   const deleteUser = async (user: AdminUser) => {
@@ -69,14 +84,7 @@ const AdminUsers = () => {
       return;
     }
 
-    try {
-      await api.admin.deleteUser(user.id);
-      const deletedAt = new Date().toISOString().slice(0, 10);
-      setUsers((prev) => prev.map((item) => item.id === user.id ? { ...item, deleted: true, deletedAt } : item));
-      toast.success('User soft deleted');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Delete failed');
-    }
+    deleteUserMutation.mutate(user.id);
   };
 
   const columns: Column<AdminUser>[] = [
@@ -110,15 +118,22 @@ const AdminUsers = () => {
         </Select>
       </div>
 
+      {isError && (
+        <Alert variant="destructive">
+          <AlertTitle>Could not load users</AlertTitle>
+          <AlertDescription>{error instanceof Error ? error.message : 'Please check your admin access and API route.'}</AlertDescription>
+        </Alert>
+      )}
+
       <DataTable
-        data={filtered}
+        data={isLoading ? [] : filtered}
         columns={columns}
-        searchPlaceholder="Search users..."
+        searchPlaceholder={isLoading ? 'Loading users...' : 'Search users...'}
         actions={(u) => (
           <div className="flex items-center justify-end gap-1">
-            <Button size="sm" variant="ghost" onClick={() => toggleRole(u.id)} title="Toggle role" disabled={u.deleted}><Shield className="h-4 w-4" /></Button>
-            <Button size="sm" variant="ghost" onClick={() => editUser(u)} disabled={u.deleted}><Edit className="h-4 w-4" /></Button>
-            <Button size="sm" variant="ghost" onClick={() => deleteUser(u)} className="text-destructive" disabled={u.deleted}><Trash2 className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" onClick={() => toggleRole(u.id)} title="Toggle role" disabled={u.deleted || updateRoleMutation.isPending}><Shield className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" onClick={() => editUser(u)} disabled={u.deleted || updateUserMutation.isPending}><Edit className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" onClick={() => deleteUser(u)} className="text-destructive" disabled={u.deleted || deleteUserMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
           </div>
         )}
       />
