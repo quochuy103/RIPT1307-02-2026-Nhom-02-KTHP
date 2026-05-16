@@ -1,20 +1,10 @@
-<<<<<<< HEAD
 
-=======
->>>>>>> c97ad81 (cleanup gitignore)
 # Graphify outputs (keep local only)
 graphify-out/
 backend/graphify-out/
 backend/cutie-cuts-app/graphify-out/
 
-<<<<<<< HEAD
-# Claude settings (local config)
 
-=======
-# Claude Code runtime files
->>>>>>> c97ad81 (cleanup gitignore)
-.claude/
-.claude-flow/
 
 # MCP and swarm config (local only)
 .mcp.json
@@ -53,17 +43,5 @@ Thumbs.db
 
 # Logs
 *.log
-<<<<<<< HEAD
 
 
-# Payment Guide
-*.md
-
-node_modules
-
-
-# Agent
-.agent/
-.env
-=======
->>>>>>> c97ad81 (cleanup gitignore)

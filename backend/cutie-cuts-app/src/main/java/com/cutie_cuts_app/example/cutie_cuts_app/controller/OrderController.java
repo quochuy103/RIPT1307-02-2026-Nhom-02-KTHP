@@ -10,6 +10,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.ProductRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.NotificationService;
+import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -121,16 +122,17 @@ public class OrderController {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
-        User user = currentUserService.getByEmail(authentication.getName());
+        if (!isAdmin(authentication)) {
+            throw new ResponseStatusException(FORBIDDEN, "Only admins can update order status");
+        }
+
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
-        if (!order.getUser().getId().equals(user.getId())) {
-            throw new ResponseStatusException(FORBIDDEN, "You can only update your own orders");
-        }
-        order.setStatus(request.getStatus());
+        String normalizedStatus = DomainStatusRules.normalizeOrderStatusForUpdate(request.getStatus());
+        order.setStatus(normalizedStatus);
         ShopOrder saved = orderRepository.save(order);
         notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
-                "Order status updated to: " + request.getStatus(),
+                "Order status updated to: " + normalizedStatus,
                 "order", saved.getId());
         return toResponse(saved);
     }
@@ -141,19 +143,15 @@ public class OrderController {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
+        boolean isAdmin = isAdmin(authentication);
         User user = currentUserService.getByEmail(authentication.getName());
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
-        if (!order.getUser().getId().equals(user.getId())) {
+        if (!isAdmin && !order.getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(FORBIDDEN, "You can only cancel your own orders");
         }
-        String currentStatus = order.getStatus();
-        if ("cancelled".equals(currentStatus)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Order is already cancelled");
-        }
-        if ("shipped".equals(currentStatus) || "delivered".equals(currentStatus)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Cannot cancel an order that has been " + currentStatus);
-        }
+        String currentStatus = DomainStatusRules.normalizeCurrentStatus(order.getStatus(), "Order");
+        DomainStatusRules.ensureOrderCanBeCancelled(currentStatus);
 
         // Restore stock for each item
         for (OrderItem item : order.getItems()) {
@@ -168,6 +166,11 @@ public class OrderController {
                 "Order cancelled. Stock restored.",
                 "order", saved.getId());
         return toResponse(saved);
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
     private Map<String, Object> toResponse(ShopOrder order) {
