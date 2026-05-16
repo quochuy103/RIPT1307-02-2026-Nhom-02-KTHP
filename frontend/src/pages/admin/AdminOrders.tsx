@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import DataTable, { Column } from '@/components/admin/DataTable';
-import { mockOrders, AdminOrder } from '@/data/adminMockData';
+import type { AdminOrder } from '@/data/adminMockData';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye } from 'lucide-react';
@@ -8,38 +9,35 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormModal from '@/components/admin/FormModal';
 import { api } from '@/lib/api';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const statusColors: Record<string, 'default' | 'secondary' | 'outline'> = {
   delivered: 'default', shipping: 'secondary', pending: 'outline'
 };
+const ordersQueryKey = ['admin', 'orders'] as const;
 
 const AdminOrders = () => {
-  const [orders, setOrders] = useState(mockOrders);
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewOrder, setViewOrder] = useState<AdminOrder | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setOrders(await api.admin.getOrders());
-      } catch {
-        // keep fallback
-      }
-    };
-    void load();
-  }, []);
+  const { data: orders = [], isLoading, isError, error } = useQuery({
+    queryKey: ordersQueryKey,
+    queryFn: api.admin.getOrders,
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: AdminOrder['status'] }) => api.admin.updateOrderStatus(id, status),
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+      toast.success(`Order status updated to ${variables.status}`);
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'Update failed'),
+  });
 
   const filtered = statusFilter === 'all' ? orders : orders.filter((o) => o.status === statusFilter);
 
-  const updateStatus = async (id: string, status: AdminOrder['status']) => {
-    try {
-      await api.admin.updateOrderStatus(id, status);
-      setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
-      toast.success(`Order status updated to ${status}`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Update failed');
-    }
-  };
+  const updateStatus = (id: string, status: AdminOrder['status']) => updateStatusMutation.mutate({ id, status });
 
   const columns: Column<AdminOrder>[] = [
     { key: 'customerName', label: 'Customer', render: (o) => <span className="font-medium">{o.customerName}</span> },
@@ -68,11 +66,18 @@ const AdminOrders = () => {
         </Select>
       </div>
 
-      <DataTable data={filtered} columns={columns} searchPlaceholder="Search orders..." actions={(o) => (
+      {isError && (
+        <Alert variant="destructive">
+          <AlertTitle>Could not load orders</AlertTitle>
+          <AlertDescription>{error instanceof Error ? error.message : 'Please check your admin access and API route.'}</AlertDescription>
+        </Alert>
+      )}
+
+      <DataTable data={isLoading ? [] : filtered} columns={columns} searchPlaceholder={isLoading ? 'Loading orders...' : 'Search orders...'} actions={(o) => (
         <div className="flex items-center justify-end gap-1">
           <Button size="sm" variant="ghost" onClick={() => setViewOrder(o)}><Eye className="h-4 w-4" /></Button>
-          {o.status === 'pending' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'shipping')}>Ship</Button>}
-          {o.status === 'shipping' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'delivered')}>Deliver</Button>}
+          {o.status === 'pending' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'shipping')} disabled={updateStatusMutation.isPending}>Ship</Button>}
+          {o.status === 'shipping' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'delivered')} disabled={updateStatusMutation.isPending}>Deliver</Button>}
         </div>
       )} />
 
