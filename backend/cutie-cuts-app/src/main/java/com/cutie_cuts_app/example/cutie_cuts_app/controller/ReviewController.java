@@ -4,6 +4,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.CreateReviewRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.*;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.*;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
+import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -57,7 +58,7 @@ public class ReviewController {
     }
 
     @PostMapping
-    public Map<String, Object> create(@RequestBody CreateReviewRequest request, Authentication authentication) {
+    public Map<String, Object> create(@Valid @RequestBody CreateReviewRequest request, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
