@@ -19,9 +19,11 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class BarberService {
 
     private final BarberRepository barberRepository;
+    private final ImageStorageService imageStorageService;
 
-    public BarberService(BarberRepository barberRepository) {
+    public BarberService(BarberRepository barberRepository, ImageStorageService imageStorageService) {
         this.barberRepository = barberRepository;
+        this.imageStorageService = imageStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -54,8 +56,9 @@ public class BarberService {
         Barber barber = new Barber();
         barber.setName(request.getName());
         barber.setRole(request.getRole());
-        String imageUrl = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
-        barber.setImage(imageUrl != null ? imageUrl : "");
+        String rawImage = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
+        ImageStorageService.UploadResult result = imageStorageService.storeImage(rawImage);
+        barber.setImage(result.url());
         barber.setExperience(request.getExperience());
         barber.setSpecialties(request.getSpecialties());
         barber.setRating(request.getRating() != null ? request.getRating() : 4.8);
@@ -69,8 +72,9 @@ public class BarberService {
                 .orElseThrow(() -> new BarberNotFoundException(id));
         barber.setName(request.getName());
         barber.setRole(request.getRole());
-        String imageUrl = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
-        barber.setImage(imageUrl != null ? imageUrl : barber.getImage());
+        String rawImage = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
+        ImageStorageService.UploadResult result = imageStorageService.storeImage(rawImage);
+        barber.setImage(result.url());
         barber.setExperience(request.getExperience());
         barber.setSpecialties(request.getSpecialties());
         if (request.getRating() != null) {

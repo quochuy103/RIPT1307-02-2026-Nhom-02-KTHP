@@ -35,7 +35,6 @@ alter table if exists barbers
     alter column image type text;
 
 -- Payment tables
-create table if not exists payments
 (
     id              bigserial primary key,
     payment_code    varchar(100) unique not null,
