@@ -19,7 +19,7 @@ public class Barber {
     @Column(nullable = false)
     private String role;
 
-    @Column(nullable = false)
+    @Column(nullable = true, columnDefinition = "TEXT")
     private String image;
 
     @Column(nullable = false)
@@ -69,6 +69,9 @@ public class Barber {
         }
         if (deleted == null) {
             deleted = false;
+        }
+        if (image == null) {
+            image = "";
         }
     }
 }
