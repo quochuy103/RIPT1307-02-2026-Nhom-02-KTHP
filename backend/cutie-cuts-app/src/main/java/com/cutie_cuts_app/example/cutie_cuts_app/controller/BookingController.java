@@ -46,7 +46,7 @@ public class BookingController {
     }
 
     @PostMapping
-    public Map<String, Object> create(@RequestBody CreateBookingRequest request, Authentication authentication) {
+    public Map<String, Object> create(@Valid @RequestBody CreateBookingRequest request, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
@@ -60,13 +60,23 @@ public class BookingController {
     }
 
     @PatchMapping("/{id}/status")
-    public Map<String, Object> updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request, Authentication authentication) {
+    public Map<String, Object> updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
+        String newStatus = request.getStatus();
+        if (!List.of("pending", "confirmed", "done", "cancelled").contains(newStatus)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Invalid status. Allowed: pending, confirmed, done, cancelled");
+        }
         User user = currentUserService.getByEmail(authentication.getName());
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        Booking booking = bookingService.updateStatus(id, newStatus, user, isAdmin);
+
         boolean isAdmin = isAdmin(authentication);
         Booking booking = bookingService.updateStatus(id, request.getStatus(), user, isAdmin);
+
         return toResponse(booking);
     }
 

@@ -12,6 +12,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.NotificationService;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
+import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -64,7 +65,7 @@ public class OrderController {
 
     @PostMapping
     @Transactional
-    public Map<String, Object> create(@RequestBody CreateOrderRequest request, Authentication authentication) {
+    public Map<String, Object> create(@Valid @RequestBody CreateOrderRequest request, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
@@ -118,7 +119,7 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/status")
-    public Map<String, Object> updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request, Authentication authentication) {
+    public Map<String, Object> updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
@@ -128,8 +129,19 @@ public class OrderController {
 
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(FORBIDDEN, "You can only update your own orders");
+        }
+        String newStatus = request.getStatus();
+        if (!List.of("pending", "paid", "cancelled", "shipped", "delivered").contains(newStatus)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Invalid status. Allowed: pending, paid, cancelled, shipped, delivered");
+        }
+        order.setStatus(newStatus);
+
         String normalizedStatus = DomainStatusRules.normalizeOrderStatusForUpdate(request.getStatus());
         order.setStatus(normalizedStatus);
+
         ShopOrder saved = orderRepository.save(order);
         notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
                 "Order status updated to: " + normalizedStatus,
