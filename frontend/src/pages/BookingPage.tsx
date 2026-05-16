@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { services, barbers, timeSlots } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,37 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/lib/api';
-import { useEffect } from 'react';
+import { ApiError, api } from '@/lib/api';
+
+const toApiTime = (timeLabel: string) => {
+  const match = timeLabel.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return timeLabel;
+
+  const [, hourValue, minute, periodValue] = match;
+  const period = periodValue.toUpperCase();
+  let hour = Number(hourValue);
+
+  if (period === 'PM' && hour < 12) hour += 12;
+  if (period === 'AM' && hour === 12) hour = 0;
+
+  return `${String(hour).padStart(2, '0')}:${minute}:00`;
+};
+
+const getBookingErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof ApiError && error.status === 409) {
+    return 'This time slot is already booked. Please choose another time.';
+  }
+
+  if (error instanceof ApiError && error.status === 401) {
+    return 'Please sign in again before booking.';
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 const BookingPage = () => {
   const { t } = useTranslation();
@@ -27,15 +56,24 @@ const BookingPage = () => {
   const [time, setTime] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [loadedServices, loadedBarbers] = await Promise.all([api.getServices(), api.getBarbers()]);
+        setIsLoadingOptions(true);
+        setLoadError(null);
+        const [loadedServices, loadedBarbers] = await Promise.all([api.services.getAll(), api.barbers.getAll()]);
         setServiceList(loadedServices);
         setBarberList(loadedBarbers);
-      } catch {
-        // keep fallback
+      } catch (error) {
+        setLoadError(error instanceof Error ? error.message : 'Unable to load booking options');
+        setServiceList(services);
+        setBarberList(barbers);
+      } finally {
+        setIsLoadingOptions(false);
       }
     };
     void load();
@@ -56,18 +94,24 @@ const BookingPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!validate()) return;
+
     try {
-      await api.createBooking({
+      setIsSubmitting(true);
+      await api.bookings.create({
         serviceId: Number(form.service),
         barberId: Number(form.barber),
-        date: date?.toISOString().slice(0, 10) ?? '',
-        time,
+        date: date ? format(date, 'yyyy-MM-dd') : '',
+        time: toApiTime(time),
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('booking.errors.timeRequired'));
+      toast.error(getBookingErrorMessage(error, t('booking.errors.submitFailed')));
       return;
+    } finally {
+      setIsSubmitting(false);
     }
+
     setSubmitted(true);
     toast.success(t('booking.successToast'));
   };
@@ -97,6 +141,12 @@ const BookingPage = () => {
         </motion.div>
 
         <form onSubmit={handleSubmit} className="space-y-6 bg-card border border-border rounded-xl p-6 md:p-8">
+          {loadError && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              {loadError}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">{t('booking.name')}</label>
@@ -113,17 +163,21 @@ const BookingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">{t('booking.service')}</label>
-              <Select value={form.service} onValueChange={v => setForm(p => ({ ...p, service: v }))}>
-                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder={t('booking.selectService')} /></SelectTrigger>
-                <SelectContent>{serviceList.map(s => <SelectItem key={s.id} value={s.id}>{s.name || t(`serviceItems.${s.nameKey}`)} - ${s.price}</SelectItem>)}</SelectContent>
+              <Select value={form.service} onValueChange={v => setForm(p => ({ ...p, service: v }))} disabled={isLoadingOptions}>
+                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder={isLoadingOptions ? t('common.loading') : t('booking.selectService')} /></SelectTrigger>
+                <SelectContent>
+                  {serviceList.map(s => <SelectItem key={s.id} value={s.id}>{s.name || t(`serviceItems.${s.nameKey}`)} - ${s.price}</SelectItem>)}
+                </SelectContent>
               </Select>
               {errors.service && <p className="text-destructive text-xs mt-1">{errors.service}</p>}
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">{t('booking.barber')}</label>
-              <Select value={form.barber} onValueChange={v => setForm(p => ({ ...p, barber: v }))}>
-                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder={t('booking.selectBarber')} /></SelectTrigger>
-                <SelectContent>{barberList.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
+              <Select value={form.barber} onValueChange={v => setForm(p => ({ ...p, barber: v }))} disabled={isLoadingOptions}>
+                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder={isLoadingOptions ? t('common.loading') : t('booking.selectBarber')} /></SelectTrigger>
+                <SelectContent>
+                  {barberList.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                </SelectContent>
               </Select>
               {errors.barber && <p className="text-destructive text-xs mt-1">{errors.barber}</p>}
             </div>
@@ -165,8 +219,8 @@ const BookingPage = () => {
             {errors.time && <p className="text-destructive text-xs mt-1">{errors.time}</p>}
           </div>
 
-          <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-base py-6">
-            {t('booking.confirm')}
+          <Button type="submit" disabled={isSubmitting || isLoadingOptions} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-base py-6">
+            {isSubmitting ? t('common.saving') : t('booking.confirm')}
           </Button>
         </form>
       </div>

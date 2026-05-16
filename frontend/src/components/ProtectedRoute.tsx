@@ -11,9 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 const ProtectedRoute = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-  const { user } = useAuth();
 
-  console.log(user);
   if (isLoading) {
     return null;
   }
