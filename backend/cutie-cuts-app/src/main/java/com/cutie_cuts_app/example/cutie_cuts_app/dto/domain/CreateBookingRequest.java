@@ -1,5 +1,6 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.dto.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -20,7 +21,13 @@ public class CreateBookingRequest {
     private LocalDate date;
 
     @NotNull
-    @Schema(type = "string", format = "time", example = "10:00", description = "Booking time in 24-hour format. Use HH:mm or HH:mm:ss. Example: 10:00")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm[:ss]")
+    @Schema(
+            implementation = String.class,
+            type = "string",
+            format = "time",
+            example = "10:00",
+            description = "Booking time in 24-hour format. Use HH:mm or HH:mm:ss. Example: 10:00")
     private LocalTime time;
 
     public Long getServiceId() { return serviceId; }

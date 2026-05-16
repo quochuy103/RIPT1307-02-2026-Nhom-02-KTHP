@@ -81,6 +81,7 @@ class OrderControllerTest {
         request.setStatus("shipping");
         Authentication authentication = adminAuthentication();
 
+        when(currentUserService.getByEmail(authentication.getName())).thenReturn(owner);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(order)).thenReturn(order);
 
@@ -99,6 +100,7 @@ class OrderControllerTest {
         request.setStatus("shipped");
         Authentication authentication = adminAuthentication();
 
+        when(currentUserService.getByEmail(authentication.getName())).thenReturn(owner);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(order)).thenReturn(order);
 

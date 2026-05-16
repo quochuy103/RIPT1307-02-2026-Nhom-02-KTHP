@@ -30,7 +30,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
+@CrossOrigin(origins = { "http://localhost:8080", "http://localhost:5173" })
 public class OrderController {
 
     private final ShopOrderRepository orderRepository;
@@ -119,7 +119,8 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/status")
-    public Map<String, Object> updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request, Authentication authentication) {
+    public Map<String, Object> updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request,
+            Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
@@ -130,12 +131,14 @@ public class OrderController {
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
 
+        User user = currentUserService.getByEmail(authentication.getName());
         if (!order.getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(FORBIDDEN, "You can only update your own orders");
         }
         String newStatus = request.getStatus();
         if (!List.of("pending", "paid", "cancelled", "shipped", "delivered").contains(newStatus)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Invalid status. Allowed: pending, paid, cancelled, shipped, delivered");
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Invalid status. Allowed: pending, paid, cancelled, shipped, delivered");
         }
         order.setStatus(newStatus);
 
