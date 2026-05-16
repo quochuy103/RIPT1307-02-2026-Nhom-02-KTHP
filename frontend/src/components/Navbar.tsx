@@ -61,15 +61,6 @@ const Navbar = () => {
                 {t(link.labelKey)}
               </Link>
             ))}
-            {isAuthenticated && (
-              <Link
-                to="/my-bookings"
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/my-bookings' ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-              >
-                {t('nav.myBookings')}
-              </Link>
-            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -105,6 +96,9 @@ const Navbar = () => {
                   )}
                   <DropdownMenuItem asChild>
                     <Link to="/my-bookings">{t('nav.myBookings')}</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-orders">{t('nav.myOrders')}</Link>
                   </DropdownMenuItem>
                   {user?.role === 'admin' && <DropdownMenuSeparator />}
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
@@ -147,14 +141,6 @@ const Navbar = () => {
               ))}
               {isAuthenticated ? (
                 <>
-                  <Link
-                    to="/my-bookings"
-                    onClick={() => setIsOpen(false)}
-                    className={`py-2 text-sm font-medium transition-colors ${location.pathname === '/my-bookings' ? 'text-primary' : 'text-muted-foreground'
-                      }`}
-                  >
-                    {t('nav.myBookings')}
-                  </Link>
                   <button
                     type="button"
                     onClick={handleLogout}
