@@ -23,6 +23,7 @@ services:
       S3_SECRET_KEY: minioadmin
       S3_BUCKET_AVATARS: avatars
       S3_BUCKET_GALLERY: gallery
+      S3_BUCKET_BARBERS: barbers
     ports:
       - "8081:8081"
 

@@ -31,6 +31,10 @@ alter table if exists products
 alter table if exists products
     add column if not exists deleted_at timestamp;
 
+
+alter table if exists barbers
+    alter column image type text;
+
 -- Add deleted columns to barbers table
 alter table if exists barbers
     add column if not exists deleted boolean;
@@ -65,8 +69,8 @@ alter table if exists services
 alter table if exists services
     add column if not exists deleted_at timestamp;
 
+
 -- Payment tables
-create table if not exists payments
 (
     id              bigserial primary key,
     payment_code    varchar(100) unique not null,
