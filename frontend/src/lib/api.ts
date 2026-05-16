@@ -50,7 +50,7 @@ export interface Order {
   products: { name: string; qty: number; price: number }[];
   totalPrice: number;
   address: string;
-  status: 'pending' | 'shipping' | 'delivered' | string;
+  status: 'pending' | 'paid' | 'shipping' | 'shipped' | 'cancelled' | string;
   createdAt: string;
 }
 

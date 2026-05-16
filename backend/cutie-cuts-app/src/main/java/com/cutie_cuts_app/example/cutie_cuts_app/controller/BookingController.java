@@ -69,6 +69,7 @@ public class BookingController {
             throw new ResponseStatusException(BAD_REQUEST, "Invalid status. Allowed: pending, confirmed, done, cancelled");
         }
         User user = currentUserService.getByEmail(authentication.getName());
+
         boolean isAdmin = isAdmin(authentication);
         Booking booking = bookingService.updateStatus(id, newStatus, user, isAdmin);
 

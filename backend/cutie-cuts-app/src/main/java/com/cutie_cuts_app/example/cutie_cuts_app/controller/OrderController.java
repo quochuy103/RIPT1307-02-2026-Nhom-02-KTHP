@@ -50,7 +50,13 @@ public class OrderController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> getAll() {
+    public List<Map<String, Object>> getAll(Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        if (!isAdmin(authentication)) {
+            throw new ResponseStatusException(FORBIDDEN, "Only admins can view all orders");
+        }
         return orderRepository.findAll().stream().map(this::toResponse).toList();
     }
 
@@ -129,6 +135,7 @@ public class OrderController {
 
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
+
 
         String normalizedStatus = DomainStatusRules.normalizeOrderStatusForUpdate(request.getStatus());
         order.setStatus(normalizedStatus);

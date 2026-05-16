@@ -11,8 +11,8 @@ import FormModal from '@/components/admin/FormModal';
 import { api } from '@/lib/api';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const statusColors: Record<string, 'default' | 'secondary' | 'outline'> = {
-  delivered: 'default', shipping: 'secondary', pending: 'outline'
+const statusColors: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+  shipped: 'default', shipping: 'secondary', paid: 'secondary', pending: 'outline', cancelled: 'destructive'
 };
 const ordersQueryKey = ['admin', 'orders'] as const;
 
@@ -60,8 +60,10 @@ const AdminOrders = () => {
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
             <SelectItem value="shipping">Shipping</SelectItem>
-            <SelectItem value="delivered">Delivered</SelectItem>
+            <SelectItem value="shipped">Shipped</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -77,7 +79,7 @@ const AdminOrders = () => {
         <div className="flex items-center justify-end gap-1">
           <Button size="sm" variant="ghost" onClick={() => setViewOrder(o)}><Eye className="h-4 w-4" /></Button>
           {o.status === 'pending' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'shipping')} disabled={updateStatusMutation.isPending}>Ship</Button>}
-          {o.status === 'shipping' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'delivered')} disabled={updateStatusMutation.isPending}>Deliver</Button>}
+          {o.status === 'shipping' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'shipped')} disabled={updateStatusMutation.isPending}>Deliver</Button>}
         </div>
       )} />
 

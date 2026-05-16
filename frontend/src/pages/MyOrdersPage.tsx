@@ -8,9 +8,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 
 const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  delivered: 'default',
+  shipped: 'default',
   shipping: 'secondary',
+  paid: 'secondary',
   pending: 'outline',
+  cancelled: 'destructive'
 };
 
 const getOrderError = (error: unknown, fallback: string) => {
