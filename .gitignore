@@ -1,11 +1,10 @@
 
 # Graphify outputs (keep local only)
 graphify-out/
+backend/graphify-out/
+backend/cutie-cuts-app/graphify-out/
 
-# Claude settings (local config)
 
-.claude/
-.claude-flow/
 
 # MCP and swarm config (local only)
 .mcp.json
@@ -14,11 +13,12 @@ graphify-out/
 .ruvector.db
 .graphify_incremental.json
 
+# Agent
+.agent/
+.env
+
 # Temp/test files
 test_image.txt
-graphify-out/
-backend/graphify-out/
-backend/cutie-cuts-app/graphify-out/
 
 # Graphify python path marker
 .graphify_python
@@ -31,6 +31,7 @@ backend/cutie-cuts-app/build/
 frontend/node_modules/
 frontend/.next/
 frontend/dist/
+node_modules
 
 # IDE
 backend/.idea/
@@ -44,12 +45,3 @@ Thumbs.db
 *.log
 
 
-# Payment Guide
-*.md
-
-node_modules
-
-
-# Agent
-.agent/
-.env
