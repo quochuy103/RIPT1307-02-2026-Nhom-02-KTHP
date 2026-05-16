@@ -22,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -73,6 +74,42 @@ class OrderControllerTest {
     }
 
     @Test
+    void updateStatusAcceptsShippingForAdmin() {
+        User owner = createUser(10L, "Customer");
+        ShopOrder order = createOrder(1L, owner, "paid", 2);
+        UpdateStatusRequest request = new UpdateStatusRequest();
+        request.setStatus("shipping");
+        Authentication authentication = adminAuthentication();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+
+        Map<String, Object> response = orderController.updateStatus(1L, request, authentication);
+
+        assertEquals("shipping", order.getStatus());
+        assertEquals("shipping", response.get("status"));
+        verify(orderRepository).save(order);
+    }
+
+    @Test
+    void updateStatusMapsShippedToDeliveredInternallyForAdmin() {
+        User owner = createUser(10L, "Customer");
+        ShopOrder order = createOrder(1L, owner, "shipping", 2);
+        UpdateStatusRequest request = new UpdateStatusRequest();
+        request.setStatus("shipped");
+        Authentication authentication = adminAuthentication();
+
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+
+        Map<String, Object> response = orderController.updateStatus(1L, request, authentication);
+
+        assertEquals("delivered", order.getStatus());
+        assertEquals("shipped", response.get("status"));
+        verify(orderRepository).save(order);
+    }
+
+    @Test
     void cancelRejectsPaidOrders() {
         User owner = createUser(10L, "Customer");
         ShopOrder order = createOrder(1L, owner, "paid", 2);
@@ -113,6 +150,13 @@ class OrderControllerTest {
                 "user@example.com",
                 "password",
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
+    }
+
+    private Authentication adminAuthentication() {
+        return new UsernamePasswordAuthenticationToken(
+                "admin@example.com",
+                "password",
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
     }
 
     private User createUser(Long id, String name) {

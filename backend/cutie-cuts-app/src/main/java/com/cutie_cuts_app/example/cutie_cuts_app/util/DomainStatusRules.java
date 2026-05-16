@@ -10,7 +10,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 public final class DomainStatusRules {
 
     private static final Set<String> BOOKING_UPDATE_STATUSES = Set.of("pending", "confirmed", "done");
-    private static final Set<String> ORDER_UPDATE_STATUSES = Set.of("pending", "paid", "shipped", "delivered");
+    private static final Set<String> ORDER_PUBLIC_UPDATE_STATUSES = Set.of("pending", "paid", "shipping", "shipped");
 
     private DomainStatusRules() {
     }
@@ -20,7 +20,22 @@ public final class DomainStatusRules {
     }
 
     public static String normalizeOrderStatusForUpdate(String status) {
-        return normalizeAllowedStatus(status, ORDER_UPDATE_STATUSES, "order");
+        String normalizedStatus = normalizeCurrentStatus(status, "order");
+        return switch (normalizedStatus) {
+            case "pending", "paid", "shipping" -> normalizedStatus;
+            case "shipped", "delivered" -> "delivered";
+            default -> throw new ResponseStatusException(BAD_REQUEST,
+                    "Invalid order status. Allowed values: " + String.join(", ", ORDER_PUBLIC_UPDATE_STATUSES));
+        };
+    }
+
+    public static String normalizeOrderStatusForResponse(String status) {
+        String normalizedStatus = normalizeCurrentStatus(status, "order");
+        return switch (normalizedStatus) {
+            case "delivered" -> "shipped";
+            case "shipped" -> "shipping";
+            default -> normalizedStatus;
+        };
     }
 
     public static String normalizeCurrentStatus(String status, String domainName) {
@@ -48,7 +63,7 @@ public final class DomainStatusRules {
                 return;
             }
             case "cancelled" -> throw new ResponseStatusException(BAD_REQUEST, "Order is already cancelled");
-            case "paid", "shipped", "delivered" -> throw new ResponseStatusException(BAD_REQUEST,
+            case "paid", "shipping", "shipped", "delivered" -> throw new ResponseStatusException(BAD_REQUEST,
                     "Cannot cancel an order that has been " + currentStatus);
             default -> throw new ResponseStatusException(BAD_REQUEST,
                     "Cannot cancel an order that is " + currentStatus);
