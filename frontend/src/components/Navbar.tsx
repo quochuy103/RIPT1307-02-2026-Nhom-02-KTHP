@@ -61,24 +61,6 @@ const Navbar = () => {
                 {t(link.labelKey)}
               </Link>
             ))}
-            {isAuthenticated && (
-              <Link
-                to="/my-bookings"
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/my-bookings' ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-              >
-                {t('nav.myBookings')}
-              </Link>
-            )}
-            {isAuthenticated && (
-              <Link
-                to="/my-orders"
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/my-orders' ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-              >
-                {t('nav.myOrders')}
-              </Link>
-            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -159,22 +141,6 @@ const Navbar = () => {
               ))}
               {isAuthenticated ? (
                 <>
-                  <Link
-                    to="/my-bookings"
-                    onClick={() => setIsOpen(false)}
-                    className={`py-2 text-sm font-medium transition-colors ${location.pathname === '/my-bookings' ? 'text-primary' : 'text-muted-foreground'
-                      }`}
-                  >
-                    {t('nav.myBookings')}
-                  </Link>
-                  <Link
-                    to="/my-orders"
-                    onClick={() => setIsOpen(false)}
-                    className={`py-2 text-sm font-medium transition-colors ${location.pathname === '/my-orders' ? 'text-primary' : 'text-muted-foreground'
-                      }`}
-                  >
-                    {t('nav.myOrders')}
-                  </Link>
                   <button
                     type="button"
                     onClick={handleLogout}
