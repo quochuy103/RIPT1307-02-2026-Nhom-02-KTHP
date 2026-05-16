@@ -143,8 +143,9 @@ public class OrderController {
         order.setStatus(normalizedStatus);
 
         ShopOrder saved = orderRepository.save(order);
+        String responseStatus = DomainStatusRules.normalizeOrderStatusForResponse(saved.getStatus());
         notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
-                "Order status updated to: " + normalizedStatus,
+                "Order status updated to: " + responseStatus,
                 "order", saved.getId());
         return toResponse(saved);
     }
@@ -201,7 +202,7 @@ public class OrderController {
         map.put("products", products);
         map.put("totalPrice", order.getTotalPrice());
         map.put("address", order.getAddress());
-        map.put("status", order.getStatus());
+        map.put("status", DomainStatusRules.normalizeOrderStatusForResponse(order.getStatus()));
         map.put("createdAt", String.valueOf(order.getCreatedAt()).substring(0, 10));
         return map;
     }
