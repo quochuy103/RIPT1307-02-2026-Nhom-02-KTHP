@@ -6,6 +6,8 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.Booking;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.BookingService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.core.Authentication;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +22,8 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
 @RequestMapping("/bookings")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
+@CrossOrigin(origins = { "http://localhost:8080", "http://localhost:5173" })
+@Tag(name = "Booking", description = "Booking management APIs")
 public class BookingController {
 
     private final BookingService bookingService;
@@ -60,13 +63,22 @@ public class BookingController {
     }
 
     @PatchMapping("/{id}/status")
-    public Map<String, Object> updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request, Authentication authentication) {
+    public Map<String, Object> updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request,
+            Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
+        String newStatus = request.getStatus();
+        if (!List.of("pending", "confirmed", "done", "cancelled").contains(newStatus)) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Invalid status. Allowed: pending, confirmed, done, cancelled");
+        }
         User user = currentUserService.getByEmail(authentication.getName());
-        boolean isAdmin = isAdmin(authentication);
-        Booking booking = bookingService.updateStatus(id, request.getStatus(), user, isAdmin);
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        Booking booking = bookingService.updateStatus(id, newStatus, user, isAdmin);
+
         return toResponse(booking);
     }
 
