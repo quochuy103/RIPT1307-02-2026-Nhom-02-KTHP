@@ -45,7 +45,23 @@ Thumbs.db
 # Logs
 *.log
 
+
 # Others
 *.md
 CLAUDE.md
 .claude/
+
+# Payment Guide
+*.md
+
+# node modules
+node_modules
+
+# Agent
+.agent
+.env
+
+# Env files
+.env
+
+

@@ -50,7 +50,13 @@ public class OrderController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> getAll() {
+    public List<Map<String, Object>> getAll(Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        if (!isAdmin(authentication)) {
+            throw new ResponseStatusException(FORBIDDEN, "Only admins can view all orders");
+        }
         return orderRepository.findAll().stream().map(this::toResponse).toList();
     }
 
@@ -130,6 +136,19 @@ public class OrderController {
 
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
+
+
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(FORBIDDEN, "You can only update your own orders");
+        }
+        String newStatus = request.getStatus();
+        if (!List.of("pending", "paid", "cancelled", "shipped", "delivered").contains(newStatus)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Invalid status. Allowed: pending, paid, cancelled, shipped, delivered");
+        }
+        order.setStatus(newStatus);
+
+
 
         String normalizedStatus = DomainStatusRules.normalizeOrderStatusForUpdate(request.getStatus());
         order.setStatus(normalizedStatus);

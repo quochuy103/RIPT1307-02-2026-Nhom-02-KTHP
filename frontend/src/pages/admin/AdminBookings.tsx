@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import DataTable, { Column } from '@/components/admin/DataTable';
-import { mockBookings, AdminBooking } from '@/data/adminMockData';
+import type { AdminBooking } from '@/data/adminMockData';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Eye } from 'lucide-react';
@@ -8,38 +9,35 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormModal from '@/components/admin/FormModal';
 import { api } from '@/lib/api';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   confirmed: 'default', done: 'secondary', cancelled: 'destructive', pending: 'outline'
 };
+const bookingsQueryKey = ['admin', 'bookings'] as const;
 
 const AdminBookings = () => {
-  const [bookings, setBookings] = useState(mockBookings);
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewBooking, setViewBooking] = useState<AdminBooking | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setBookings(await api.admin.getBookings());
-      } catch {
-        // keep fallback
-      }
-    };
-    void load();
-  }, []);
+  const { data: bookings = [], isLoading, isError, error } = useQuery({
+    queryKey: bookingsQueryKey,
+    queryFn: api.admin.getBookings,
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: AdminBooking['status'] }) => api.admin.updateBookingStatus(id, status),
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
+      toast.success(`Booking ${variables.status}`);
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'Update failed'),
+  });
 
   const filtered = statusFilter === 'all' ? bookings : bookings.filter((b) => b.status === statusFilter);
 
-  const updateStatus = async (id: string, status: AdminBooking['status']) => {
-    try {
-      await api.admin.updateBookingStatus(id, status);
-      setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status } : b));
-      toast.success(`Booking ${status}`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Update failed');
-    }
-  };
+  const updateStatus = (id: string, status: AdminBooking['status']) => updateStatusMutation.mutate({ id, status });
 
   const columns: Column<AdminBooking>[] = [
     { key: 'userName', label: 'Client', render: (b) => <span className="font-medium">{b.userName}</span> },
@@ -70,17 +68,24 @@ const AdminBookings = () => {
         </Select>
       </div>
 
+      {isError && (
+        <Alert variant="destructive">
+          <AlertTitle>Could not load bookings</AlertTitle>
+          <AlertDescription>{error instanceof Error ? error.message : 'Please check your admin access and API route.'}</AlertDescription>
+        </Alert>
+      )}
+
       <DataTable
-        data={filtered}
+        data={isLoading ? [] : filtered}
         columns={columns}
-        searchPlaceholder="Search bookings..."
+        searchPlaceholder={isLoading ? 'Loading bookings...' : 'Search bookings...'}
         actions={(b) => (
           <div className="flex items-center justify-end gap-1">
             <Button size="sm" variant="ghost" onClick={() => setViewBooking(b)}><Eye className="h-4 w-4" /></Button>
             {b.status === 'pending' && (
               <>
-                <Button size="sm" variant="ghost" onClick={() => updateStatus(b.id, 'confirmed')}><CheckCircle className="h-4 w-4 text-green-400" /></Button>
-                <Button size="sm" variant="ghost" onClick={() => updateStatus(b.id, 'cancelled')}><XCircle className="h-4 w-4 text-destructive" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => updateStatus(b.id, 'confirmed')} disabled={updateStatusMutation.isPending}><CheckCircle className="h-4 w-4 text-green-400" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => updateStatus(b.id, 'cancelled')} disabled={updateStatusMutation.isPending}><XCircle className="h-4 w-4 text-destructive" /></Button>
               </>
             )}
           </div>

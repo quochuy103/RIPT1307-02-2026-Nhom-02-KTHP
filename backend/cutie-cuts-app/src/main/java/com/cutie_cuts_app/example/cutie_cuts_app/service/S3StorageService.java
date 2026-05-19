@@ -40,6 +40,9 @@ public class S3StorageService {
     @Value("${s3.bucket-gallery:gallery}")
     private String galleryBucket;
 
+    @Value("${s3.bucket-barbers:barbers}")
+    private String barbersBucket;
+
     private S3Client s3Client;
 
     @PostConstruct
@@ -97,6 +100,22 @@ public class S3StorageService {
     public String uploadGalleryImage(MultipartFile file, String filename) throws IOException {
         String path = "images";
         return uploadFile(file, galleryBucket, path);
+    }
+
+    public String uploadBarberImage(byte[] imageBytes, String contentType, String extension) throws IOException {
+        ensureBucketExists(barbersBucket);
+        String key = UUID.randomUUID() + extension;
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(barbersBucket)
+                .key(key)
+                .contentType(contentType)
+                .acl("public-read")
+                .build();
+
+        s3Client.putObject(request, RequestBody.fromBytes(imageBytes));
+
+        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), barbersBucket, key);
     }
 
     private void applyPublicReadPolicy(String bucketName) {
