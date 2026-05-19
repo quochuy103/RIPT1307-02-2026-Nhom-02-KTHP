@@ -11,32 +11,53 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 public class BookingService {
 
+    private static final int MAX_DAILY_CANCELLATIONS = 3;
+    private static final long MIN_CANCEL_NOTICE_MINUTES = 30;
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
     private final BookingRepository bookingRepository;
     private final SalonServiceRepository salonServiceRepository;
     private final BarberRepository barberRepository;
     private final NotificationService notificationService;
+    private final Clock clock;
 
+    @Autowired
     public BookingService(
             BookingRepository bookingRepository,
             SalonServiceRepository salonServiceRepository,
             BarberRepository barberRepository,
             NotificationService notificationService) {
+        this(bookingRepository, salonServiceRepository, barberRepository, notificationService, Clock.system(BUSINESS_ZONE));
+    }
+
+    BookingService(
+            BookingRepository bookingRepository,
+            SalonServiceRepository salonServiceRepository,
+            BarberRepository barberRepository,
+            NotificationService notificationService,
+            Clock clock) {
         this.bookingRepository = bookingRepository;
         this.salonServiceRepository = salonServiceRepository;
         this.barberRepository = barberRepository;
         this.notificationService = notificationService;
+        this.clock = clock;
     }
 
     public List<Booking> getBookings() {
@@ -103,12 +124,40 @@ public class BookingService {
 
         String currentStatus = DomainStatusRules.normalizeCurrentStatus(booking.getStatus(), "Booking");
         DomainStatusRules.ensureBookingCanBeCancelled(currentStatus);
+        if (!isAdmin) {
+            enforceCancellationWindow(booking);
+            enforceDailyCancellationLimit(user);
+        }
 
         booking.setStatus("cancelled");
+        booking.setCancelledAt(LocalDateTime.now(clock));
         Booking saved = bookingRepository.save(booking);
         notificationService.notify(booking.getUser(), NotificationType.BOOKING_CANCELLED,
                 "Booking cancelled for " + booking.getService().getName() + " with " + booking.getBarber().getName(),
                 "booking", saved.getId());
         return saved;
+    }
+
+    private void enforceCancellationWindow(Booking booking) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime bookingDateTime = LocalDateTime.of(booking.getDate(), booking.getTime());
+        if (bookingDateTime.isBefore(now.plusMinutes(MIN_CANCEL_NOTICE_MINUTES))) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Bookings can only be cancelled at least 30 minutes before the appointment");
+        }
+    }
+
+    private void enforceDailyCancellationLimit(User user) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
+        LocalDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
+        long cancelledCount = bookingRepository.countByUserAndStatusAndCancelledAtBetween(
+                user,
+                "cancelled",
+                startOfDay,
+                endOfDay);
+        if (cancelledCount >= MAX_DAILY_CANCELLATIONS) {
+            throw new ResponseStatusException(BAD_REQUEST, "You can cancel at most 3 bookings per day");
+        }
     }
 }

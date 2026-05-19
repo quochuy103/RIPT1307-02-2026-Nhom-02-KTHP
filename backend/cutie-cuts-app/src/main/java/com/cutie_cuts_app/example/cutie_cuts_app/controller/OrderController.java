@@ -30,7 +30,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
+@CrossOrigin(origins = { "http://localhost:8080", "http://localhost:5173" })
 public class OrderController {
 
     private final ShopOrderRepository orderRepository;
@@ -125,7 +125,8 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/status")
-    public Map<String, Object> updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request, Authentication authentication) {
+    public Map<String, Object> updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request,
+            Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
@@ -135,6 +136,7 @@ public class OrderController {
 
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
+
 
 
         if (!order.getUser().getId().equals(user.getId())) {
@@ -147,6 +149,7 @@ public class OrderController {
         order.setStatus(newStatus);
 
 
+
         String normalizedStatus = DomainStatusRules.normalizeOrderStatusForUpdate(request.getStatus());
         order.setStatus(normalizedStatus);
 
@@ -154,6 +157,31 @@ public class OrderController {
         String responseStatus = DomainStatusRules.normalizeOrderStatusForResponse(saved.getStatus());
         notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
                 "Order status updated to: " + responseStatus,
+                "order", saved.getId());
+        return toResponse(saved);
+    }
+
+    @PostMapping("/{id}/confirm-received")
+    @Transactional
+    public Map<String, Object> confirmReceived(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+
+        User user = currentUserService.getByEmail(authentication.getName());
+        ShopOrder order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(FORBIDDEN, "You can only confirm receipt for your own orders");
+        }
+
+        String currentStatus = DomainStatusRules.normalizeCurrentStatus(order.getStatus(), "Order");
+        DomainStatusRules.ensureOrderCanBeConfirmedReceived(currentStatus);
+
+        order.setStatus("delivered");
+        ShopOrder saved = orderRepository.save(order);
+        notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
+                "Order marked as received.",
                 "order", saved.getId());
         return toResponse(saved);
     }
@@ -197,6 +225,7 @@ public class OrderController {
     private Map<String, Object> toResponse(ShopOrder order) {
         List<Map<String, Object>> products = order.getItems().stream().map(item -> {
             Map<String, Object> p = new LinkedHashMap<>();
+            p.put("productId", item.getProduct().getId());
             p.put("name", item.getProduct().getName());
             p.put("qty", item.getQuantity());
             p.put("price", item.getPrice());

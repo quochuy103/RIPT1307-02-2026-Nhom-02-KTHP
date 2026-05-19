@@ -17,8 +17,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,14 +51,17 @@ class BookingServiceTest {
     private NotificationService notificationService;
 
     private BookingService bookingService;
+    private Clock fixedClock;
 
     @BeforeEach
     void setUp() {
+        fixedClock = Clock.fixed(Instant.parse("2026-05-16T02:00:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
         bookingService = new BookingService(
                 bookingRepository,
                 salonServiceRepository,
                 barberRepository,
-                notificationService);
+                notificationService,
+                fixedClock);
     }
 
     @Test
@@ -104,11 +111,17 @@ class BookingServiceTest {
         Booking booking = createBooking(1L, owner, "pending");
 
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.countByUserAndStatusAndCancelledAtBetween(
+                eq(owner),
+                eq("cancelled"),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class))).thenReturn(0L);
         when(bookingRepository.save(booking)).thenReturn(booking);
 
         Booking cancelled = bookingService.cancelBooking(1L, owner, false);
 
         assertEquals("cancelled", cancelled.getStatus());
+        assertEquals(LocalDateTime.now(fixedClock), cancelled.getCancelledAt());
         verify(notificationService).notify(
                 eq(owner),
                 eq(NotificationType.BOOKING_CANCELLED),
@@ -130,6 +143,63 @@ class BookingServiceTest {
 
         assertEquals(FORBIDDEN, exception.getStatusCode());
         verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelBookingRejectsFourthCancellationInSameDay() {
+        User owner = createUser(10L, "Customer");
+        Booking booking = createBooking(1L, owner, "pending");
+
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.countByUserAndStatusAndCancelledAtBetween(
+                eq(owner),
+                eq("cancelled"),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class))).thenReturn(3L);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> bookingService.cancelBooking(1L, owner, false));
+
+        assertEquals("You can cancel at most 3 bookings per day", exception.getReason());
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelBookingRejectsBookingsWithinThirtyMinutes() {
+        User owner = createUser(10L, "Customer");
+        Booking booking = createBooking(1L, owner, "pending");
+        booking.setDate(LocalDate.of(2026, 5, 16));
+        booking.setTime(LocalTime.of(9, 20));
+
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> bookingService.cancelBooking(1L, owner, false));
+
+        assertEquals("Bookings can only be cancelled at least 30 minutes before the appointment",
+                exception.getReason());
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelBookingAllowsAdminsToBypassSpamChecks() {
+        User owner = createUser(10L, "Customer");
+        User admin = createUser(99L, "Admin");
+        Booking booking = createBooking(1L, owner, "pending");
+        booking.setDate(LocalDate.of(2026, 5, 16));
+        booking.setTime(LocalTime.of(9, 10));
+
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(booking)).thenReturn(booking);
+
+        Booking cancelled = bookingService.cancelBooking(1L, admin, true);
+
+        assertEquals("cancelled", cancelled.getStatus());
+        verify(bookingRepository, never()).countByUserAndStatusAndCancelledAtBetween(
+                any(),
+                any(),
+                any(),
+                any());
     }
 
     private Booking createBooking(Long bookingId, User user, String status) {
