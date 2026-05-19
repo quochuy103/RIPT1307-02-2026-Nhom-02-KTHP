@@ -137,11 +137,6 @@ public class OrderController {
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
 
-
-
-        if (!order.getUser().getId().equals(user.getId())) {
-            throw new ResponseStatusException(FORBIDDEN, "You can only update your own orders");
-        }
         String newStatus = request.getStatus();
         if (!List.of("pending", "paid", "cancelled", "shipped", "delivered").contains(newStatus)) {
             throw new ResponseStatusException(BAD_REQUEST, "Invalid status. Allowed: pending, paid, cancelled, shipped, delivered");
