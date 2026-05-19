@@ -70,6 +70,16 @@ public class ImageStorageService {
         return new ParsedImage(bytes, mimeType, extension);
     }
 
+    /**
+     * Delete a stored image from S3. Skips data URLs (not yet stored),
+     * blank values, and external URLs not managed by MinIO.
+     */
+    public void deleteImage(String url) {
+        if (url == null || url.isBlank()) return;
+        if (isDataUrl(url)) return; // never persisted
+        s3StorageService.deleteFile(url);
+    }
+
     public UploadResult storeImage(String value) {
         if (value == null || value.isBlank()) {
             return new UploadResult("", false);

@@ -70,17 +70,25 @@ public class BarberService {
     public BarberResponse update(Long id, BarberRequest request) {
         Barber barber = barberRepository.findById(id)
                 .orElseThrow(() -> new BarberNotFoundException(id));
+        String oldImage = barber.getImage();
         barber.setName(request.getName());
         barber.setRole(request.getRole());
         String rawImage = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
         ImageStorageService.UploadResult result = imageStorageService.storeImage(rawImage);
-        barber.setImage(result.url());
+        String newImage = result.url();
+        barber.setImage(newImage);
         barber.setExperience(request.getExperience());
         barber.setSpecialties(request.getSpecialties());
         if (request.getRating() != null) {
             barber.setRating(request.getRating());
         }
         Barber saved = barberRepository.save(barber);
+
+        // Clean up old managed MinIO image when replaced with a new one
+        if (result.wasStored() && oldImage != null && !oldImage.isBlank() && !oldImage.equals(newImage)) {
+            imageStorageService.deleteImage(oldImage);
+        }
+
         return BarberResponse.from(saved);
     }
 
@@ -88,6 +96,7 @@ public class BarberService {
     public void delete(Long id) {
         Barber barber = barberRepository.findById(id)
                 .orElseThrow(() -> new BarberNotFoundException(id));
+        imageStorageService.deleteImage(barber.getImage());
         barber.setDeleted(true);
         barber.setDeletedAt(java.time.LocalDateTime.now());
     }
