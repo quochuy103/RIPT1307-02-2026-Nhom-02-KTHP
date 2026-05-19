@@ -148,15 +148,41 @@ public class S3StorageService {
     public void deleteFile(String url) {
         if (url == null || url.isBlank()) return;
         try {
-            String bucket = url.contains("/avatars/") ? avatarsBucket : galleryBucket;
-            String key = url.substring(url.indexOf(bucket) + bucket.length() + 1);
-            // Strip leading slash if present (handles URLs without trailing slash on publicUrl)
-            key = key.replaceFirst("^/+", "");
+            // Strip publicUrl prefix to get the object path
+            String path = url;
+            String normalizedPublicUrl = publicUrl.replaceAll("/+$", "");
+            if (url.startsWith(normalizedPublicUrl)) {
+                path = url.substring(normalizedPublicUrl.length());
+            }
+            path = path.replaceFirst("^/+", "");
+
+            String bucket;
+            String key;
+
+            if (path.startsWith(barbersBucket + "/")) {
+                bucket = barbersBucket;
+                key = path.substring(barbersBucket.length() + 1);
+            } else if (path.startsWith(avatarsBucket + "/")) {
+                bucket = avatarsBucket;
+                key = path.substring(avatarsBucket.length() + 1);
+            } else if (path.startsWith("images/")) {
+                // gallery images uploaded under "images/" prefix
+                bucket = galleryBucket;
+                key = path.substring("images/".length());
+            } else if (path.startsWith(galleryBucket + "/")) {
+                bucket = galleryBucket;
+                key = path.substring(galleryBucket.length() + 1);
+            } else {
+                // Not a managed MinIO URL — skip
+                log.debug("URL does not match any managed bucket, skipping deletion: {}", url);
+                return;
+            }
 
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(bucket)
                     .key(key)
                     .build());
+            log.info("Deleted file from bucket {}: {}", bucket, key);
         } catch (Exception e) {
             log.warn("Failed to delete file {}: {}", url, e.getMessage());
         }

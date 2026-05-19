@@ -78,17 +78,6 @@ public class BookingController {
         boolean isAdmin = isAdmin(authentication);
         Booking booking = bookingService.updateStatus(id, newStatus, user, isAdmin);
 
-
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        Booking booking = bookingService.updateStatus(id, newStatus, user, isAdmin);
-
-
-        boolean isAdmin = isAdmin(authentication);
-        Booking booking = bookingService.updateStatus(id, request.getStatus(), user, isAdmin);
-
-
-
         return toResponse(booking);
     }
 
