@@ -81,7 +81,6 @@ class OrderControllerTest {
         request.setStatus("shipping");
         Authentication authentication = adminAuthentication();
 
-        when(currentUserService.getByEmail(authentication.getName())).thenReturn(owner);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(order)).thenReturn(order);
 
@@ -100,15 +99,47 @@ class OrderControllerTest {
         request.setStatus("shipped");
         Authentication authentication = adminAuthentication();
 
-        when(currentUserService.getByEmail(authentication.getName())).thenReturn(owner);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(order)).thenReturn(order);
 
         Map<String, Object> response = orderController.updateStatus(1L, request, authentication);
 
-        assertEquals("delivered", order.getStatus());
+        assertEquals("shipped", order.getStatus());
         assertEquals("shipped", response.get("status"));
         verify(orderRepository).save(order);
+    }
+
+    @Test
+    void confirmReceivedMarksShippingOrderAsDeliveredForOwner() {
+        User owner = createUser(10L, "Customer");
+        ShopOrder order = createOrder(1L, owner, "shipped", 2);
+        Authentication authentication = userAuthentication();
+
+        when(currentUserService.getByEmail(authentication.getName())).thenReturn(owner);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+
+        Map<String, Object> response = orderController.confirmReceived(1L, authentication);
+
+        assertEquals("delivered", order.getStatus());
+        assertEquals("delivered", response.get("status"));
+        verify(orderRepository).save(order);
+    }
+
+    @Test
+    void confirmReceivedRejectsShippingOrders() {
+        User owner = createUser(10L, "Customer");
+        ShopOrder order = createOrder(1L, owner, "shipping", 2);
+        Authentication authentication = userAuthentication();
+
+        when(currentUserService.getByEmail(authentication.getName())).thenReturn(owner);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> orderController.confirmReceived(1L, authentication));
+
+        assertEquals(BAD_REQUEST, exception.getStatusCode());
+        verify(orderRepository, never()).save(any());
     }
 
     @Test
@@ -145,6 +176,22 @@ class OrderControllerTest {
         assertEquals(7, product.getStock());
         verify(productRepository).save(product);
         verify(orderRepository).save(order);
+    }
+
+    @Test
+    void myOrdersIncludesProductIdInEachItem() {
+        User owner = createUser(10L, "Customer");
+        ShopOrder order = createOrder(1L, owner, "shipped", 2);
+        Authentication authentication = userAuthentication();
+
+        when(currentUserService.getByEmail(authentication.getName())).thenReturn(owner);
+        when(orderRepository.findByUser(owner)).thenReturn(List.of(order));
+
+        List<Map<String, Object>> response = orderController.myOrders(authentication);
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> products = (List<Map<String, Object>>) response.get(0).get("products");
+        assertEquals(100L, products.get(0).get("productId"));
     }
 
     private Authentication userAuthentication() {
