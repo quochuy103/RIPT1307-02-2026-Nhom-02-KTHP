@@ -71,6 +71,7 @@ alter table if exists services
 
 
 -- Payment tables
+create table if not exists payments
 (
     id              bigserial primary key,
     payment_code    varchar(100) unique not null,
