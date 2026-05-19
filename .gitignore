@@ -15,6 +15,7 @@ backend/cutie-cuts-app/graphify-out/
 
 # Agent
 .agent/
+/.claude/
 .env
 
 # Temp/test files
@@ -44,6 +45,12 @@ Thumbs.db
 # Logs
 *.log
 
+
+# Others
+*.md
+CLAUDE.md
+.claude/
+
 # Payment Guide
 *.md
 
@@ -56,4 +63,5 @@ node_modules
 
 # Env files
 .env
+
 

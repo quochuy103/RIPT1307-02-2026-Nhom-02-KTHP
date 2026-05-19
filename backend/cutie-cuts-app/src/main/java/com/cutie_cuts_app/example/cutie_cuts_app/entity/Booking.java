@@ -44,6 +44,9 @@ public class Booking {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
     public Long getId() { return id; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
@@ -60,6 +63,8 @@ public class Booking {
     public Double getPrice() { return price; }
     public void setPrice(Double price) { this.price = price; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getCancelledAt() { return cancelledAt; }
+    public void setCancelledAt(LocalDateTime cancelledAt) { this.cancelledAt = cancelledAt; }
 
     @PrePersist
     public void prePersist() {
