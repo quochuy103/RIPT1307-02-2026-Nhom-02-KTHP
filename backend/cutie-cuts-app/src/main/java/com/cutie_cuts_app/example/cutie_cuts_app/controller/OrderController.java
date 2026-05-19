@@ -131,17 +131,6 @@ public class OrderController {
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
 
-        User user = currentUserService.getByEmail(authentication.getName());
-        if (!order.getUser().getId().equals(user.getId())) {
-            throw new ResponseStatusException(FORBIDDEN, "You can only update your own orders");
-        }
-        String newStatus = request.getStatus();
-        if (!List.of("pending", "paid", "cancelled", "shipped", "delivered").contains(newStatus)) {
-            throw new ResponseStatusException(BAD_REQUEST,
-                    "Invalid status. Allowed: pending, paid, cancelled, shipped, delivered");
-        }
-        order.setStatus(newStatus);
-
         String normalizedStatus = DomainStatusRules.normalizeOrderStatusForUpdate(request.getStatus());
         order.setStatus(normalizedStatus);
 
@@ -149,6 +138,31 @@ public class OrderController {
         String responseStatus = DomainStatusRules.normalizeOrderStatusForResponse(saved.getStatus());
         notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
                 "Order status updated to: " + responseStatus,
+                "order", saved.getId());
+        return toResponse(saved);
+    }
+
+    @PostMapping("/{id}/confirm-received")
+    @Transactional
+    public Map<String, Object> confirmReceived(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+
+        User user = currentUserService.getByEmail(authentication.getName());
+        ShopOrder order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(FORBIDDEN, "You can only confirm receipt for your own orders");
+        }
+
+        String currentStatus = DomainStatusRules.normalizeCurrentStatus(order.getStatus(), "Order");
+        DomainStatusRules.ensureOrderCanBeConfirmedReceived(currentStatus);
+
+        order.setStatus("delivered");
+        ShopOrder saved = orderRepository.save(order);
+        notificationService.notify(order.getUser(), NotificationType.ORDER_STATUS_UPDATED,
+                "Order marked as received.",
                 "order", saved.getId());
         return toResponse(saved);
     }
@@ -192,6 +206,7 @@ public class OrderController {
     private Map<String, Object> toResponse(ShopOrder order) {
         List<Map<String, Object>> products = order.getItems().stream().map(item -> {
             Map<String, Object> p = new LinkedHashMap<>();
+            p.put("productId", item.getProduct().getId());
             p.put("name", item.getProduct().getName());
             p.put("qty", item.getQuantity());
             p.put("price", item.getPrice());
