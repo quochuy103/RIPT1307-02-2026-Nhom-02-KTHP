@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
@@ -97,7 +98,7 @@ public class OrderController {
                 throw new ResponseStatusException(BAD_REQUEST, "Quantity must be greater than 0");
             }
             if (qty > product.getStock()) {
-                throw new ResponseStatusException(BAD_REQUEST, "Not enough stock for: " + product.getName());
+                throw new ResponseStatusException(CONFLICT, "Not enough stock for: " + product.getName());
             }
 
             // Deduct stock
@@ -136,14 +137,6 @@ public class OrderController {
 
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
-
-        String newStatus = request.getStatus();
-        if (!List.of("pending", "paid", "cancelled", "shipped", "delivered").contains(newStatus)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Invalid status. Allowed: pending, paid, cancelled, shipped, delivered");
-        }
-        order.setStatus(newStatus);
-
-
 
         String normalizedStatus = DomainStatusRules.normalizeOrderStatusForUpdate(request.getStatus());
         order.setStatus(normalizedStatus);
