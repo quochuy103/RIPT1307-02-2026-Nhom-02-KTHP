@@ -12,6 +12,10 @@ import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.NotificationService;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +36,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @RestController
 @RequestMapping("/api/orders")
 @CrossOrigin(origins = { "http://localhost:8080", "http://localhost:5173" })
+@Tag(name = "Order", description = "Order management APIs")
 public class OrderController {
 
     private final ShopOrderRepository orderRepository;
@@ -51,6 +56,12 @@ public class OrderController {
     }
 
     @GetMapping
+    @Operation(summary = "Get all orders", description = "Returns all orders. Admin access only.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Authentication required"),
+            @ApiResponse(responseCode = "403", description = "Only admins can view all orders")
+    })
     public List<Map<String, Object>> getAll(Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
@@ -62,6 +73,11 @@ public class OrderController {
     }
 
     @GetMapping("/my")
+    @Operation(summary = "Get current user's orders", description = "Returns the authenticated user's orders.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Authentication required")
+    })
     public List<Map<String, Object>> myOrders(Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
@@ -72,6 +88,14 @@ public class OrderController {
 
     @PostMapping
     @Transactional
+    @Operation(summary = "Create order", description = "Creates a new order for the authenticated user and deducts stock from ordered products.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Order created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid order payload or quantity"),
+            @ApiResponse(responseCode = "401", description = "Authentication required"),
+            @ApiResponse(responseCode = "404", description = "Product not found"),
+            @ApiResponse(responseCode = "409", description = "Insufficient stock for one or more products")
+    })
     public Map<String, Object> create(@Valid @RequestBody CreateOrderRequest request, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
@@ -126,6 +150,14 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/status")
+    @Operation(summary = "Update order status", description = "Updates an order status using the domain status rules. Admin access only.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Order status updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid status value"),
+            @ApiResponse(responseCode = "401", description = "Authentication required"),
+            @ApiResponse(responseCode = "403", description = "Only admins can update order status"),
+            @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     public Map<String, Object> updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request,
             Authentication authentication) {
         if (authentication == null) {
@@ -151,6 +183,14 @@ public class OrderController {
 
     @PostMapping("/{id}/confirm-received")
     @Transactional
+    @Operation(summary = "Confirm order received", description = "Marks the authenticated user's shipped order as delivered.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Order marked as received"),
+            @ApiResponse(responseCode = "400", description = "Order is not eligible to be confirmed as received"),
+            @ApiResponse(responseCode = "401", description = "Authentication required"),
+            @ApiResponse(responseCode = "403", description = "You can only confirm your own orders"),
+            @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     public Map<String, Object> confirmReceived(@PathVariable Long id, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
@@ -176,6 +216,14 @@ public class OrderController {
 
     @PostMapping("/{id}/cancel")
     @Transactional
+    @Operation(summary = "Cancel order", description = "Cancels a pending order and restores stock. Customers can cancel their own orders; admins can cancel any order.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Order cancelled successfully"),
+            @ApiResponse(responseCode = "400", description = "Order cannot be cancelled in its current status"),
+            @ApiResponse(responseCode = "401", description = "Authentication required"),
+            @ApiResponse(responseCode = "403", description = "You can only cancel your own orders"),
+            @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     public Map<String, Object> cancel(@PathVariable Long id, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
