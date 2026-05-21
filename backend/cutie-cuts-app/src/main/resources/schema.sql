@@ -123,3 +123,34 @@ drop index if exists idx_booking_active_slot_unique;
 create unique index if not exists idx_booking_active_slot_unique
     on bookings (barber_id, "date", "time")
     where lower(status) <> 'cancelled';
+
+-- Add order_id and product_id columns to reviews table (matching Review.java entity)
+alter table if exists reviews
+    add column if not exists order_id bigint;
+
+alter table if exists reviews
+    add column if not exists product_id bigint;
+
+-- Foreign keys for reviews
+alter table if exists reviews
+    drop constraint if exists fk_review_order;
+alter table if exists reviews
+    add constraint fk_review_order
+    foreign key (order_id) references orders(id);
+
+alter table if exists reviews
+    drop constraint if exists fk_review_product;
+alter table if exists reviews
+    add constraint fk_review_product
+    foreign key (product_id) references products(id);
+
+-- Indexes expected by Review.java entity (@Index annotations)
+create index if not exists idx_review_order on reviews (order_id);
+create index if not exists idx_review_product on reviews (product_id);
+
+-- Unique constraint expected by Review.java entity
+alter table if exists reviews
+    drop constraint if exists uk_review_order_product;
+alter table if exists reviews
+    add constraint uk_review_order_product
+    unique (order_id, product_id);
