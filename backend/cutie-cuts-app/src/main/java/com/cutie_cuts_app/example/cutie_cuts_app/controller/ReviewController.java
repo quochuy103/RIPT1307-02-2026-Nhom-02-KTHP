@@ -18,6 +18,9 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -68,6 +71,11 @@ public class ReviewController {
     @GetMapping
     public List<Map<String, Object>> getAll() {
         return reviewRepository.findByDeletedFalse().stream().map(this::toResponse).toList();
+    }
+
+    @GetMapping("/page")
+    public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable) {
+        return reviewRepository.findAll(pageable).map(this::toResponse);
     }
 
     @GetMapping("/products/{productId}")

@@ -3,6 +3,7 @@ package com.cutie_cuts_app.example.cutie_cuts_app.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -24,6 +25,10 @@ public class ImageStorageService {
             "^data:image/([a-zA-Z0-9+-]+);base64,(.+)$"
     );
 
+    public enum ImageContext {
+        BARBER, GALLERY, PRODUCT, AVATAR
+    }
+
     private final S3StorageService s3StorageService;
 
     public ImageStorageService(S3StorageService s3StorageService) {
@@ -37,6 +42,11 @@ public class ImageStorageService {
     public static boolean isDataUrl(String value) {
         if (value == null || value.isBlank()) return false;
         return DATA_URL_PATTERN.matcher(value).matches();
+    }
+
+    public static boolean isManagedUrl(String url) {
+        if (url == null || url.isBlank()) return false;
+        return !isDataUrl(url);
     }
 
     public ParsedImage parseDataUrl(String dataUrl) {
@@ -81,6 +91,10 @@ public class ImageStorageService {
     }
 
     public UploadResult storeImage(String value) {
+        return storeImage(value, ImageContext.BARBER);
+    }
+
+    public UploadResult storeImage(String value, ImageContext context) {
         if (value == null || value.isBlank()) {
             return new UploadResult("", false);
         }
@@ -91,13 +105,14 @@ public class ImageStorageService {
 
         ParsedImage parsed = parseDataUrl(value);
         try {
-            String url = s3StorageService.uploadBarberImage(
-                    parsed.bytes(),
-                    parsed.contentType(),
-                    parsed.extension()
-            );
+            String url = switch (context) {
+                case BARBER -> s3StorageService.uploadBarberImage(parsed.bytes(), parsed.contentType(), parsed.extension());
+                case GALLERY -> s3StorageService.uploadGalleryImage(parsed.bytes(), parsed.contentType(), parsed.extension());
+                case PRODUCT -> s3StorageService.uploadProductImage(parsed.bytes(), parsed.contentType(), parsed.extension());
+                case AVATAR -> s3StorageService.uploadAvatarImage(parsed.bytes(), parsed.contentType(), parsed.extension(), null);
+            };
             return new UploadResult(url, true);
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
                     "Failed to store image: " + e.getClass().getSimpleName());
         }

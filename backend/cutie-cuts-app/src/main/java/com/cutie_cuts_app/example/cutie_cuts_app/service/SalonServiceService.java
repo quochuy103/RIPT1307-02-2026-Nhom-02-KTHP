@@ -4,6 +4,8 @@ import com.cutie_cuts_app.example.cutie_cuts_app.dto.service.SalonServiceRequest
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.service.SalonServiceResponse;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.SalonService;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,11 @@ public class SalonServiceService {
         return repository.findByDeletedFalse().stream()
                 .map(SalonServiceResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SalonServiceResponse> findAllPaginated(Pageable pageable) {
+        return repository.findAll(pageable).map(SalonServiceResponse::from);
     }
 
     @Transactional(readOnly = true)

@@ -13,6 +13,9 @@ import com.cutie_cuts_app.example.cutie_cuts_app.service.NotificationService;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -58,6 +61,18 @@ public class OrderController {
             throw new ResponseStatusException(FORBIDDEN, "Only admins can view all orders");
         }
         return orderRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    @GetMapping("/page")
+    public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable,
+            Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        if (!isAdmin(authentication)) {
+            throw new ResponseStatusException(FORBIDDEN, "Only admins can view all orders");
+        }
+        return orderRepository.findAll(pageable).map(this::toResponse);
     }
 
     @GetMapping("/my")
@@ -136,14 +151,6 @@ public class OrderController {
 
         ShopOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
-
-        String newStatus = request.getStatus();
-        if (!List.of("pending", "paid", "cancelled", "shipped", "delivered").contains(newStatus)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Invalid status. Allowed: pending, paid, cancelled, shipped, delivered");
-        }
-        order.setStatus(newStatus);
-
-
 
         String normalizedStatus = DomainStatusRules.normalizeOrderStatusForUpdate(request.getStatus());
         order.setStatus(normalizedStatus);
