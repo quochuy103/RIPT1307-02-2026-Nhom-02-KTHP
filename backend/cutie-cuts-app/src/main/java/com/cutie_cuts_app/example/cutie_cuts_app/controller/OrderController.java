@@ -17,6 +17,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -70,6 +73,18 @@ public class OrderController {
             throw new ResponseStatusException(FORBIDDEN, "Only admins can view all orders");
         }
         return orderRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    @GetMapping("/page")
+    public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable,
+            Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        if (!isAdmin(authentication)) {
+            throw new ResponseStatusException(FORBIDDEN, "Only admins can view all orders");
+        }
+        return orderRepository.findAll(pageable).map(this::toResponse);
     }
 
     @GetMapping("/my")

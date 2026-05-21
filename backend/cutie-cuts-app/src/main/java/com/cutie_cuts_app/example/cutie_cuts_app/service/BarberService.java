@@ -57,7 +57,7 @@ public class BarberService {
         barber.setName(request.getName());
         barber.setRole(request.getRole());
         String rawImage = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
-        ImageStorageService.UploadResult result = imageStorageService.storeImage(rawImage);
+        ImageStorageService.UploadResult result = imageStorageService.storeImage(rawImage, ImageStorageService.ImageContext.BARBER);
         barber.setImage(result.url());
         barber.setExperience(request.getExperience());
         barber.setSpecialties(request.getSpecialties());

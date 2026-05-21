@@ -22,13 +22,16 @@ public class GalleryImageService {
 
     private final GalleryImageRepository galleryImageRepository;
     private final S3StorageService s3StorageService;
+    private final ImageStorageService imageStorageService;
 
     @Value("${s3.bucket-gallery:gallery}")
     private String galleryBucket;
 
-    public GalleryImageService(GalleryImageRepository galleryImageRepository, S3StorageService s3StorageService) {
+    public GalleryImageService(GalleryImageRepository galleryImageRepository, S3StorageService s3StorageService,
+            ImageStorageService imageStorageService) {
         this.galleryImageRepository = galleryImageRepository;
         this.s3StorageService = s3StorageService;
+        this.imageStorageService = imageStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -93,6 +96,7 @@ public class GalleryImageService {
         GalleryImage image = galleryImageRepository.findById(id)
                 .filter(img -> !Boolean.TRUE.equals(img.getDeleted()))
                 .orElseThrow(() -> new ImageNotFoundException(id));
+        imageStorageService.deleteImage(image.getUrl());
         image.setDeleted(true);
         image.setDeletedAt(java.time.LocalDateTime.now());
         galleryImageRepository.save(image);

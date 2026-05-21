@@ -12,6 +12,8 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceReposito
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -62,6 +64,10 @@ public class BookingService {
 
     public List<Booking> getBookings() {
         return bookingRepository.findAll();
+    }
+
+    public Page<Booking> getBookingsPaginated(Pageable pageable) {
+        return bookingRepository.findAll(pageable);
     }
 
     public List<Booking> getBookingsByUser(User user) {
