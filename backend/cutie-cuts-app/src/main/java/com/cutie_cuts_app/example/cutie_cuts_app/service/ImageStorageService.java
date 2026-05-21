@@ -45,10 +45,6 @@ public class ImageStorageService {
     }
 
 
-    public static boolean isManagedUrl(String url) {
-        if (url == null || url.isBlank()) return false;
-        return !isDataUrl(url);
-
     public static boolean isManagedUrl(String value) {
         if (value == null || value.isBlank()) return false;
         if (isDataUrl(value)) return false;
