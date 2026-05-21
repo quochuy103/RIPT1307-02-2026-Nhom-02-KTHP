@@ -153,6 +153,10 @@ public class S3StorageService {
             String normalizedPublicUrl = publicUrl.replaceAll("/+$", "");
             if (url.startsWith(normalizedPublicUrl)) {
                 path = url.substring(normalizedPublicUrl.length());
+            } else if (url.startsWith("http://") || url.startsWith("https://")) {
+                // External URL — not managed by MinIO, skip
+                log.debug("External URL, skipping deletion: {}", url);
+                return;
             }
             path = path.replaceFirst("^/+", "");
 
@@ -166,15 +170,28 @@ public class S3StorageService {
                 bucket = avatarsBucket;
                 key = path.substring(avatarsBucket.length() + 1);
             } else if (path.startsWith("images/")) {
-                // gallery images uploaded under "images/" prefix
                 bucket = galleryBucket;
                 key = path.substring("images/".length());
+            } else if (path.startsWith("products/")) {
+                // Product images stored in barbers bucket under products/ prefix
+                bucket = barbersBucket;
+                key = path.substring("products/".length());
             } else if (path.startsWith(galleryBucket + "/")) {
                 bucket = galleryBucket;
                 key = path.substring(galleryBucket.length() + 1);
+            } else if (path.startsWith(barbersBucket + "/")) {
+                bucket = barbersBucket;
+                key = path.substring(barbersBucket.length() + 1);
+            } else if (!path.contains("/") && !path.startsWith("http")) {
+                // Bare object key (e.g., "uuid.jpg") — assume barbers bucket
+                bucket = barbersBucket;
+                key = path;
+            } else if (path.startsWith("avatars/")) {
+                bucket = avatarsBucket;
+                key = path.substring("avatars/".length());
             } else {
-                // Not a managed MinIO URL — skip
-                log.debug("URL does not match any managed bucket, skipping deletion: {}", url);
+                // Not a managed MinIO URL or object key — skip
+                log.debug("Value does not match any managed bucket, skipping deletion: {}", url);
                 return;
             }
 

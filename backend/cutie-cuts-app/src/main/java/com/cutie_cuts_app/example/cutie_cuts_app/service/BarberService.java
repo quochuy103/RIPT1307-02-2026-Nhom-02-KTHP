@@ -85,7 +85,7 @@ public class BarberService {
         Barber saved = barberRepository.save(barber);
 
         // Clean up old managed MinIO image when replaced with a new one
-        if (result.wasStored() && oldImage != null && !oldImage.isBlank() && !oldImage.equals(newImage)) {
+        if (oldImage != null && !oldImage.isBlank() && !oldImage.equals(newImage)) {
             imageStorageService.deleteImage(oldImage);
         }
 

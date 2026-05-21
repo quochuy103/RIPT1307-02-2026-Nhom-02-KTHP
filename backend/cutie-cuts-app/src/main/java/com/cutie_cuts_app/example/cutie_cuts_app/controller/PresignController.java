@@ -1,0 +1,55 @@
+package com.cutie_cuts_app.example.cutie_cuts_app.controller;
+
+import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.PresignRequest;
+import com.cutie_cuts_app.example.cutie_cuts_app.service.PresignService;
+import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+
+@RestController
+@RequestMapping("/api/uploads")
+@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
+public class PresignController {
+
+    private final PresignService presignService;
+
+    public PresignController(PresignService presignService) {
+        this.presignService = presignService;
+    }
+
+    @PostMapping("/presign")
+    public Map<String, Object> presign(@Valid @RequestBody PresignRequest request,
+                                        Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (presignService.isAdminContext(request.getContext()) && !isAdmin) {
+            throw new ResponseStatusException(FORBIDDEN,
+                    "Only admins can upload images for context: " + request.getContext());
+        }
+
+        PresignService.PresignResult result = presignService.generateUploadUrl(
+                request.getContext(),
+                request.getContentType(),
+                request.getSizeBytes());
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("uploadUrl", result.uploadUrl());
+        response.put("objectKey", result.objectKey());
+        response.put("publicUrl", result.publicUrl());
+        response.put("expiresInSeconds", result.expiresInSeconds());
+        response.put("headers", result.headers());
+        return response;
+    }
+}
