@@ -7,6 +7,7 @@ import FormModal from '@/components/admin/FormModal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
+import ImageUploader from '@/components/ImageUploader';
 
 const AdminGallery = () => {
   const [images, setImages] = useState(mockGallery);
@@ -77,7 +78,20 @@ const AdminGallery = () => {
 
       <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Image" onSubmit={handleUpload}>
         <div className="space-y-3">
-          <div><Label>Image URL</Label><Input value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://..." /></div>
+          <div>
+            <Label>Image</Label>
+            <ImageUploader
+              context="GALLERY"
+              onUploaded={(publicUrl) => setForm({ ...form, url: publicUrl })}
+              onError={(msg) => toast.error(msg)}
+            />
+            <Input
+              value={form.url}
+              onChange={(e) => setForm({ ...form, url: e.target.value })}
+              placeholder="Or paste image URL manually"
+              className="mt-2"
+            />
+          </div>
           <div><Label>Alt Text</Label><Input value={form.alt} onChange={(e) => setForm({ ...form, alt: e.target.value })} placeholder="Description" /></div>
         </div>
       </FormModal>

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import ImageUploader from '@/components/ImageUploader';
 
 const emptyProduct: Omit<AdminProduct, 'id'> = { name: '', price: 0, image: '/placeholder.svg', description: '', stock: 0, category: '' };
 const productsQueryKey = ['admin', 'products'] as const;
@@ -114,7 +115,21 @@ const AdminProducts = () => {
             <div><Label>Price ($)</Label><Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} /></div>
             <div><Label>Stock</Label><Input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} /></div>
           </div>
-          <div><Label>Image URL</Label><Input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} /></div>
+          <div>
+            <Label>Image</Label>
+            <ImageUploader
+              context="PRODUCT"
+              currentUrl={form.image !== '/placeholder.svg' ? form.image : undefined}
+              onUploaded={(publicUrl) => setForm({ ...form, image: publicUrl })}
+              onError={(msg) => toast.error(msg)}
+            />
+            <Input
+              value={form.image}
+              onChange={(e) => setForm({ ...form, image: e.target.value })}
+              placeholder="Or paste image URL manually"
+              className="mt-2"
+            />
+          </div>
           <div><Label>Description</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
         </div>
       </FormModal>

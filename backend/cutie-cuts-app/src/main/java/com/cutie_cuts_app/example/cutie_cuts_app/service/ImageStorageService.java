@@ -39,6 +39,12 @@ public class ImageStorageService {
         return DATA_URL_PATTERN.matcher(value).matches();
     }
 
+    public static boolean isManagedUrl(String value) {
+        if (value == null || value.isBlank()) return false;
+        if (isDataUrl(value)) return false;
+        return true;
+    }
+
     public ParsedImage parseDataUrl(String dataUrl) {
         Matcher matcher = DATA_URL_PATTERN.matcher(dataUrl);
         if (!matcher.matches()) {
