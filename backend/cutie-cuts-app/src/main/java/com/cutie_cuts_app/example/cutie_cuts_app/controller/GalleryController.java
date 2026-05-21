@@ -5,6 +5,10 @@ import com.cutie_cuts_app.example.cutie_cuts_app.dto.gallery.GalleryImageRespons
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.GalleryImage;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.GalleryImageRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.GalleryImageService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +41,13 @@ public class GalleryController {
             @RequestParam(defaultValue = "20") int size) {
         List<GalleryImageResponse> images = galleryImageService.findAll(category, page, size);
         return ResponseEntity.status(OK).body(images);
+    }
+
+    @GetMapping("/page")
+    public ResponseEntity<Page<GalleryImageResponse>> getAllPaginated(
+            @PageableDefault(size = 20) Pageable pageable) {
+        Page<GalleryImage> images = galleryImageRepository.findAll(pageable);
+        return ResponseEntity.ok(images.map(GalleryImageResponse::from));
     }
 
     @GetMapping("/{id}")

@@ -4,6 +4,8 @@ import com.cutie_cuts_app.example.cutie_cuts_app.dto.product.ProductRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.product.ProductResponse;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.Product;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ProductRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +18,11 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final ImageStorageService imageStorageService;
 
-    public ProductService(ProductRepository productRepository) {
+    public ProductService(ProductRepository productRepository, ImageStorageService imageStorageService) {
         this.productRepository = productRepository;
+        this.imageStorageService = imageStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -26,6 +30,11 @@ public class ProductService {
         return productRepository.findByDeletedFalse().stream()
                 .map(ProductResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> findAllPaginated(Pageable pageable) {
+        return productRepository.findAll(pageable).map(ProductResponse::from);
     }
 
     @Transactional(readOnly = true)
@@ -72,9 +81,11 @@ public class ProductService {
     public ProductResponse update(Long id, ProductRequest request) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
+        String oldImage = product.getImage();
         product.setName(request.getName());
         product.setPrice(request.getPrice());
-        product.setImage(request.getImage());
+        String newImage = request.getImage();
+        product.setImage(newImage);
         if (request.getRating() != null) {
             product.setRating(request.getRating());
         }
@@ -82,6 +93,12 @@ public class ProductService {
         product.setDescription(request.getDescription());
         product.setStock(request.getStock());
         Product saved = productRepository.save(product);
+
+        if (oldImage != null && !oldImage.isBlank() && !oldImage.equals(newImage)
+                && ImageStorageService.isManagedUrl(oldImage)) {
+            imageStorageService.deleteImage(oldImage);
+        }
+
         return ProductResponse.from(saved);
     }
 
@@ -89,6 +106,7 @@ public class ProductService {
     public void delete(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
+        imageStorageService.deleteImage(product.getImage());
         product.setDeleted(true);
         product.setDeletedAt(java.time.LocalDateTime.now());
     }

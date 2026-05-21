@@ -8,6 +8,9 @@ import com.cutie_cuts_app.example.cutie_cuts_app.service.BookingService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +40,15 @@ public class BookingController {
     @GetMapping
     public List<Map<String, Object>> getAll() {
         return bookingService.getBookings().stream().map(this::toResponse).toList();
+    }
+
+    @GetMapping("/page")
+    public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable,
+            Authentication authentication) {
+        if (authentication == null || !isAdmin(authentication)) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        return bookingService.getBookingsPaginated(pageable).map(this::toResponse);
     }
 
     @GetMapping("/my")

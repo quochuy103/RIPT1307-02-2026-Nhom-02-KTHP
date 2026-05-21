@@ -103,11 +103,23 @@ public class S3StorageService {
     }
 
     public String uploadBarberImage(byte[] imageBytes, String contentType, String extension) throws IOException {
-        ensureBucketExists(barbersBucket);
-        String key = UUID.randomUUID() + extension;
+        return uploadBytesToBucket(imageBytes, contentType, extension, barbersBucket);
+    }
+
+    public String uploadGalleryImage(byte[] imageBytes, String contentType, String extension) throws IOException {
+        return uploadBytesToBucket(imageBytes, contentType, extension, galleryBucket);
+    }
+
+    public String uploadProductImage(byte[] imageBytes, String contentType, String extension) throws IOException {
+        return uploadBytesToBucket(imageBytes, contentType, extension, galleryBucket);
+    }
+
+    public String uploadAvatarImage(byte[] imageBytes, String contentType, String extension, Long userId) throws IOException {
+        ensureBucketExists(avatarsBucket);
+        String key = "avatars/" + userId + "/" + UUID.randomUUID() + extension;
 
         PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(barbersBucket)
+                .bucket(avatarsBucket)
                 .key(key)
                 .contentType(contentType)
                 .acl("public-read")
@@ -115,7 +127,23 @@ public class S3StorageService {
 
         s3Client.putObject(request, RequestBody.fromBytes(imageBytes));
 
-        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), barbersBucket, key);
+        return String.format("%s/%s", publicUrl.replaceAll("/+$", ""), key);
+    }
+
+    private String uploadBytesToBucket(byte[] imageBytes, String contentType, String extension, String bucket) throws IOException {
+        ensureBucketExists(bucket);
+        String key = UUID.randomUUID() + extension;
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(contentType)
+                .acl("public-read")
+                .build();
+
+        s3Client.putObject(request, RequestBody.fromBytes(imageBytes));
+
+        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
     }
 
     private void applyPublicReadPolicy(String bucketName) {
