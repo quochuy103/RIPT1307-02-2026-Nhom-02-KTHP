@@ -5,8 +5,8 @@ import org.springframework.stereotype.Service;import org.springframework.web.ser
 import java.io.IOException;import java.util.Base64;import java.util.List;import java.util.regex.Matcher;import java.util.regex.Pattern;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
-
-@Servicepublic class ImageStorageService {
+@Service
+public class ImageStorageService {
 
 private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 private static final List<String> ALLOWED_MIME_TYPES = List.of(
@@ -42,12 +42,6 @@ public static boolean isDataUrl(String value) {
 public static boolean isManagedUrl(String url) {
     if (url == null || url.isBlank()) return false;
     return !isDataUrl(url);
-
-public static boolean isManagedUrl(String value) {
-    if (value == null || value.isBlank()) return false;
-    if (isDataUrl(value)) return false;
-    return true;
-
 }
 
 public ParsedImage parseDataUrl(String dataUrl) {
@@ -73,18 +67,9 @@ public ParsedImage parseDataUrl(String dataUrl) {
         throw new ResponseStatusException(BAD_REQUEST, "Image size must not exceed 5MB");
     }
 
-<<<<<<< HEAD
-
-    public static boolean isManagedUrl(String value) {
-        if (value == null || value.isBlank()) return false;
-        if (isDataUrl(value)) return false;
-        return true;
-
-=======
     if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
         throw new ResponseStatusException(BAD_REQUEST,
                 "Unsupported image type. Allowed: JPEG, PNG, WebP");
->>>>>>> 054a86e (savecommit)
     }
 
     return new ParsedImage(bytes, mimeType, extension);
