@@ -20,7 +20,7 @@ const CheckoutPage = () => {
 
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.phone || !form.address) { toast.error(t('checkout.fillAll')); return; }
+    if (!form.address) { toast.error(t('checkout.fillAll')); return; }
     if (items.length === 0) { toast.error(t('checkout.cartEmpty')); return; }
 
     setIsSubmitting(true);
@@ -63,7 +63,7 @@ const CheckoutPage = () => {
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
           <CheckCircle className="h-20 w-20 text-primary mx-auto mb-6" />
           <h2 className="font-display text-3xl font-bold mb-3">{t('checkout.orderPlaced')}</h2>
-          <p className="text-muted-foreground mb-6">{t('checkout.thankYou', { name: form.name })}</p>
+          <p className="text-muted-foreground mb-6">{t('checkout.thankYou')}</p>
           <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
             <Link to="/shop">{t('checkout.continueShopping')}</Link>
           </Button>

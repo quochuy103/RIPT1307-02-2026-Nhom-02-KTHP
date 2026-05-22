@@ -141,6 +141,20 @@ const Navbar = () => {
               ))}
               {isAuthenticated ? (
                 <>
+                  <Link
+                    to="/my-bookings"
+                    onClick={() => setIsOpen(false)}
+                    className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                  >
+                    {t('nav.myBookings')}
+                  </Link>
+                  <Link
+                    to="/my-orders"
+                    onClick={() => setIsOpen(false)}
+                    className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                  >
+                    {t('nav.myOrders')}
+                  </Link>
                   <button
                     type="button"
                     onClick={handleLogout}

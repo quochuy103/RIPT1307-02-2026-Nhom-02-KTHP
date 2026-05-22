@@ -15,7 +15,7 @@ const GalleryPage = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        setImages(await api.getGallery());
+        setImages(await api.gallery.getAll());
       } catch {
         // keep fallback
       }

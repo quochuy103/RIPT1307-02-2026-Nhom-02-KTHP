@@ -10,6 +10,7 @@ import type {
   AdminUser,
 } from '@/data/adminMockData';
 import { dispatchUnauthorizedEvent } from '@/lib/auth-events';
+import type { OrderStatus, OrderStatusUpdate } from '@/types/order';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8081';
 
@@ -50,7 +51,7 @@ export interface Order {
   products: { name: string; qty: number; price: number }[];
   totalPrice: number;
   address: string;
-  status: 'pending' | 'paid' | 'shipping' | 'shipped' | 'cancelled' | string;
+  status: OrderStatus;
   createdAt: string;
 }
 
@@ -192,78 +193,6 @@ const mapOrder = (row: OrderRow): Order => ({
 });
 
 export const api = {
-  getServices: async (): Promise<Service[]> => {
-    const rows = await request<Array<{ id: number; name: string; description: string; price: number; duration: number; category: string }>>('/api/services');
-    return rows.map((row) => ({
-      id: String(row.id),
-      nameKey: '',
-      descKey: '',
-      name: row.name,
-      description: row.description,
-      price: row.price,
-      duration: row.duration,
-      category: row.category as Service['category'],
-    }));
-  },
-
-  getBarbers: async (): Promise<Barber[]> => {
-    const rows = await request<Array<{ id: number; name: string; role: string; image: string; experience: number; specialties: string; rating: number }>>('/api/barbers');
-    return rows.map((row) => ({
-      id: String(row.id),
-      name: row.name,
-      role: row.role,
-      image: row.image,
-      experience: row.experience,
-      specialties: row.specialties ? row.specialties.split(',').map((s) => s.trim()).filter(Boolean) : [],
-      rating: row.rating,
-    }));
-  },
-
-  getProducts: async (): Promise<Product[]> => {
-    const rows = await request<Array<{ id: number; name: string; price: number; image: string; rating: number; category: string; description: string }>>('/api/products');
-    return rows.map((row) => ({
-      id: String(row.id),
-      name: row.name,
-      price: row.price,
-      image: row.image,
-      rating: row.rating,
-      category: row.category,
-      description: row.description,
-    }));
-  },
-
-  getReviews: async (): Promise<Review[]> => {
-    const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>('/api/reviews');
-    return rows.map((row) => ({
-      id: String(row.id),
-      name: row.userName,
-      rating: row.rating,
-      commentKey: '',
-      comment: row.comment,
-      date: row.date,
-      avatar: initials(row.userName),
-    }));
-  },
-
-  getGallery: async (): Promise<GalleryImage[]> => {
-    const rows = await request<Array<{ id: number; url: string; alt: string; category: string }>>('/api/gallery');
-    return rows.map((row) => ({
-      id: String(row.id),
-      src: row.url,
-      alt: row.alt,
-      category: row.category as GalleryImage['category'],
-    }));
-  },
-
-  createBooking: async (payload: { serviceId: number; barberId: number; date: string; time: string }) => {
-    return request('/api/bookings', { method: 'POST', body: JSON.stringify(payload) }, true);
-
-  },
-
-  createOrder: async (payload: { address: string; items: Array<{ productId: number; quantity: number }> }) => {
-    return request('/api/orders', { method: 'POST', body: JSON.stringify(payload) }, true);
-  },
-
   services: {
     getAll: async (): Promise<Service[]> => {
       const rows = await request<ServiceRow[]>('/api/services');
@@ -282,6 +211,33 @@ export const api = {
     getAll: async (): Promise<Product[]> => {
       const rows = await request<ProductRow[]>('/api/products');
       return rows.map(mapProduct);
+    },
+  },
+
+  reviews: {
+    getAll: async (): Promise<Review[]> => {
+      const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>('/api/reviews');
+      return rows.map((row) => ({
+        id: String(row.id),
+        name: row.userName,
+        rating: row.rating,
+        commentKey: '',
+        comment: row.comment,
+        date: row.date,
+        avatar: initials(row.userName),
+      }));
+    },
+  },
+
+  gallery: {
+    getAll: async (): Promise<GalleryImage[]> => {
+      const rows = await request<Array<{ id: number; url: string; alt: string; category: string }>>('/api/gallery');
+      return rows.map((row) => ({
+        id: String(row.id),
+        src: row.url,
+        alt: row.alt,
+        category: row.category as GalleryImage['category'],
+      }));
     },
   },
 
@@ -352,7 +308,7 @@ export const api = {
       const rows = await request<Array<{ id: number; userId: number; customerName: string; products: AdminOrder['products']; totalPrice: number; address: string; status: AdminOrder['status']; createdAt: string }>>('/api/orders', undefined, true);
       return rows.map((r) => ({ ...r, id: String(r.id), userId: String(r.userId) }));
     },
-    updateOrderStatus: async (id: string, status: AdminOrder['status']) => request(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
+    updateOrderStatus: async (id: string, status: OrderStatusUpdate) => request(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
 
     getReviews: async (): Promise<AdminReview[]> => {
       const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>('/api/reviews');
