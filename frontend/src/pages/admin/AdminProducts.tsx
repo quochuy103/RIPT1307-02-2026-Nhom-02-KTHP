@@ -14,13 +14,21 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import ImageUploader from '@/components/ImageUploader';
 
 const emptyProduct: Omit<AdminProduct, 'id'> = { name: '', price: 0, image: '/placeholder.svg', description: '', stock: 0, category: '' };
+
+interface ProductFormState extends Omit<AdminProduct, 'id'> {
+  objectKey: string;
+  contentType: string;
+  fileSize: number;
+}
+
+const emptyForm: ProductFormState = { ...emptyProduct, objectKey: '', contentType: '', fileSize: 0 };
 const productsQueryKey = ['admin', 'products'] as const;
 
 const AdminProducts = () => {
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdminProduct | null>(null);
-  const [form, setForm] = useState(emptyProduct);
+  const [form, setForm] = useState<ProductFormState>(emptyForm);
 
   const { data: products = [], isLoading, isError, error } = useQuery({
     queryKey: productsQueryKey,
@@ -58,8 +66,8 @@ const AdminProducts = () => {
     onError: (error) => toast.error(error instanceof Error ? error.message : 'Delete failed'),
   });
 
-  const openCreate = () => { setEditing(null); setForm(emptyProduct); setModalOpen(true); };
-  const openEdit = (p: AdminProduct) => { setEditing(p); setForm(p); setModalOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(emptyForm); setModalOpen(true); };
+  const openEdit = (p: AdminProduct) => { setEditing(p); setForm({ ...p, objectKey: '', contentType: '', fileSize: 0 }); setModalOpen(true); };
 
   const handleSubmit = () => {
     if (!form.name) { toast.error('Name is required'); return; }
@@ -120,7 +128,7 @@ const AdminProducts = () => {
             <ImageUploader
               context="PRODUCT"
               currentUrl={form.image !== '/placeholder.svg' ? form.image : undefined}
-              onUploaded={(publicUrl) => setForm({ ...form, image: publicUrl })}
+              onUploaded={(publicUrl, objectKey, contentType, fileSize) => setForm({ ...form, image: publicUrl, objectKey, contentType, fileSize })}
               onError={(msg) => toast.error(msg)}
             />
             <Input

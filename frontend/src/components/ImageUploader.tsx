@@ -1,23 +1,14 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, X } from 'lucide-react';
-
-interface PresignResponse {
-  uploadUrl: string;
-  objectKey: string;
-  publicUrl: string;
-  expiresInSeconds: number;
-  headers: Record<string, string>;
-}
+import { uploadImage, uploadToStorage, type UploadContext, type PresignResult } from '@/services/uploadService';
 
 interface ImageUploaderProps {
-  context: 'BARBER' | 'GALLERY' | 'PRODUCT' | 'AVATAR';
+  context: UploadContext;
   currentUrl?: string;
-  onUploaded: (publicUrl: string, objectKey: string) => void;
+  onUploaded: (publicUrl: string, objectKey: string, contentType: string, fileSize: number) => void;
   onError?: (message: string) => void;
 }
-
-const MAX_SIZE = 5 * 1024 * 1024;
 
 export default function ImageUploader({ context, currentUrl, onUploaded, onError }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
@@ -25,54 +16,23 @@ export default function ImageUploader({ context, currentUrl, onUploaded, onError
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
-    if (file.size > MAX_SIZE) {
-      onError?.('File must be under 5 MB');
-      return;
-    }
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      onError?.('Only JPEG, PNG, WebP, and GIF images are allowed');
-      return;
-    }
-
     setUploading(true);
     try {
-      const token = localStorage.getItem('cutie_cuts_token');
+      let result: { publicUrl: string; objectKey: string; contentType: string; fileSize: number };
 
-      const presignRes = await fetch('http://localhost:8081/api/uploads/presign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          context,
-          fileName: file.name,
-          contentType: file.type,
-          sizeBytes: file.size,
-        }),
-      });
-
-      if (!presignRes.ok) {
-        const err = await presignRes.json().catch(() => ({}));
-        throw new Error(err.message || err.error || `Presign failed (${presignRes.status})`);
+      if (context === 'AVATAR') {
+        const r = await uploadImage({ file, context: 'AVATAR' });
+        result = { publicUrl: r.publicUrl, objectKey: r.objectKey, contentType: file.type, fileSize: file.size };
+      } else if (context === 'GALLERY') {
+        const r = await uploadToStorage(file, 'GALLERY');
+        result = { publicUrl: r.publicUrl, objectKey: r.objectKey, contentType: r.contentType, fileSize: r.fileSize };
+      } else {
+        const r = await uploadToStorage(file, context);
+        result = { publicUrl: r.publicUrl, objectKey: r.objectKey, contentType: r.contentType, fileSize: r.fileSize };
       }
 
-      const presign = (await presignRes.json()) as PresignResponse;
-
-      const uploadRes = await fetch(presign.uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error(`Direct upload to storage failed (${uploadRes.status})`);
-      }
-
-      setPreview(presign.publicUrl);
-      onUploaded(presign.publicUrl, presign.objectKey);
+      setPreview(result.publicUrl);
+      onUploaded(result.publicUrl, result.objectKey, result.contentType, result.fileSize);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Upload failed';
       onError?.(msg);
