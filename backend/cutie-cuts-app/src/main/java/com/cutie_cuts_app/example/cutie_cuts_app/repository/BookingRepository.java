@@ -22,6 +22,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     long countByUser(User user);
     long countByUserAndStatusIgnoreCase(User user, String status);
     Optional<Booking> findFirstByUserOrderByCreatedAtDesc(User user);
+    boolean existsByUserAndDateAndStatusNot(User user, LocalDate date, String status);
     Optional<Booking> findByBarberAndDateAndTime(Barber barber, LocalDate date, LocalTime time);
     boolean existsByBarberAndDateAndTimeAndStatusNot(Barber barber, LocalDate date, LocalTime time, String status);
     long countByUserAndStatusAndCancelledAtBetween(User user, String status, LocalDateTime start, LocalDateTime end);

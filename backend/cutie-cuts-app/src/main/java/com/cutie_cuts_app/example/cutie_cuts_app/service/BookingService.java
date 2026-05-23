@@ -80,6 +80,10 @@ public class BookingService {
         Barber barber = barberRepository.findById(request.getBarberId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Barber not found"));
 
+        if (bookingRepository.existsByUserAndDateAndStatusNot(user, request.getDate(), "cancelled")) {
+            throw new ResponseStatusException(BAD_REQUEST, "You can only book one appointment per day");
+        }
+
         if (bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
                 barber,
                 request.getDate(),

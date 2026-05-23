@@ -77,6 +77,7 @@ class BookingServiceTest {
 
         when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
         when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
+        when(bookingRepository.existsByUserAndDateAndStatusNot(user, request.getDate(), "cancelled")).thenReturn(false);
         when(bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
                 barber,
                 request.getDate(),
@@ -92,6 +93,28 @@ class BookingServiceTest {
                 request.getDate(),
                 request.getTime(),
                 "cancelled");
+    }
+
+    @Test
+    void createBookingRejectsSecondActiveBookingForSameDay() {
+        User user = createUser(10L, "Customer");
+        Barber barber = createBarber(20L, "Barber A");
+        SalonService service = createSalonService(30L, "Haircut", 120);
+        CreateBookingRequest request = new CreateBookingRequest();
+        request.setBarberId(20L);
+        request.setServiceId(30L);
+        request.setDate(LocalDate.of(2026, 5, 20));
+        request.setTime(LocalTime.of(10, 0));
+
+        when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
+        when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
+        when(bookingRepository.existsByUserAndDateAndStatusNot(user, request.getDate(), "cancelled")).thenReturn(true);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> bookingService.createBooking(user, request));
+
+        assertEquals("You can only book one appointment per day", exception.getReason());
+        verify(bookingRepository, never()).save(any());
     }
 
     @Test
