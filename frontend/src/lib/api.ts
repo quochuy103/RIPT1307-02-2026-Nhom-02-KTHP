@@ -55,6 +55,28 @@ export interface Order {
   createdAt: string;
 }
 
+export interface UserProfile {
+  id: number;
+  name: string;
+  fullName?: string;
+  gender?: 'male' | 'female' | 'other' | string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  avatarUrl?: string | null;
+  role?: 'user' | 'admin' | string | null;
+  provider?: string | null;
+  accountProvider?: string | null;
+  createdAt?: string | null;
+}
+
+export interface UpdateUserProfilePayload {
+  fullName: string;
+  gender?: string | null;
+  phone?: string | null;
+  address?: string | null;
+}
+
 type OrderRow = {
   id: number;
   userId?: number;
@@ -64,6 +86,10 @@ type OrderRow = {
   address: string;
   status: Order['status'];
   createdAt: string;
+};
+
+type AvatarUploadResponse = {
+  url: string;
 };
 
 type BookingRow = {
@@ -127,6 +153,42 @@ async function requestWithNotFoundFallback<T>(path: string, fallbackPath: string
     }
     throw error;
   }
+}
+
+async function requestForm<T>(path: string, formData: FormData, auth = false): Promise<T> {
+  const headers = new Headers();
+
+  if (auth) {
+    const token = getToken();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, { method: 'POST', headers, body: formData });
+
+  if (auth && response.status === 401) {
+    dispatchUnauthorizedEvent();
+  }
+
+  if (!response.ok) {
+    let message = `Request failed (${response.status})`;
+    try {
+      const body = await response.json() as { message?: string; error?: string; detail?: string };
+      if (body.message) message = body.message;
+      else if (body.detail) message = body.detail;
+      else if (body.error) message = body.error;
+    } catch {
+      // ignore
+    }
+    throw new ApiError(message, response.status);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return await response.json() as T;
 }
 
 const initials = (name: string) => {
@@ -193,6 +255,18 @@ const mapOrder = (row: OrderRow): Order => ({
 });
 
 export const api = {
+  user: {
+    getMe: async (): Promise<UserProfile> => request<UserProfile>('/api/user/me', undefined, true),
+    updateProfile: async (payload: UpdateUserProfilePayload): Promise<UserProfile> => (
+      request<UserProfile>('/api/user/me', { method: 'PATCH', body: JSON.stringify(payload) }, true)
+    ),
+    uploadAvatar: async (file: File): Promise<AvatarUploadResponse> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return requestForm<AvatarUploadResponse>('/api/users/me/avatar', formData, true);
+    },
+  },
+
   services: {
     getAll: async (): Promise<Service[]> => {
       const rows = await request<ServiceRow[]>('/api/services');

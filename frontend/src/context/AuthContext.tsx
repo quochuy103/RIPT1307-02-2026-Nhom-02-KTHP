@@ -8,6 +8,7 @@ interface User {
   name: string;
   email: string;
   role: 'user' | 'admin';
+  avatarUrl?: string | null;
 }
 
 const isValidRole = (role: unknown): role is User['role'] => role === 'user' || role === 'admin';
@@ -29,6 +30,7 @@ const normalizeStoredUser = (value: unknown): User | null => {
     name: candidate.name,
     email: candidate.email,
     role: candidate.role,
+    avatarUrl: typeof candidate.avatarUrl === 'string' ? candidate.avatarUrl : null,
   };
 };
 
@@ -50,6 +52,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   oauthLogin: (provider: string, token: string) => Promise<void>;
   logout: (options?: LogoutOptions) => void;
+  syncUser: (user: User) => void;
 }
 
 interface LogoutOptions {
@@ -100,6 +103,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(auth.token);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(auth.user));
     localStorage.setItem(TOKEN_STORAGE_KEY, auth.token);
+  }, []);
+
+  const syncUser = useCallback((nextUser: User) => {
+    setUser(nextUser);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(nextUser));
   }, []);
 
   const clearAuth = useCallback(() => {
@@ -179,9 +187,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error('Session expired');
         }
 
-        const currentUser = await response.json() as User;
-        setUser(currentUser);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
+        const data = await response.json() as {
+          id: number;
+          name?: string;
+          fullName?: string;
+          email?: string;
+          role?: string;
+          avatarUrl?: string | null;
+        };
+
+        const normalizedRole = data.role === 'admin' ? 'admin' : 'user';
+        syncUser({
+          id: data.id,
+          name: data.fullName || data.name || '',
+          email: data.email || '',
+          role: normalizedRole,
+          avatarUrl: data.avatarUrl ?? null,
+        });
       } catch {
         clearAuth();
       } finally {
@@ -190,7 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     void restoreSession();
-  }, [clearAuth, token]);
+  }, [clearAuth, syncUser, token]);
 
   useEffect(() => {
     const handleUnauthorized = () => {
@@ -206,7 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [logout]);
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, isLoading, login, register, oauthLogin, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, isLoading, login, register, oauthLogin, logout, syncUser }}>
       {children}
     </AuthContext.Provider>
   );

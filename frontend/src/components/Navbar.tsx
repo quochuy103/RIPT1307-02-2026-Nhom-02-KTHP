@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,14 @@ const navLinks = [
   { to: '/about', labelKey: 'nav.about' },
   { to: '/contact', labelKey: 'nav.contact' },
 ];
+
+const getInitials = (name?: string | null) => {
+  if (!name) return 'U';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'U';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
+};
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -80,7 +89,10 @@ const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                    <User className="h-5 w-5" />
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatarUrl || undefined} alt={user?.name || 'User'} />
+                      <AvatarFallback className="text-xs">{getInitials(user?.name)}</AvatarFallback>
+                    </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -95,6 +107,9 @@ const Navbar = () => {
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
+                    <Link to="/profile">{t('nav.profile')}</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/my-bookings">{t('nav.myBookings')}</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -103,7 +118,7 @@ const Navbar = () => {
                   {user?.role === 'admin' && <DropdownMenuSeparator />}
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                    {t('nav.logout')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -142,6 +157,13 @@ const Navbar = () => {
               {isAuthenticated ? (
                 <>
                   <Link
+                    to="/profile"
+                    onClick={() => setIsOpen(false)}
+                    className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                  >
+                    {t('nav.profile')}
+                  </Link>
+                  <Link
                     to="/my-bookings"
                     onClick={() => setIsOpen(false)}
                     className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
@@ -161,7 +183,7 @@ const Navbar = () => {
                     className="flex items-center gap-2 py-2 text-sm font-medium text-destructive transition-colors hover:text-destructive/80"
                   >
                     <LogOut className="h-4 w-4" />
-                    Logout
+                    {t('nav.logout')}
                   </button>
                 </>
               ) : (
