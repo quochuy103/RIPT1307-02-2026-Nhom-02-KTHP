@@ -12,8 +12,13 @@ public class ProductRequest {
     @DecimalMin(value = "0.0", message = "Price must be non-negative")
     private Double price;
 
-    @NotBlank(message = "Image is required")
     private String image;
+
+    private String objectKey;
+
+    private String contentType;
+
+    private Long fileSize;
 
     @DecimalMin(value = "0.0", message = "Rating must be at least 0")
     @DecimalMax(value = "5.0", message = "Rating must be at most 5")
@@ -36,6 +41,12 @@ public class ProductRequest {
     public void setPrice(Double price) { this.price = price; }
     public String getImage() { return image; }
     public void setImage(String image) { this.image = image; }
+    public String getObjectKey() { return objectKey; }
+    public void setObjectKey(String objectKey) { this.objectKey = objectKey; }
+    public String getContentType() { return contentType; }
+    public void setContentType(String contentType) { this.contentType = contentType; }
+    public Long getFileSize() { return fileSize; }
+    public void setFileSize(Long fileSize) { this.fileSize = fileSize; }
     public Double getRating() { return rating; }
     public void setRating(Double rating) { this.rating = rating; }
     public String getCategory() { return category; }

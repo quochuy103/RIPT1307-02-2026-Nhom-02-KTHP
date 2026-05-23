@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -75,32 +74,28 @@ public class S3StorageService {
         applyPublicReadPolicy(bucketName);
     }
 
-    public String uploadFile(MultipartFile file, String bucket, String path) throws IOException {
-        ensureBucketExists(bucket);
-        String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String key = path + "/" + filename;
-
-        PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
-                .contentType(file.getContentType())
-                .build();
-
-        s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
-
-        // Return path-style URL: {publicUrl}/{key} where key = avatars/2/file or gallery/images/file
-        return String.format("%s/%s", publicUrl.replaceAll("/+$", ""), key);
+    public boolean objectExists(String bucket, String key) {
+        try {
+            s3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build());
+            return true;
+        } catch (NoSuchKeyException e) {
+            return false;
+        } catch (Exception e) {
+            log.warn("headObject failed for bucket={} key={}: {}", bucket, key, e.getMessage());
+            return false;
+        }
     }
 
-    public String uploadAvatar(MultipartFile file, Long userId) throws IOException {
-        String path = "avatars/" + userId;
-        return uploadFile(file, avatarsBucket, path);
+    public String derivePublicUrl(String bucket, String key) {
+        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
     }
 
-    public String uploadGalleryImage(MultipartFile file, String filename) throws IOException {
-        String path = "images";
-        return uploadFile(file, galleryBucket, path);
-    }
+    public String getAvatarsBucket() { return avatarsBucket; }
+    public String getGalleryBucket() { return galleryBucket; }
+    public String getBarbersBucket() { return barbersBucket; }
 
     public String uploadBarberImage(byte[] imageBytes, String contentType, String extension) throws IOException {
         return uploadBytesToBucket(imageBytes, contentType, extension, barbersBucket);
