@@ -354,20 +354,20 @@ export const api = {
       const rows = await request<Array<{ id: number; name: string; category: string; price: number; stock: number; image: string; description: string }>>('/api/products', undefined, true);
       return rows.map((r) => ({ id: String(r.id), name: r.name, category: r.category, price: r.price, stock: r.stock, image: r.image, description: r.description }));
     },
-    createProduct: async (payload: Omit<AdminProduct, 'id'>) => request('/api/products', { method: 'POST', body: JSON.stringify(payload) }, true),
-    updateProduct: async (id: string, payload: Omit<AdminProduct, 'id'>) => request(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, true),
+    createProduct: async (payload: Omit<AdminProduct, 'id'> & { objectKey?: string; contentType?: string; fileSize?: number }) => request('/api/products', { method: 'POST', body: JSON.stringify(payload) }, true),
+    updateProduct: async (id: string, payload: Omit<AdminProduct, 'id'> & { objectKey?: string; contentType?: string; fileSize?: number }) => request(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, true),
     deleteProduct: async (id: string) => request(`/api/products/${id}`, { method: 'DELETE' }, true),
 
     getBarbers: async (): Promise<AdminBarber[]> => {
       const rows = await request<Array<{ id: number; name: string; experience: number; image: string; specialties: string }>>('/api/barbers', undefined, true);
       return rows.map((r) => ({ id: String(r.id), name: r.name, experience: r.experience, avatar: r.image, specialties: r.specialties ? r.specialties.split(',').map((s) => s.trim()) : [] }));
     },
-    createBarber: async (payload: Omit<AdminBarber, 'id'>) => {
-      const body = { ...payload, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8 };
+    createBarber: async (payload: Omit<AdminBarber, 'id'> & { objectKey?: string; contentType?: string; fileSize?: number }) => {
+      const body = { name: payload.name, experience: payload.experience, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8, objectKey: payload.objectKey, contentType: payload.contentType, fileSize: payload.fileSize };
       return request('/api/barbers', { method: 'POST', body: JSON.stringify(body) }, true);
     },
-    updateBarber: async (id: string, payload: Omit<AdminBarber, 'id'>) => {
-      const body = { ...payload, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8 };
+    updateBarber: async (id: string, payload: Omit<AdminBarber, 'id'> & { objectKey?: string; contentType?: string; fileSize?: number }) => {
+      const body = { name: payload.name, experience: payload.experience, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8, objectKey: payload.objectKey, contentType: payload.contentType, fileSize: payload.fileSize };
       return request(`/api/barbers/${id}`, { method: 'PUT', body: JSON.stringify(body) }, true);
     },
     deleteBarber: async (id: string) => request(`/api/barbers/${id}`, { method: 'DELETE' }, true),
@@ -394,7 +394,6 @@ export const api = {
       const rows = await request<Array<{ id: number; url: string; alt: string; uploadedAt: string }>>('/api/gallery');
       return rows.map((r) => ({ ...r, id: String(r.id), uploadedAt: r.uploadedAt?.slice(0, 10) ?? '' }));
     },
-    createGalleryImage: async (payload: { url: string; alt: string }) => request('/api/gallery', { method: 'POST', body: JSON.stringify({ ...payload, category: 'modern' }) }),
     deleteGalleryImage: async (id: string) => request(`/api/gallery/${id}`, { method: 'DELETE' }),
 
     getUsers: async (): Promise<AdminUser[]> => {
