@@ -8,7 +8,9 @@
     "shop": "Shop",
     "gallery": "Gallery",
     "about": "About",
-    "contact": "Contact"
+    "contact": "Contact",
+    "profile": "Profile",
+    "logout": "Logout"
   },
   "hero": {
     "est": "Est. 2010",
@@ -246,6 +248,51 @@
     "passwordMismatch": "Passwords do not match",
     "accountCreated": "Account created!",
     "welcomeBackToast": "Welcome back!"
+  },
+  "profile": {
+    "title": "My",
+    "highlight": "Profile",
+    "subtitle": "View and update your account information",
+    "personalInfo": "Personal information",
+    "accountInfo": "Account information",
+    "edit": "Edit",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "empty": "No profile information was found.",
+    "unknown": "User",
+    "notProvided": "Not provided",
+    "changeAvatar": "Change avatar",
+    "avatarHint": "JPEG, PNG, WebP, or GIF up to 5 MB.",
+    "saveSuccess": "Profile updated.",
+    "avatarSuccess": "Avatar updated.",
+    "fields": {
+      "fullName": "Full name",
+      "phone": "Phone number",
+      "gender": "Gender",
+      "address": "Address",
+      "email": "Email",
+      "role": "Role",
+      "provider": "Provider",
+      "createdAt": "Created date"
+    },
+    "placeholders": {
+      "phone": "+1 (555) 000-0000",
+      "address": "Enter your address"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other"
+    },
+    "errors": {
+      "load": "Unable to load your profile.",
+      "save": "Unable to update your profile.",
+      "avatar": "Unable to update your avatar.",
+      "avatarType": "Only JPEG, PNG, WebP, or GIF images are allowed.",
+      "avatarSize": "Image must be under 5 MB.",
+      "nameRequired": "Full name is required.",
+      "refreshTitle": "Could not refresh profile"
+    }
   },
   "admin": {
     "title": "Admin",

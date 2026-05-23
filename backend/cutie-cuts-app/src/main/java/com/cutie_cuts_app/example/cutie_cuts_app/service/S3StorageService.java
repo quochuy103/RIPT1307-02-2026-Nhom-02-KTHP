@@ -88,12 +88,15 @@ public class S3StorageService {
 
         s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-        // Return path-style URL: {publicUrl}/{key} where key = avatars/2/file or gallery/images/file
-        return String.format("%s/%s", publicUrl.replaceAll("/+$", ""), key);
+        // MinIO path-style URL: {publicUrl}/{bucket}/{key}
+        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
     }
 
     public String uploadAvatar(MultipartFile file, Long userId) throws IOException {
-        String path = "avatars/" + userId;
+        // path = userId only, bucket = "avatars"
+        // → key = "{userId}/{uuid}_{filename}"
+        // → URL = http://localhost:9000/avatars/{userId}/{uuid}_{filename}
+        String path = String.valueOf(userId);
         return uploadFile(file, avatarsBucket, path);
     }
 
