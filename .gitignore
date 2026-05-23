@@ -3,9 +3,11 @@
 graphify-out/
 backend/graphify-out/
 backend/cutie-cuts-app/graphify-out/
-
-
-
+.codegraph/
+.claude-flow/
+agentdb.rvf.*
+agentdb.rvf
+ruvector.db
 # MCP and swarm config (local only)
 .mcp.json
 .swarm/
