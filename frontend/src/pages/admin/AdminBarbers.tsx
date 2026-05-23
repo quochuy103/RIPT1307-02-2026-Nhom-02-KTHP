@@ -14,13 +14,21 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import ImageUploader from '@/components/ImageUploader';
 
 const emptyBarber: Omit<AdminBarber, 'id'> = { name: '', experience: 0, avatar: '', specialties: [] };
+
+interface BarberFormState extends Omit<AdminBarber, 'id'> {
+  objectKey: string;
+  contentType: string;
+  fileSize: number;
+}
+
+const emptyForm: BarberFormState = { ...emptyBarber, objectKey: '', contentType: '', fileSize: 0 };
 const barbersQueryKey = ['admin', 'barbers'] as const;
 
 const AdminBarbers = () => {
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdminBarber | null>(null);
-  const [form, setForm] = useState(emptyBarber);
+  const [form, setForm] = useState<BarberFormState>(emptyForm);
 
   const { data: barbers = [], isLoading, isError, error } = useQuery({
     queryKey: barbersQueryKey,
@@ -58,8 +66,8 @@ const AdminBarbers = () => {
     onError: (error) => toast.error(error instanceof Error ? error.message : 'Delete failed'),
   });
 
-  const openCreate = () => { setEditing(null); setForm(emptyBarber); setModalOpen(true); };
-  const openEdit = (b: AdminBarber) => { setEditing(b); setForm(b); setModalOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(emptyForm); setModalOpen(true); };
+  const openEdit = (b: AdminBarber) => { setEditing(b); setForm({ ...b, objectKey: '', contentType: '', fileSize: 0 }); setModalOpen(true); };
 
   const handleSubmit = () => {
     if (!form.name) { toast.error('Name is required'); return; }
@@ -112,7 +120,7 @@ const AdminBarbers = () => {
             <ImageUploader
               context="BARBER"
               currentUrl={form.avatar}
-              onUploaded={(publicUrl) => setForm({ ...form, avatar: publicUrl })}
+              onUploaded={(publicUrl, objectKey, contentType, fileSize) => setForm({ ...form, avatar: publicUrl, objectKey, contentType, fileSize })}
               onError={(msg) => toast.error(msg)}
             />
             {form.avatar && (
