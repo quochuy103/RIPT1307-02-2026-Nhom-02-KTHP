@@ -6,13 +6,28 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
+import type { OrderStatus } from '@/types/order';
 
-const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  shipped: 'default',
-  shipping: 'secondary',
-  paid: 'secondary',
+const statusColors: Record<OrderStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   pending: 'outline',
-  cancelled: 'destructive'
+  paid: 'secondary',
+  shipping: 'secondary',
+  shipped: 'default',
+  delivered: 'default',
+  cancelled: 'destructive',
+};
+
+const formatOrderDate = (value: string) => {
+  if (!value) return '-';
+
+  const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+  const date = new Date(normalized);
+
+  if (!Number.isNaN(date.getTime())) {
+    return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: '2-digit' }).format(date);
+  }
+
+  return value.split(/[T ]/)[0] || '-';
 };
 
 const getOrderError = (error: unknown, fallback: string) => {
@@ -98,8 +113,8 @@ const MyOrdersPage = () => {
                           <span className="font-display text-sm font-semibold text-muted-foreground">
                             {t('myOrders.orderId')} #{order.id}
                           </span>
-                          <Badge variant={statusColors[order.status] ?? 'outline'}>
-                            {t(`myOrders.status.${order.status}`, { defaultValue: order.status })}
+                          <Badge variant={statusColors[order.status]}>
+                            {t(`myOrders.status.${order.status}`)}
                           </Badge>
                         </div>
 
@@ -124,7 +139,7 @@ const MyOrdersPage = () => {
                         <div className="grid gap-1.5 text-sm text-muted-foreground sm:grid-cols-2">
                           <span className="flex items-center gap-2">
                             <CalendarDays className="h-4 w-4 text-primary" />
-                            {order.createdAt ? order.createdAt.slice(0, 10) : '—'}
+                            {formatOrderDate(order.createdAt)}
                           </span>
                           <span className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-primary" />

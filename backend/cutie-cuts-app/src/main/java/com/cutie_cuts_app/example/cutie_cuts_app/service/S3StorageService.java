@@ -74,6 +74,31 @@ public class S3StorageService {
         applyPublicReadPolicy(bucketName);
     }
 
+
+    public String uploadFile(MultipartFile file, String bucket, String path) throws IOException {
+        ensureBucketExists(bucket);
+        String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String key = path + "/" + filename;
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(file.getContentType())
+                .build();
+
+        s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+        // MinIO path-style URL: {publicUrl}/{bucket}/{key}
+        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
+    }
+
+    public String uploadAvatar(MultipartFile file, Long userId) throws IOException {
+        // path = userId only, bucket = "avatars"
+        // → key = "{userId}/{uuid}_{filename}"
+        // → URL = http://localhost:9000/avatars/{userId}/{uuid}_{filename}
+        String path = String.valueOf(userId);
+        return uploadFile(file, avatarsBucket, path);
+
     public boolean objectExists(String bucket, String key) {
         try {
             s3Client.headObject(HeadObjectRequest.builder()
@@ -91,6 +116,7 @@ public class S3StorageService {
 
     public String derivePublicUrl(String bucket, String key) {
         return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
+
     }
 
     public String getAvatarsBucket() { return avatarsBucket; }

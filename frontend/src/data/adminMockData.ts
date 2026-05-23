@@ -1,3 +1,5 @@
+import type { OrderStatus } from '@/types/order';
+
 export interface AdminUser {
   id: string;
   name: string;
@@ -40,7 +42,7 @@ export interface AdminOrder {
   products: { name: string; qty: number; price: number }[];
   totalPrice: number;
   address: string;
-  status: 'pending' | 'paid' | 'shipping' | 'shipped' | 'cancelled';
+  status: OrderStatus;
   createdAt: string;
 }
 

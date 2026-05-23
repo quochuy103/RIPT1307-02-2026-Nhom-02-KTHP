@@ -8,7 +8,9 @@
     "shop": "Cửa hàng",
     "gallery": "Bộ sưu tập",
     "about": "Giới thiệu",
-    "contact": "Liên hệ"
+    "contact": "Liên hệ",
+    "profile": "Trang cá nhân",
+    "logout": "Đăng xuất"
   },
   "hero": {
     "est": "Thành lập 2010",
@@ -151,14 +153,14 @@
     "shipping": "Phí vận chuyển",
     "free": "Miễn phí",
     "total": "Tổng cộng",
-    "fullName": "Họ và tên",
-    "phone": "Số điện thoại",
+    "fullName": "Họ và tên (không bắt buộc)",
+    "phone": "Số điện thoại (không bắt buộc)",
     "address": "Địa chỉ giao hàng",
     "placeOrder": "Đặt Hàng",
     "orderPlaced": "Đặt Hàng Thành Công!",
-    "thankYou": "Cảm ơn bạn, {{name}}. Chúng tôi sẽ liên hệ sớm.",
+    "thankYou": "Đơn hàng của bạn đã được ghi nhận.",
     "continueShopping": "Tiếp Tục Mua Sắm",
-    "fillAll": "Vui lòng điền đầy đủ thông tin",
+    "fillAll": "Vui lòng nhập địa chỉ giao hàng.",
     "cartEmpty": "Giỏ hàng trống",
     "errorUnauthenticated": "Vui lòng đăng nhập để đặt hàng.",
     "errorStock": "Một hoặc nhiều sản phẩm đã hết hàng.",
@@ -176,7 +178,10 @@
     "total": "Tổng cộng",
     "status": {
       "pending": "Chờ xử lý",
+      "paid": "Đã thanh toán",
       "shipping": "Đang giao",
+      "shipped": "Đã gửi hàng",
+      "cancelled": "Đã hủy",
       "delivered": "Đã giao"
     }
   },
@@ -243,6 +248,51 @@
     "passwordMismatch": "Mật khẩu không khớp",
     "accountCreated": "Tạo tài khoản thành công!",
     "welcomeBackToast": "Chào mừng trở lại!"
+  },
+  "profile": {
+    "title": "Trang",
+    "highlight": "Cá Nhân",
+    "subtitle": "Xem và cập nhật thông tin tài khoản của bạn",
+    "personalInfo": "Thông tin cá nhân",
+    "accountInfo": "Thông tin tài khoản",
+    "edit": "Chỉnh sửa",
+    "save": "Lưu thay đổi",
+    "cancel": "Hủy",
+    "empty": "Không tìm thấy thông tin hồ sơ.",
+    "unknown": "Người dùng",
+    "notProvided": "Chưa cập nhật",
+    "changeAvatar": "Đổi ảnh đại diện",
+    "avatarHint": "Ảnh JPEG, PNG, WebP hoặc GIF, tối đa 5 MB.",
+    "saveSuccess": "Đã cập nhật hồ sơ.",
+    "avatarSuccess": "Đã cập nhật ảnh đại diện.",
+    "fields": {
+      "fullName": "Họ và tên",
+      "phone": "Số điện thoại",
+      "gender": "Giới tính",
+      "address": "Địa chỉ",
+      "email": "Email",
+      "role": "Vai trò",
+      "provider": "Nhà cung cấp",
+      "createdAt": "Ngày tạo"
+    },
+    "placeholders": {
+      "phone": "+84 xxx xxx xxx",
+      "address": "Nhập địa chỉ của bạn"
+    },
+    "gender": {
+      "male": "Nam",
+      "female": "Nữ",
+      "other": "Khác"
+    },
+    "errors": {
+      "load": "Không thể tải hồ sơ.",
+      "save": "Không thể cập nhật hồ sơ.",
+      "avatar": "Không thể cập nhật ảnh đại diện.",
+      "avatarType": "Chỉ hỗ trợ ảnh JPEG, PNG, WebP hoặc GIF.",
+      "avatarSize": "Ảnh phải nhỏ hơn 5 MB.",
+      "nameRequired": "Vui lòng nhập họ và tên.",
+      "refreshTitle": "Không thể làm mới hồ sơ"
+    }
   },
   "admin": {
     "title": "Bảng Điều Khiển",
