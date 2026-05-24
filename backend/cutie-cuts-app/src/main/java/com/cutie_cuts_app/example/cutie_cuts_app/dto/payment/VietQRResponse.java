@@ -37,7 +37,10 @@ public class VietQRResponse {
     }
 
     public static class VietQRData {
+        @JsonProperty("qrCode")
         private String qrCode;
+
+        @JsonProperty("qrDataURL")
         private String qrDataURL;
 
         public VietQRData() {
