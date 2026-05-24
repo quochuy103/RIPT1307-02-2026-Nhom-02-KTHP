@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -98,6 +99,7 @@ public class S3StorageService {
         // → URL = http://localhost:9000/avatars/{userId}/{uuid}_{filename}
         String path = String.valueOf(userId);
         return uploadFile(file, avatarsBucket, path);
+    }
 
     public boolean objectExists(String bucket, String key) {
         try {
