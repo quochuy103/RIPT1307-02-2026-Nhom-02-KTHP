@@ -17,15 +17,21 @@ public class ResendEmailService implements EmailService {
 
     private final Resend resend;
     private final String mailFrom;
+    private final int passwordResetOtpExpiryMinutes;
+    private final int emailVerificationOtpExpiryMinutes;
 
     public ResendEmailService(
             @Value("${app.resend.api-key}") String apiKey,
-            @Value("${app.mail.from}") String mailFrom) {
+            @Value("${app.mail.from}") String mailFrom,
+            @Value("${app.password-reset.otp-expiry-minutes}") int passwordResetOtpExpiryMinutes,
+            @Value("${app.email-verification.otp-expiry-minutes}") int emailVerificationOtpExpiryMinutes) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("RESEND_API_KEY is required when APP_MAIL_PROVIDER=resend");
         }
         this.resend = new Resend(apiKey);
         this.mailFrom = mailFrom;
+        this.passwordResetOtpExpiryMinutes = passwordResetOtpExpiryMinutes;
+        this.emailVerificationOtpExpiryMinutes = emailVerificationOtpExpiryMinutes;
     }
 
     @Override
@@ -40,11 +46,11 @@ public class ResendEmailService implements EmailService {
                     %s
                   </div>
                   <p style="margin-top: 24px; font-size: 14px; color: #666;">
-                    Mã này sẽ hết hạn sau 10 phút.<br/>
+                    Mã này sẽ hết hạn sau %d phút.<br/>
                     Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.
                   </p>
                 </div>
-                """.formatted(otp);
+                """.formatted(passwordResetOtpExpiryMinutes, otp);
 
         try {
             CreateEmailOptions params = CreateEmailOptions.builder()
@@ -74,11 +80,11 @@ public class ResendEmailService implements EmailService {
                     %s
                   </div>
                   <p style="margin-top: 24px; font-size: 14px; color: #666;">
-                    Mã này sẽ hết hạn sau 10 phút.<br/>
+                    Mã này sẽ hết hạn sau %d phút.<br/>
                     Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email.
                   </p>
                 </div>
-                """.formatted(otp);
+                """.formatted(emailVerificationOtpExpiryMinutes, otp);
 
         try {
             CreateEmailOptions params = CreateEmailOptions.builder()
