@@ -15,6 +15,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
+
 @Service
 public class ReviewService {
 
@@ -75,6 +79,8 @@ public class ReviewService {
 
     @Transactional
     public ReviewResponse create(ReviewRequest request, Long userId) {
+        validateReviewRequest(request);
+
         User user = userRepository.getReferenceById(userId);
 
         Review review = new Review();
@@ -86,6 +92,15 @@ public class ReviewService {
             Booking booking = bookingRepository.findById(request.getBookingId())
                     .orElseThrow(() -> new ResponseStatusException(
                             org.springframework.http.HttpStatus.NOT_FOUND, "Booking not found"));
+            if (!booking.getUser().getId().equals(userId)) {
+                throw new ResponseStatusException(FORBIDDEN, "You can only review your own bookings");
+            }
+            if (!"done".equalsIgnoreCase(booking.getStatus())) {
+                throw new ResponseStatusException(BAD_REQUEST, "Cannot review a booking that is not completed");
+            }
+            if (reviewRepository.existsByBookingId(booking.getId())) {
+                throw new ResponseStatusException(CONFLICT, "You have already reviewed this booking");
+            }
             review.setBooking(booking);
             review.setService(booking.getService());
             review.setBarber(booking.getBarber());
@@ -106,6 +121,24 @@ public class ReviewService {
 
         Review saved = reviewRepository.save(review);
         return ReviewResponse.from(saved);
+    }
+
+    private void validateReviewRequest(ReviewRequest request) {
+        if (request.getRating() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Rating is required");
+        }
+        if (request.getRating() < 1) {
+            throw new ResponseStatusException(BAD_REQUEST, "Rating must be at least 1");
+        }
+        if (request.getRating() > 5) {
+            throw new ResponseStatusException(BAD_REQUEST, "Rating must be at most 5");
+        }
+        if (request.getComment() == null || request.getComment().isBlank()) {
+            throw new ResponseStatusException(BAD_REQUEST, "Comment is required");
+        }
+        if (request.getBookingId() == null && request.getServiceId() == null && request.getBarberId() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Review target is required");
+        }
     }
 
     @Transactional

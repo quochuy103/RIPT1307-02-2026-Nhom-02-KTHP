@@ -123,3 +123,10 @@ drop index if exists idx_booking_active_slot_unique;
 create unique index if not exists idx_booking_active_slot_unique
     on bookings (barber_id, "date", "time")
     where lower(status) <> 'cancelled';
+
+alter table if exists reviews
+    drop constraint if exists chk_reviews_rating_range;
+
+alter table if exists reviews
+    add constraint chk_reviews_rating_range
+    check (rating between 1 and 5) not valid;

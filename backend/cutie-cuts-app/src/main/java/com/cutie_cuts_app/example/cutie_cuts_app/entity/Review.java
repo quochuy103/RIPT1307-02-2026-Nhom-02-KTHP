@@ -1,5 +1,8 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.entity;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -42,6 +45,9 @@ public class Review {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    @NotNull(message = "Rating is required")
+    @Min(value = 1, message = "Rating must be at least 1")
+    @Max(value = 5, message = "Rating must be at most 5")
     @Column(nullable = false)
     private Integer rating;
 

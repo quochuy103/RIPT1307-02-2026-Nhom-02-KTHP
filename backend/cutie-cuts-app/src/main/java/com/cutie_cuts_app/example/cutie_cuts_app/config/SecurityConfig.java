@@ -65,7 +65,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/bookings/my").authenticated()
                         .requestMatchers(HttpMethod.GET, "/bookings").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/bookings").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/bookings/{id}/status").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/bookings/{id}/status").hasRole("ADMIN")
                         .requestMatchers("/bookings/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
