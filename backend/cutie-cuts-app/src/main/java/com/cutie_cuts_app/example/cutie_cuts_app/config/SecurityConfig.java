@@ -24,9 +24,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final InMemoryRateLimiter rateLimiter;
 
-    public SecurityConfig(JwtFilter jwtFilter) {
+    public SecurityConfig(JwtFilter jwtFilter, InMemoryRateLimiter rateLimiter) {
         this.jwtFilter = jwtFilter;
+        this.rateLimiter = rateLimiter;
     }
 
     @Bean
@@ -43,24 +45,35 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**", "/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/barbers/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/services/**").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/{id}/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/bookings").hasRole("ADMIN")
                         .requestMatchers("/api/barbers/**").hasRole("ADMIN")
                         .requestMatchers("/api/products/**").hasRole("ADMIN")
                         .requestMatchers("/api/services/**").hasRole("ADMIN")
                         .requestMatchers("/api/bookings/**").authenticated()
                         .requestMatchers("/api/reviews/**").authenticated()
-                        .requestMatchers("/api/gallery/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/gallery/confirm").hasRole("ADMIN")
+                        .requestMatchers("/api/gallery/**").authenticated()
                         .requestMatchers("/api/orders/**").authenticated()
                         .requestMatchers("/api/payments/**").authenticated()
                         .requestMatchers("/api/webhooks/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/notifications/**").authenticated()
-                        .requestMatchers("/api/users/me/avatar").authenticated()
-                        .requestMatchers("/users/**").hasRole("ADMIN")
-                        .requestMatchers("/user/register").permitAll()
-                        .requestMatchers("/user/**").authenticated()
+                        .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers("/api/uploads/**").authenticated()
+                        .requestMatchers("/api/users/me/avatar/**").authenticated()
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/user/register").permitAll()
+                        .requestMatchers("/api/user/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/bookings/my").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/bookings").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/bookings").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/bookings/{id}/status").authenticated()
+                        .requestMatchers("/bookings/**").authenticated()
                         .anyRequest().permitAll())
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new RateLimitFilter(rateLimiter), JwtFilter.class);
 
         return http.build();
     }

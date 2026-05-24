@@ -4,6 +4,9 @@ import com.cutie_cuts_app.example.cutie_cuts_app.dto.service.SalonServiceRequest
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.service.SalonServiceResponse;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.SalonServiceService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +27,12 @@ public class SalonServiceController {
     @GetMapping
     public ResponseEntity<List<SalonServiceResponse>> getAll() {
         return ResponseEntity.ok(salonServiceService.findAll());
+    }
+
+    @GetMapping("/page")
+    public ResponseEntity<Page<SalonServiceResponse>> getAllPaginated(
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(salonServiceService.findAllPaginated(pageable));
     }
 
     @GetMapping("/{id}")

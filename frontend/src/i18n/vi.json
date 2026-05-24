@@ -3,10 +3,14 @@
     "home": "Trang chủ",
     "services": "Dịch vụ",
     "bookNow": "Đặt lịch",
+    "myBookings": "Lịch hẹn của tôi",
+    "myOrders": "Đơn hàng của tôi",
     "shop": "Cửa hàng",
     "gallery": "Bộ sưu tập",
     "about": "Giới thiệu",
-    "contact": "Liên hệ"
+    "contact": "Liên hệ",
+    "profile": "Trang cá nhân",
+    "logout": "Đăng xuất"
   },
   "hero": {
     "est": "Thành lập 2010",
@@ -52,7 +56,9 @@
       "styling": "Tạo kiểu",
       "coloring": "Nhuộm",
       "grooming": "Chăm sóc"
-    }
+    },
+    "empty": "Hiện chưa có dịch vụ nào.",
+    "loadError": "Không thể tải dịch vụ. Tạm thời hiển thị dữ liệu dự phòng."
   },
   "serviceItems": {
     "classicHaircut": "Cắt Tóc Cổ Điển",
@@ -102,15 +108,34 @@
       "serviceRequired": "Vui lòng chọn dịch vụ",
       "barberRequired": "Vui lòng chọn barber",
       "dateRequired": "Vui lòng chọn ngày",
-      "timeRequired": "Vui lòng chọn giờ"
+      "timeRequired": "Vui lòng chọn giờ",
+      "submitFailed": "Không thể tạo lịch hẹn. Vui lòng thử lại."
     },
     "successToast": "Đặt lịch thành công!"
+  },
+  "myBookings": {
+    "title": "Lịch Hẹn",
+    "highlight": "Của Tôi",
+    "subtitle": "Xem và quản lý các lịch hẹn sắp tới của bạn",
+    "empty": "Bạn chưa có lịch hẹn nào.",
+    "loadError": "Không thể tải lịch hẹn của bạn.",
+    "cancel": "Hủy Lịch",
+    "cancelConfirm": "Bạn có chắc muốn hủy lịch hẹn này?",
+    "cancelSuccess": "Đã hủy lịch hẹn.",
+    "cancelError": "Không thể hủy lịch hẹn.",
+    "status": {
+      "pending": "Chờ xử lý",
+      "confirmed": "Đã xác nhận",
+      "done": "Hoàn tất",
+      "cancelled": "Đã hủy"
+    }
   },
   "shop": {
     "title": "Cửa",
     "highlight": "Hàng",
     "subtitle": "Sản phẩm chăm sóc tóc cao cấp tại nhà",
-    "add": "Thêm"
+    "add": "Thêm",
+    "empty": "Hiện chưa có sản phẩm nào."
   },
   "cart": {
     "title": "Giỏ Hàng",
@@ -128,15 +153,58 @@
     "shipping": "Phí vận chuyển",
     "free": "Miễn phí",
     "total": "Tổng cộng",
-    "fullName": "Họ và tên",
-    "phone": "Số điện thoại",
+    "fullName": "Họ và tên (không bắt buộc)",
+    "phone": "Số điện thoại (không bắt buộc)",
     "address": "Địa chỉ giao hàng",
+    "paymentMethod": "Phương Thức Thanh Toán",
+    "payQR": "QR / Chuyển Khoản",
+    "payCOD": "Tiền mặt khi nhận hàng",
     "placeOrder": "Đặt Hàng",
     "orderPlaced": "Đặt Hàng Thành Công!",
-    "thankYou": "Cảm ơn bạn, {{name}}. Chúng tôi sẽ liên hệ sớm.",
+    "thankYou": "Đơn hàng của bạn đã được ghi nhận.",
     "continueShopping": "Tiếp Tục Mua Sắm",
-    "fillAll": "Vui lòng điền đầy đủ thông tin",
-    "cartEmpty": "Giỏ hàng trống"
+    "fillAll": "Vui lòng nhập địa chỉ giao hàng.",
+    "cartEmpty": "Giỏ hàng trống",
+    "errorUnauthenticated": "Vui lòng đăng nhập để đặt hàng.",
+    "errorStock": "Một hoặc nhiều sản phẩm đã hết hàng.",
+    "errorValidation": "Thông tin đặt hàng không hợp lệ. Vui lòng kiểm tra lại.",
+    "errorServer": "Đặt hàng thất bại. Vui lòng thử lại.",
+    "errorPayment": "Khởi tạo thanh toán thất bại. Đơn hàng đã được tạo. Vui lòng thử lại từ Đơn Hàng Của Tôi.",
+    "scanQR": "Quét Mã QR",
+    "qrInstruction": "Quét mã QR bằng ứng dụng ngân hàng để hoàn tất thanh toán. Đơn hàng sẽ được cập nhật tự động.",
+    "paymentCode": "Mã Thanh Toán",
+    "paymentAmount": "Số Tiền",
+    "bankInfo": "Ngân Hàng",
+    "bankAccount": "Số Tài Khoản",
+    "waitingPayment": "Đang Chờ Thanh Toán",
+    "paymentSuccess": "Thanh Toán Thành Công!",
+    "paymentSuccessMsg": "Thanh toán đã được xác nhận. Cảm ơn bạn!",
+    "paymentExpired": "Hết Hạn Thanh Toán",
+    "paymentExpiredMsg": "Thời gian thanh toán đã hết. Vui lòng đặt đơn mới.",
+    "paymentFailed": "Thanh Toán Thất Bại",
+    "viewMyOrders": "Xem Đơn Hàng",
+    "expiresIn": "Hết hạn sau",
+    "orderId": "Đơn hàng",
+    "qrUnavailable": "Không thể tạo mã QR",
+    "manualTransferHint": "Vui lòng dùng thông tin ngân hàng bên dưới để chuyển khoản thủ công."
+  },
+  "myOrders": {
+    "title": "Đơn Hàng",
+    "highlight": "Của Tôi",
+    "subtitle": "Theo dõi và xem lại lịch sử mua hàng của bạn",
+    "empty": "Bạn chưa có đơn hàng nào.",
+    "loadError": "Không thể tải đơn hàng của bạn.",
+    "orderId": "Đơn hàng",
+    "products": "Sản phẩm",
+    "total": "Tổng cộng",
+    "status": {
+      "pending": "Chờ xử lý",
+      "paid": "Đã thanh toán",
+      "shipping": "Đang giao",
+      "shipped": "Đã gửi hàng",
+      "cancelled": "Đã hủy",
+      "delivered": "Đã giao"
+    }
   },
   "gallery": {
     "title": "Bộ Sưu",
@@ -202,6 +270,51 @@
     "accountCreated": "Tạo tài khoản thành công!",
     "welcomeBackToast": "Chào mừng trở lại!"
   },
+  "profile": {
+    "title": "Trang",
+    "highlight": "Cá Nhân",
+    "subtitle": "Xem và cập nhật thông tin tài khoản của bạn",
+    "personalInfo": "Thông tin cá nhân",
+    "accountInfo": "Thông tin tài khoản",
+    "edit": "Chỉnh sửa",
+    "save": "Lưu thay đổi",
+    "cancel": "Hủy",
+    "empty": "Không tìm thấy thông tin hồ sơ.",
+    "unknown": "Người dùng",
+    "notProvided": "Chưa cập nhật",
+    "changeAvatar": "Đổi ảnh đại diện",
+    "avatarHint": "Ảnh JPEG, PNG, WebP hoặc GIF, tối đa 5 MB.",
+    "saveSuccess": "Đã cập nhật hồ sơ.",
+    "avatarSuccess": "Đã cập nhật ảnh đại diện.",
+    "fields": {
+      "fullName": "Họ và tên",
+      "phone": "Số điện thoại",
+      "gender": "Giới tính",
+      "address": "Địa chỉ",
+      "email": "Email",
+      "role": "Vai trò",
+      "provider": "Nhà cung cấp",
+      "createdAt": "Ngày tạo"
+    },
+    "placeholders": {
+      "phone": "+84 xxx xxx xxx",
+      "address": "Nhập địa chỉ của bạn"
+    },
+    "gender": {
+      "male": "Nam",
+      "female": "Nữ",
+      "other": "Khác"
+    },
+    "errors": {
+      "load": "Không thể tải hồ sơ.",
+      "save": "Không thể cập nhật hồ sơ.",
+      "avatar": "Không thể cập nhật ảnh đại diện.",
+      "avatarType": "Chỉ hỗ trợ ảnh JPEG, PNG, WebP hoặc GIF.",
+      "avatarSize": "Ảnh phải nhỏ hơn 5 MB.",
+      "nameRequired": "Vui lòng nhập họ và tên.",
+      "refreshTitle": "Không thể làm mới hồ sơ"
+    }
+  },
   "admin": {
     "title": "Bảng Điều Khiển",
     "highlight": "Quản Trị",
@@ -243,7 +356,10 @@
     "copyright": "© {{year}} Blade & Co. Bảo lưu mọi quyền."
   },
   "common": {
-    "yearsExperience": "năm kinh nghiệm"
+    "yearsExperience": "năm kinh nghiệm",
+    "loading": "Đang tải...",
+    "retry": "Thử lại",
+    "saving": "Vui lòng chờ..."
   },
   "reviews": {
     "r1": "Fade tốt nhất mà tôi từng có. Marcus đúng là một nghệ sĩ.",
