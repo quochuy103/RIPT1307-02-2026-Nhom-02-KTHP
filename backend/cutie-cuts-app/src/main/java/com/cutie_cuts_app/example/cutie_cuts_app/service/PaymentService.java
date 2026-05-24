@@ -3,23 +3,29 @@ package com.cutie_cuts_app.example.cutie_cuts_app.service;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.payment.PaymentResponse;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.payment.VietQRResponse;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.Payment;
-import com.cutie_cuts_app.example.cutie_cuts_app.entity.PaymentTransaction;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.ShopOrder;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.PaymentRepository;
-import com.cutie_cuts_app.example.cutie_cuts_app.repository.PaymentTransactionRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.BAD_GATEWAY;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 public class PaymentService {
@@ -27,7 +33,6 @@ public class PaymentService {
     private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
 
     private final PaymentRepository paymentRepository;
-    private final PaymentTransactionRepository transactionRepository;
     private final ShopOrderRepository orderRepository;
     private final VietQRService vietQRService;
     private final CurrentUserService currentUserService;
@@ -42,12 +47,10 @@ public class PaymentService {
     private String accountName;
 
     public PaymentService(PaymentRepository paymentRepository,
-            PaymentTransactionRepository transactionRepository,
             ShopOrderRepository orderRepository,
             VietQRService vietQRService,
             CurrentUserService currentUserService) {
         this.paymentRepository = paymentRepository;
-        this.transactionRepository = transactionRepository;
         this.orderRepository = orderRepository;
         this.vietQRService = vietQRService;
         this.currentUserService = currentUserService;
@@ -55,17 +58,27 @@ public class PaymentService {
 
     @Transactional
     public PaymentResponse createPayment(Long orderId) {
+        if (orderId == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Order id is required");
+        }
+
         User currentUser = currentUserService.getCurrentUser();
 
         ShopOrder order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
 
         if (!order.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized access to order");
+            throw new ResponseStatusException(FORBIDDEN, "Unauthorized access to order");
         }
 
         if (!"pending".equalsIgnoreCase(order.getStatus())) {
-            throw new RuntimeException("Order is not in pending status");
+            throw new ResponseStatusException(CONFLICT, "Order is not in pending status");
+        }
+
+        Payment activePayment = resolveExistingPayment(order);
+        if (activePayment != null) {
+            logger.info("Reusing active payment {} for order {}", activePayment.getPaymentCode(), orderId);
+            return mapToResponse(activePayment);
         }
 
         String paymentCode = generatePaymentCode();
@@ -83,10 +96,14 @@ public class PaymentService {
         payment.setExpiredAt(LocalDateTime.now().plusMinutes(5));
 
         VietQRResponse qrResponse = vietQRService.generateQRCode(paymentCode, order.getTotalPrice());
+        if (qrResponse == null || qrResponse.getData() == null) {
+            throw new ResponseStatusException(BAD_GATEWAY, "Unable to generate QR code for payment");
+        }
 
-        if (qrResponse != null && qrResponse.getData() != null) {
-            payment.setQrCodeUrl(qrResponse.getData().getQrCode());
-            payment.setQrDataUrl(qrResponse.getData().getQrDataURL());
+        payment.setQrCodeUrl(qrResponse.getData().getQrCode());
+        payment.setQrDataUrl(qrResponse.getData().getQrDataURL());
+        if (isBlank(payment.getQrCodeUrl()) && isBlank(payment.getQrDataUrl())) {
+            throw new ResponseStatusException(BAD_GATEWAY, "Unable to generate QR code for payment");
         }
 
         payment = paymentRepository.save(payment);
@@ -97,14 +114,22 @@ public class PaymentService {
     }
 
     public PaymentResponse getPaymentByCode(String paymentCode) {
+        User currentUser = currentUserService.getCurrentUser();
         Payment payment = paymentRepository.findByPaymentCode(paymentCode)
-                .orElseThrow(() -> new RuntimeException("Payment not found"));
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Payment not found"));
+
+        if (!payment.getUser().getId().equals(currentUser.getId())) {
+            throw new ResponseStatusException(NOT_FOUND, "Payment not found");
+        }
+
+        expireIfNeeded(payment);
         return mapToResponse(payment);
     }
 
     public List<PaymentResponse> getUserPayments() {
         User currentUser = currentUserService.getCurrentUser();
         List<Payment> payments = paymentRepository.findByUserId(currentUser.getId());
+        payments.forEach(this::expireIfNeeded);
         return payments.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
@@ -118,6 +143,50 @@ public class PaymentService {
             paymentRepository.save(payment);
             logger.info("Payment expired: {}", payment.getPaymentCode());
         }
+    }
+
+    private Payment resolveExistingPayment(ShopOrder order) {
+        Payment activePendingPayment = null;
+
+        for (Payment existingPayment : paymentRepository.findByOrderId(order.getId())) {
+            expireIfNeeded(existingPayment);
+
+            if ("COMPLETED".equalsIgnoreCase(existingPayment.getStatus())) {
+                throw new ResponseStatusException(CONFLICT, "Order has already been paid");
+            }
+
+            if ("PENDING".equalsIgnoreCase(existingPayment.getStatus())) {
+                if (activePendingPayment == null) {
+                    activePendingPayment = existingPayment;
+                    continue;
+                }
+
+                LocalDateTime currentCreatedAt = activePendingPayment.getCreatedAt();
+                LocalDateTime candidateCreatedAt = existingPayment.getCreatedAt();
+                Comparator<LocalDateTime> comparator = Comparator.nullsFirst(Comparator.naturalOrder());
+                if (comparator.compare(currentCreatedAt, candidateCreatedAt) < 0) {
+                    activePendingPayment = existingPayment;
+                }
+            }
+        }
+
+        return activePendingPayment;
+    }
+
+    private void expireIfNeeded(Payment payment) {
+        if (!"PENDING".equalsIgnoreCase(payment.getStatus())) {
+            return;
+        }
+        if (payment.getExpiredAt() == null || !payment.getExpiredAt().isBefore(LocalDateTime.now())) {
+            return;
+        }
+
+        payment.setStatus("EXPIRED");
+        paymentRepository.save(payment);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private String generatePaymentCode() {
