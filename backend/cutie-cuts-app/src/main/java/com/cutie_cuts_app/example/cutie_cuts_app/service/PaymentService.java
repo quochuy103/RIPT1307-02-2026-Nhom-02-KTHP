@@ -64,7 +64,7 @@ public class PaymentService {
 
         User currentUser = currentUserService.getCurrentUser();
 
-        ShopOrder order = orderRepository.findById(orderId)
+        ShopOrder order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Order not found"));
 
         if (!order.getUser().getId().equals(currentUser.getId())) {
@@ -156,6 +156,14 @@ public class PaymentService {
             }
 
             if ("PENDING".equalsIgnoreCase(existingPayment.getStatus())) {
+                if (isBlank(existingPayment.getQrCodeUrl()) && isBlank(existingPayment.getQrDataUrl())) {
+                    existingPayment.setStatus("EXPIRED");
+                    paymentRepository.save(existingPayment);
+                    logger.warn("Marked legacy pending payment {} as expired because it has no QR payload",
+                            existingPayment.getPaymentCode());
+                    continue;
+                }
+
                 if (activePendingPayment == null) {
                     activePendingPayment = existingPayment;
                     continue;
