@@ -3,8 +3,8 @@ package com.cutie_cuts_app.example.cutie_cuts_app.dto.payment;
 public class VietQRRequest {
     private String accountNo;
     private String accountName;
-    private String acqId;
-    private Double amount;
+    private Long acqId;
+    private Integer amount;
     private String addInfo;
     private String format;
     private String template;
@@ -28,19 +28,19 @@ public class VietQRRequest {
         this.accountName = accountName;
     }
 
-    public String getAcqId() {
+    public Long getAcqId() {
         return acqId;
     }
 
-    public void setAcqId(String acqId) {
+    public void setAcqId(Long acqId) {
         this.acqId = acqId;
     }
 
-    public Double getAmount() {
+    public Integer getAmount() {
         return amount;
     }
 
-    public void setAmount(Double amount) {
+    public void setAmount(Integer amount) {
         this.amount = amount;
     }
 
