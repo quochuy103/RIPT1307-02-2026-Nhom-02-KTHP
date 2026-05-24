@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import type { OrderStatus } from '@/types/order';
+import { formatVND } from '@/lib/format';
 
 const statusColors: Record<OrderStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   pending: 'outline',
@@ -130,7 +131,7 @@ const MyOrdersPage = () => {
                                 <span>{p.name}</span>
                                 <span className="text-muted-foreground">× {p.qty}</span>
                               </span>
-                              <span className="text-muted-foreground">${(p.price * p.qty).toFixed(2)}</span>
+                              <span className="text-muted-foreground">{formatVND(p.price * p.qty)}</span>
                             </div>
                           ))}
                         </div>
@@ -151,7 +152,7 @@ const MyOrdersPage = () => {
                       {/* Total */}
                       <div className="flex flex-col items-end gap-1 min-w-[100px]">
                         <p className="text-xs text-muted-foreground">{t('myOrders.total')}</p>
-                        <p className="font-bold text-lg text-primary">${order.totalPrice.toFixed(2)}</p>
+                        <p className="font-bold text-lg text-primary">{formatVND(order.totalPrice)}</p>
                       </div>
                     </div>
                   </CardContent>
