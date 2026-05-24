@@ -136,13 +136,11 @@ public class OrderController {
             if (qty <= 0) {
                 throw new ResponseStatusException(BAD_REQUEST, "Quantity must be greater than 0");
             }
-            if (qty > product.getStock()) {
+
+            int updated = productRepository.deductStock(product.getId(), qty);
+            if (updated == 0) {
                 throw new ResponseStatusException(CONFLICT, "Not enough stock for: " + product.getName());
             }
-
-            // Deduct stock
-            product.setStock(product.getStock() - qty);
-            productRepository.save(product);
 
             OrderItem item = new OrderItem();
             item.setOrder(order);

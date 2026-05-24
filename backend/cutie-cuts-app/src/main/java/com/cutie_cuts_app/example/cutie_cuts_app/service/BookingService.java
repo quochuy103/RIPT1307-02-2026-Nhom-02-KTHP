@@ -22,6 +22,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
@@ -33,6 +34,15 @@ public class BookingService {
     private static final int MAX_DAILY_CANCELLATIONS = 3;
     private static final long MIN_CANCEL_NOTICE_MINUTES = 30;
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
+    // Per-slot lock registry for single-instance race-condition prevention.
+    // Key = "{barberId}_{date}_{time}". Lock is removed via remove(key, lock)
+    // so a replacement lock created by another thread is never discarded.
+    // TODO: Multi-instance deployments need a DB-level solution:
+    //   - partial unique index on (barber_id, date, time) WHERE status <> 'cancelled', or
+    //   - a dedicated booking_slots table, or
+    //   - a database advisory lock.
+    private final ConcurrentHashMap<String, Object> slotLocks = new ConcurrentHashMap<>();
 
     private final BookingRepository bookingRepository;
     private final SalonServiceRepository salonServiceRepository;
@@ -74,33 +84,48 @@ public class BookingService {
         return bookingRepository.findByUser(user);
     }
 
+    @Transactional
     public Booking createBooking(User user, CreateBookingRequest request) {
         SalonService service = salonServiceRepository.findById(request.getServiceId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Service not found"));
         Barber barber = barberRepository.findById(request.getBarberId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Barber not found"));
 
-        if (bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
-                barber,
-                request.getDate(),
-                request.getTime(),
-                "cancelled")) {
-            throw new SlotAlreadyBookedException();
+        LocalDateTime bookingDateTime = LocalDateTime.of(request.getDate(), request.getTime());
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (bookingDateTime.isBefore(now)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Booking date/time cannot be in the past");
         }
 
-        Booking booking = new Booking();
-        booking.setUser(user);
-        booking.setService(service);
-        booking.setBarber(barber);
-        booking.setDate(request.getDate());
-        booking.setTime(request.getTime());
-        booking.setPrice(service.getPrice().doubleValue());
+        String slotKey = barber.getId() + "_" + request.getDate() + "_" + request.getTime();
+        Object lock = slotLocks.computeIfAbsent(slotKey, k -> new Object());
+        synchronized (lock) {
+            try {
+                if (bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
+                        barber,
+                        request.getDate(),
+                        request.getTime(),
+                        "cancelled")) {
+                    throw new SlotAlreadyBookedException();
+                }
 
-        Booking saved = bookingRepository.save(booking);
-        notificationService.notify(user, NotificationType.BOOKING_CREATED,
-                "Booking created for " + service.getName() + " with " + barber.getName() + " on " + request.getDate() + " at " + request.getTime(),
-                "booking", saved.getId());
-        return saved;
+                Booking booking = new Booking();
+                booking.setUser(user);
+                booking.setService(service);
+                booking.setBarber(barber);
+                booking.setDate(request.getDate());
+                booking.setTime(request.getTime());
+                booking.setPrice(service.getPrice().doubleValue());
+
+                Booking saved = bookingRepository.save(booking);
+                notificationService.notify(user, NotificationType.BOOKING_CREATED,
+                        "Booking created for " + service.getName() + " with " + barber.getName() + " on " + request.getDate() + " at " + request.getTime(),
+                        "booking", saved.getId());
+                return saved;
+            } finally {
+                slotLocks.remove(slotKey, lock);
+            }
+        }
     }
 
     public Booking updateStatus(Long id, String status, User user, boolean isAdmin) {
