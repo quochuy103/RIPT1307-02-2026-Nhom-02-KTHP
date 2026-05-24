@@ -1,6 +1,8 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.dto.payment;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class PaymentResponse {
     private Long id;
@@ -13,8 +15,10 @@ public class PaymentResponse {
     private String bankAccount;
     private String bankCode;
     private String bankName;
-    private LocalDateTime expiredAt;
-    private LocalDateTime createdAt;
+    /** Serialized as UTC ISO-8601 with 'Z' suffix so browsers parse timezone correctly. */
+    private Instant expiredAt;
+    /** Serialized as UTC ISO-8601 with 'Z' suffix. */
+    private Instant createdAt;
 
     public PaymentResponse() {
     }
@@ -99,19 +103,20 @@ public class PaymentResponse {
         this.bankName = bankName;
     }
 
-    public LocalDateTime getExpiredAt() {
+    public Instant getExpiredAt() {
         return expiredAt;
     }
 
     public void setExpiredAt(LocalDateTime expiredAt) {
-        this.expiredAt = expiredAt;
+        // Convert LocalDateTime (server-local/UTC) to Instant so Jackson serializes with 'Z'
+        this.expiredAt = expiredAt != null ? expiredAt.toInstant(ZoneOffset.UTC) : null;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+        this.createdAt = createdAt != null ? createdAt.toInstant(ZoneOffset.UTC) : null;
     }
 }

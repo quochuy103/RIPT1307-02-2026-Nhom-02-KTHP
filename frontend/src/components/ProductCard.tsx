@@ -3,6 +3,7 @@ import { Product } from '@/data/mockData';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { formatVND } from '@/lib/format';
 
 interface Props {
   product: Product;
@@ -28,7 +29,7 @@ const ProductCard = ({ product }: Props) => {
           <span className="text-xs text-muted-foreground ml-1">{product.rating}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-primary font-bold text-lg">${product.price}</span>
+          <span className="text-primary font-bold text-lg">{formatVND(product.price)}</span>
           <Button size="sm" onClick={() => addToCart(product)} className="bg-primary text-primary-foreground hover:bg-primary/90">
             <ShoppingCart className="h-4 w-4 mr-1" /> {t('shop.add')}
           </Button>

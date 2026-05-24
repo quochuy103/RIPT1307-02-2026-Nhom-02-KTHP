@@ -184,7 +184,9 @@
     "paymentFailed": "Payment Failed",
     "viewMyOrders": "View My Orders",
     "expiresIn": "Expires in",
-    "orderId": "Order"
+    "orderId": "Order",
+    "qrUnavailable": "QR code is not available",
+    "manualTransferHint": "Please use the bank details below to complete your payment manually."
   },
   "myOrders": {
     "title": "My",

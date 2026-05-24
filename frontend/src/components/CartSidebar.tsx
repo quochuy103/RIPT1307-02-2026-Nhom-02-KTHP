@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { formatVND } from '@/lib/format';
 
 const CartSidebar = () => {
   const { items, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, totalPrice, totalItems } = useCart();
@@ -49,7 +50,7 @@ const CartSidebar = () => {
                       <img src={item.product.image} alt={item.product.name} className="w-16 h-16 object-cover rounded-md" />
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-medium truncate">{item.product.name}</h4>
-                        <p className="text-primary font-bold text-sm">${item.product.price}</p>
+                        <p className="text-primary font-bold text-sm">{formatVND(item.product.price)}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-1 bg-muted rounded hover:bg-primary/20 transition-colors">
                             <Minus className="h-3 w-3" />
@@ -73,7 +74,7 @@ const CartSidebar = () => {
               <div className="border-t border-border p-4">
                 <div className="flex justify-between mb-4">
                   <span className="font-medium">{t('cart.total')}</span>
-                  <span className="text-primary font-bold text-lg">${totalPrice.toFixed(2)}</span>
+                  <span className="text-primary font-bold text-lg">{formatVND(totalPrice)}</span>
                 </div>
                 <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsCartOpen(false)}>
                   <Link to="/checkout">{t('cart.checkout')}</Link>

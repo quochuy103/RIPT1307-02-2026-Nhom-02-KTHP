@@ -184,7 +184,9 @@
     "paymentFailed": "Thanh Toán Thất Bại",
     "viewMyOrders": "Xem Đơn Hàng",
     "expiresIn": "Hết hạn sau",
-    "orderId": "Đơn hàng"
+    "orderId": "Đơn hàng",
+    "qrUnavailable": "Không thể tạo mã QR",
+    "manualTransferHint": "Vui lòng dùng thông tin ngân hàng bên dưới để chuyển khoản thủ công."
   },
   "myOrders": {
     "title": "Đơn Hàng",

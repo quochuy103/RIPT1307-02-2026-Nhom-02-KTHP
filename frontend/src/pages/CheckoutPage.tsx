@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError, type PaymentInfo, type Order } from '@/lib/api';
+import { formatVND } from '@/lib/format';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,9 +52,7 @@ const formatCountdown = (seconds: number): string => {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
-/** Format amount as VND integer — backend uses Double which may be fractional */
-const formatAmount = (amount: number): string =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -94,11 +93,21 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (step !== 'waiting_payment' || !payment?.expiredAt) return;
 
-    const expiry = new Date(payment.expiredAt).getTime();
+    // Backend sends LocalDateTime without timezone (no 'Z' suffix).
+    // Docker/server runs UTC. Browser in Vietnam is UTC+7.
+    // Without 'Z', new Date() parses as local time → 7h behind actual UTC time → immediate expiry.
+    // Fix: always treat the timestamp as UTC by appending 'Z' if missing.
+    const rawExpiredAt = payment.expiredAt;
+    const utcString = rawExpiredAt.endsWith('Z') || rawExpiredAt.includes('+') || rawExpiredAt.includes('-', 10)
+      ? rawExpiredAt
+      : rawExpiredAt + 'Z';
+    const expiry = new Date(utcString).getTime();
+
     const tick = () => {
       const remaining = Math.max(0, Math.floor((expiry - Date.now()) / 1000));
       setCountdown(remaining);
-      if (remaining === 0) {
+      // Only trigger expiry if truly 0 (not NaN from a bad date parse)
+      if (remaining === 0 && !isNaN(expiry)) {
         stopPolling();
         setStep('payment_expired');
       }
@@ -323,14 +332,31 @@ const CheckoutPage = () => {
                 )}
               </div>
 
-              {/* QR Image */}
-              {(payment.qrCodeUrl || payment.qrDataUrl) && (
+              {/* QR Image — qrDataUrl is the actual data:image/png;base64 URL from VietQR.
+                   qrCodeUrl is the raw EMVCo text string (not usable as img src).
+                   Fallback: if VietQR is down and somehow null slips through, show manual
+                   bank-transfer instructions so the user is never left with nothing. */}
+              {payment.qrDataUrl ? (
                 <div className="flex justify-center p-6 bg-white">
                   <img
-                    src={payment.qrCodeUrl || payment.qrDataUrl || ''}
+                    src={payment.qrDataUrl}
                     alt={t('checkout.scanQR')}
                     className="w-56 h-56 object-contain rounded-lg"
                   />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3 p-6 text-center border-b border-yellow-500/20 bg-yellow-500/5">
+                  <AlertCircle className="h-8 w-8 text-yellow-500" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-600">
+                      {t('checkout.qrUnavailable', { defaultValue: 'QR code is not available' })}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t('checkout.manualTransferHint', {
+                        defaultValue: 'Please use the bank details below to transfer manually.',
+                      })}
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -348,7 +374,7 @@ const CheckoutPage = () => {
                 </div>
                 <div className="flex justify-between items-center border-t border-border pt-3">
                   <span className="text-sm text-muted-foreground">{t('checkout.paymentAmount')}</span>
-                  <span className="font-bold text-primary text-lg">{formatAmount(payment.amount)}</span>
+                  <span className="font-bold text-primary text-lg">{formatVND(payment.amount)}</span>
                 </div>
 
                 {(payment.bankName || payment.bankAccount) && (
@@ -444,7 +470,7 @@ const CheckoutPage = () => {
                     />
                     <div className="flex-1">
                       <h3 className="font-medium">{item.product.name}</h3>
-                      <p className="text-primary font-bold">${item.product.price}</p>
+                      <p className="text-primary font-bold">{formatVND(item.product.price)}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <button
                           onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
@@ -471,7 +497,7 @@ const CheckoutPage = () => {
                       </div>
                     </div>
                     <p className="font-bold text-primary self-center">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      {formatVND(item.product.price * item.quantity)}
                     </p>
                   </motion.div>
                 ))}
@@ -485,7 +511,7 @@ const CheckoutPage = () => {
               <h2 className="font-display text-xl font-semibold mb-4">{t('checkout.orderSummary')}</h2>
               <div className="flex justify-between mb-2 text-sm">
                 <span className="text-muted-foreground">{t('checkout.subtotal')}</span>
-                <span>${totalPrice.toFixed(2)}</span>
+                <span>{formatVND(totalPrice)}</span>
               </div>
               <div className="flex justify-between mb-4 text-sm">
                 <span className="text-muted-foreground">{t('checkout.shipping')}</span>
@@ -493,7 +519,7 @@ const CheckoutPage = () => {
               </div>
               <div className="flex justify-between font-bold text-lg border-t border-border pt-4 mb-6">
                 <span>{t('checkout.total')}</span>
-                <span className="text-primary">${totalPrice.toFixed(2)}</span>
+                <span className="text-primary">{formatVND(totalPrice)}</span>
               </div>
 
               <form onSubmit={handleOrder} className="space-y-3">
