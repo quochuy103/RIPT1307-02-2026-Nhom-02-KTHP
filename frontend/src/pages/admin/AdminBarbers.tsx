@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import DataTable, { Column } from '@/components/admin/DataTable';
-import { mockBarbers, AdminBarber } from '@/data/adminMockData';
+import type { AdminBarber } from '@/data/adminMockData';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,56 +10,73 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { api } from '@/lib/api';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import ImageUploader from '@/components/ImageUploader';
 
 const emptyBarber: Omit<AdminBarber, 'id'> = { name: '', experience: 0, avatar: '', specialties: [] };
 
+interface BarberFormState extends Omit<AdminBarber, 'id'> {
+  objectKey: string;
+  contentType: string;
+  fileSize: number;
+}
+
+const emptyForm: BarberFormState = { ...emptyBarber, objectKey: '', contentType: '', fileSize: 0 };
+const barbersQueryKey = ['admin', 'barbers'] as const;
+
 const AdminBarbers = () => {
-  const [barbers, setBarbers] = useState(mockBarbers);
+  const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdminBarber | null>(null);
-  const [form, setForm] = useState(emptyBarber);
+  const [form, setForm] = useState<BarberFormState>(emptyForm);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setBarbers(await api.admin.getBarbers());
-      } catch {
-        // keep fallback
-      }
-    };
-    void load();
-  }, []);
+  const { data: barbers = [], isLoading, isError, error } = useQuery({
+    queryKey: barbersQueryKey,
+    queryFn: api.admin.getBarbers,
+  });
 
-  const openCreate = () => { setEditing(null); setForm(emptyBarber); setModalOpen(true); };
-  const openEdit = (b: AdminBarber) => { setEditing(b); setForm(b); setModalOpen(true); };
+  const invalidateBarbers = () => queryClient.invalidateQueries({ queryKey: barbersQueryKey });
 
-  const handleSubmit = async () => {
-    if (!form.name) { toast.error('Name is required'); return; }
-    try {
-      if (editing) {
-        await api.admin.updateBarber(editing.id, form);
-        setBarbers((prev) => prev.map((b) => b.id === editing.id ? { ...b, ...form } : b));
-        toast.success('Barber updated');
-      } else {
-        await api.admin.createBarber(form);
-        setBarbers(await api.admin.getBarbers());
-        toast.success('Barber added');
-      }
+  const createMutation = useMutation({
+    mutationFn: api.admin.createBarber,
+    onSuccess: async () => {
+      await invalidateBarbers();
+      toast.success('Barber added');
       setModalOpen(false);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Save failed');
-    }
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'Save failed'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Omit<AdminBarber, 'id'> }) => api.admin.updateBarber(id, payload),
+    onSuccess: async () => {
+      await invalidateBarbers();
+      toast.success('Barber updated');
+      setModalOpen(false);
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'Save failed'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: api.admin.deleteBarber,
+    onSuccess: async () => {
+      await invalidateBarbers();
+      toast.success('Barber deleted');
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'Delete failed'),
+  });
+
+  const openCreate = () => { setEditing(null); setForm(emptyForm); setModalOpen(true); };
+  const openEdit = (b: AdminBarber) => { setEditing(b); setForm({ ...b, objectKey: '', contentType: '', fileSize: 0 }); setModalOpen(true); };
+
+  const handleSubmit = () => {
+    if (!form.name) { toast.error('Name is required'); return; }
+    if (!form.avatar) { toast.error('Avatar image is required'); return; }
+    if (editing) updateMutation.mutate({ id: editing.id, payload: form });
+    else createMutation.mutate(form);
   };
 
-  const deleteBarber = async (id: string) => {
-    try {
-      await api.admin.deleteBarber(id);
-      setBarbers((prev) => prev.filter((b) => b.id !== id));
-      toast.success('Barber deleted');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Delete failed');
-    }
-  };
+  const deleteBarber = (id: string) => deleteMutation.mutate(id);
 
   const columns: Column<AdminBarber>[] = [
     { key: 'avatar', label: 'Avatar', searchable: false, render: (b) => (
@@ -79,10 +97,17 @@ const AdminBarbers = () => {
         <Button onClick={openCreate}><Plus className="mr-1 h-4 w-4" /> Add Barber</Button>
       </div>
 
-      <DataTable data={barbers} columns={columns} searchPlaceholder="Search barbers..." actions={(b) => (
+      {isError && (
+        <Alert variant="destructive">
+          <AlertTitle>Could not load barbers</AlertTitle>
+          <AlertDescription>{error instanceof Error ? error.message : 'Please check your admin access and API route.'}</AlertDescription>
+        </Alert>
+      )}
+
+      <DataTable data={isLoading ? [] : barbers} columns={columns} searchPlaceholder={isLoading ? 'Loading barbers...' : 'Search barbers...'} actions={(b) => (
         <div className="flex items-center justify-end gap-1">
           <Button size="sm" variant="ghost" onClick={() => openEdit(b)}><Edit className="h-4 w-4" /></Button>
-          <Button size="sm" variant="ghost" onClick={() => deleteBarber(b.id)} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+          <Button size="sm" variant="ghost" onClick={() => deleteBarber(b.id)} className="text-destructive" disabled={deleteMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
         </div>
       )} />
 
@@ -90,7 +115,23 @@ const AdminBarbers = () => {
         <div className="space-y-3">
           <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div><Label>Experience (years)</Label><Input type="number" value={form.experience} onChange={(e) => setForm({ ...form, experience: Number(e.target.value) })} /></div>
-          <div><Label>Avatar URL</Label><Input value={form.avatar} onChange={(e) => setForm({ ...form, avatar: e.target.value })} /></div>
+          <div>
+            <Label>Avatar Image</Label>
+            <ImageUploader
+              context="BARBER"
+              currentUrl={form.avatar}
+              onUploaded={(publicUrl, objectKey, contentType, fileSize) => setForm({ ...form, avatar: publicUrl, objectKey, contentType, fileSize })}
+              onError={(msg) => toast.error(msg)}
+            />
+            {form.avatar && (
+              <Input
+                value={form.avatar}
+                placeholder="Or paste image URL manually"
+                onChange={(e) => setForm({ ...form, avatar: e.target.value })}
+                className="mt-2"
+              />
+            )}
+          </div>
           <div><Label>Specialties (comma-separated)</Label><Input value={form.specialties.join(', ')} onChange={(e) => setForm({ ...form, specialties: e.target.value.split(',').map((s) => s.trim()) })} /></div>
         </div>
       </FormModal>

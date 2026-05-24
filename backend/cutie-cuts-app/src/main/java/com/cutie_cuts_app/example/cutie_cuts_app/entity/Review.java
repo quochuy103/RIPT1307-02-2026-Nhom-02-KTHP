@@ -5,8 +5,13 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "reviews", indexes = {
-    @Index(name = "idx_review_user", columnList = "user_id")
-}, uniqueConstraints = @UniqueConstraint(columnNames = {"booking_id"}))
+    @Index(name = "idx_review_user", columnList = "user_id"),
+    @Index(name = "idx_review_product", columnList = "product_id"),
+    @Index(name = "idx_review_order", columnList = "order_id")
+}, uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"booking_id"}),
+    @UniqueConstraint(name = "uk_review_order_product", columnNames = {"order_id", "product_id"})
+})
 public class Review {
 
     @Id
@@ -28,6 +33,14 @@ public class Review {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "barber_id")
     private Barber barber;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private ShopOrder order;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private Product product;
 
     @Column(nullable = false)
     private Integer rating;
@@ -53,6 +66,10 @@ public class Review {
     public void setService(SalonService service) { this.service = service; }
     public Barber getBarber() { return barber; }
     public void setBarber(Barber barber) { this.barber = barber; }
+    public ShopOrder getOrder() { return order; }
+    public void setOrder(ShopOrder order) { this.order = order; }
+    public Product getProduct() { return product; }
+    public void setProduct(Product product) { this.product = product; }
     public Integer getRating() { return rating; }
     public void setRating(Integer rating) { this.rating = rating; }
     public String getComment() { return comment; }

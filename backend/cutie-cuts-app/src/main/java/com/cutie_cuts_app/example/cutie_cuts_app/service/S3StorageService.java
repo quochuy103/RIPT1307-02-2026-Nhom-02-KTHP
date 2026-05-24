@@ -40,6 +40,9 @@ public class S3StorageService {
     @Value("${s3.bucket-gallery:gallery}")
     private String galleryBucket;
 
+    @Value("${s3.bucket-barbers:barbers}")
+    private String barbersBucket;
+
     private S3Client s3Client;
 
     @PostConstruct
@@ -72,6 +75,7 @@ public class S3StorageService {
         applyPublicReadPolicy(bucketName);
     }
 
+
     public String uploadFile(MultipartFile file, String bucket, String path) throws IOException {
         ensureBucketExists(bucket);
         String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
@@ -85,18 +89,84 @@ public class S3StorageService {
 
         s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-        // Return path-style URL: {publicUrl}/{key} where key = avatars/2/file or gallery/images/file
-        return String.format("%s/%s", publicUrl.replaceAll("/+$", ""), key);
+        // MinIO path-style URL: {publicUrl}/{bucket}/{key}
+        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
     }
 
     public String uploadAvatar(MultipartFile file, Long userId) throws IOException {
-        String path = "avatars/" + userId;
+        // path = userId only, bucket = "avatars"
+        // → key = "{userId}/{uuid}_{filename}"
+        // → URL = http://localhost:9000/avatars/{userId}/{uuid}_{filename}
+        String path = String.valueOf(userId);
         return uploadFile(file, avatarsBucket, path);
     }
 
-    public String uploadGalleryImage(MultipartFile file, String filename) throws IOException {
-        String path = "images";
-        return uploadFile(file, galleryBucket, path);
+    public boolean objectExists(String bucket, String key) {
+        try {
+            s3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build());
+            return true;
+        } catch (NoSuchKeyException e) {
+            return false;
+        } catch (Exception e) {
+            log.warn("headObject failed for bucket={} key={}: {}", bucket, key, e.getMessage());
+            return false;
+        }
+    }
+
+    public String derivePublicUrl(String bucket, String key) {
+        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
+
+    }
+
+    public String getAvatarsBucket() { return avatarsBucket; }
+    public String getGalleryBucket() { return galleryBucket; }
+    public String getBarbersBucket() { return barbersBucket; }
+
+    public String uploadBarberImage(byte[] imageBytes, String contentType, String extension) throws IOException {
+        return uploadBytesToBucket(imageBytes, contentType, extension, barbersBucket);
+    }
+
+    public String uploadGalleryImage(byte[] imageBytes, String contentType, String extension) throws IOException {
+        return uploadBytesToBucket(imageBytes, contentType, extension, galleryBucket);
+    }
+
+    public String uploadProductImage(byte[] imageBytes, String contentType, String extension) throws IOException {
+        return uploadBytesToBucket(imageBytes, contentType, extension, galleryBucket);
+    }
+
+    public String uploadAvatarImage(byte[] imageBytes, String contentType, String extension, Long userId) throws IOException {
+        ensureBucketExists(avatarsBucket);
+        String key = "avatars/" + userId + "/" + UUID.randomUUID() + extension;
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(avatarsBucket)
+                .key(key)
+                .contentType(contentType)
+                .acl("public-read")
+                .build();
+
+        s3Client.putObject(request, RequestBody.fromBytes(imageBytes));
+
+        return String.format("%s/%s", publicUrl.replaceAll("/+$", ""), key);
+    }
+
+    private String uploadBytesToBucket(byte[] imageBytes, String contentType, String extension, String bucket) throws IOException {
+        ensureBucketExists(bucket);
+        String key = UUID.randomUUID() + extension;
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(contentType)
+                .acl("public-read")
+                .build();
+
+        s3Client.putObject(request, RequestBody.fromBytes(imageBytes));
+
+        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
     }
 
     private void applyPublicReadPolicy(String bucketName) {
@@ -129,15 +199,58 @@ public class S3StorageService {
     public void deleteFile(String url) {
         if (url == null || url.isBlank()) return;
         try {
-            String bucket = url.contains("/avatars/") ? avatarsBucket : galleryBucket;
-            String key = url.substring(url.indexOf(bucket) + bucket.length() + 1);
-            // Strip leading slash if present (handles URLs without trailing slash on publicUrl)
-            key = key.replaceFirst("^/+", "");
+            // Strip publicUrl prefix to get the object path
+            String path = url;
+            String normalizedPublicUrl = publicUrl.replaceAll("/+$", "");
+            if (url.startsWith(normalizedPublicUrl)) {
+                path = url.substring(normalizedPublicUrl.length());
+            } else if (url.startsWith("http://") || url.startsWith("https://")) {
+                // External URL — not managed by MinIO, skip
+                log.debug("External URL, skipping deletion: {}", url);
+                return;
+            }
+            path = path.replaceFirst("^/+", "");
+
+            String bucket;
+            String key;
+
+            if (path.startsWith(barbersBucket + "/")) {
+                bucket = barbersBucket;
+                key = path.substring(barbersBucket.length() + 1);
+            } else if (path.startsWith(avatarsBucket + "/")) {
+                bucket = avatarsBucket;
+                key = path.substring(avatarsBucket.length() + 1);
+            } else if (path.startsWith("images/")) {
+                bucket = galleryBucket;
+                key = path.substring("images/".length());
+            } else if (path.startsWith("products/")) {
+                // Product images stored in barbers bucket under products/ prefix
+                bucket = barbersBucket;
+                key = path.substring("products/".length());
+            } else if (path.startsWith(galleryBucket + "/")) {
+                bucket = galleryBucket;
+                key = path.substring(galleryBucket.length() + 1);
+            } else if (path.startsWith(barbersBucket + "/")) {
+                bucket = barbersBucket;
+                key = path.substring(barbersBucket.length() + 1);
+            } else if (!path.contains("/") && !path.startsWith("http")) {
+                // Bare object key (e.g., "uuid.jpg") — assume barbers bucket
+                bucket = barbersBucket;
+                key = path;
+            } else if (path.startsWith("avatars/")) {
+                bucket = avatarsBucket;
+                key = path.substring("avatars/".length());
+            } else {
+                // Not a managed MinIO URL or object key — skip
+                log.debug("Value does not match any managed bucket, skipping deletion: {}", url);
+                return;
+            }
 
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(bucket)
                     .key(key)
                     .build());
+            log.info("Deleted file from bucket {}: {}", bucket, key);
         } catch (Exception e) {
             log.warn("Failed to delete file {}: {}", url, e.getMessage());
         }

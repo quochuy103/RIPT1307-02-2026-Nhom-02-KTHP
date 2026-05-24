@@ -6,7 +6,13 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.Booking;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.BookingService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -14,11 +20,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
 @RequestMapping("/bookings")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
+@CrossOrigin(origins = { "http://localhost:8080", "http://localhost:5173" })
+@Tag(name = "Booking", description = "Booking management APIs")
 public class BookingController {
 
     private final BookingService bookingService;
@@ -34,6 +42,15 @@ public class BookingController {
         return bookingService.getBookings().stream().map(this::toResponse).toList();
     }
 
+    @GetMapping("/page")
+    public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable,
+            Authentication authentication) {
+        if (authentication == null || !isAdmin(authentication)) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        return bookingService.getBookingsPaginated(pageable).map(this::toResponse);
+    }
+
     @GetMapping("/my")
     public List<Map<String, Object>> myBookings(Authentication authentication) {
         if (authentication == null) {
@@ -44,9 +61,13 @@ public class BookingController {
     }
 
     @PostMapping
-    public Map<String, Object> create(@RequestBody CreateBookingRequest request, Authentication authentication) {
+    public Map<String, Object> create(@Valid @RequestBody CreateBookingRequest request, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        if (request.getServiceId() == null || request.getBarberId() == null
+                || request.getDate() == null || request.getTime() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Missing required fields: serviceId, barberId, date, time");
         }
         User user = currentUserService.getByEmail(authentication.getName());
         Booking booking = bookingService.createBooking(user, request);
@@ -54,17 +75,28 @@ public class BookingController {
     }
 
     @PatchMapping("/{id}/status")
-    public Map<String, Object> updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request, Authentication authentication) {
+    public Map<String, Object> updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request,
+            Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
+        String newStatus = request.getStatus();
+        if (!List.of("pending", "confirmed", "done", "cancelled").contains(newStatus)) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Invalid status. Allowed: pending, confirmed, done, cancelled");
+        }
         User user = currentUserService.getByEmail(authentication.getName());
+
         boolean isAdmin = isAdmin(authentication);
-        Booking booking = bookingService.updateStatus(id, request.getStatus(), user, isAdmin);
+        Booking booking = bookingService.updateStatus(id, newStatus, user, isAdmin);
+
         return toResponse(booking);
     }
 
     @PostMapping("/{id}/cancel")
+    @Operation(
+            summary = "Cancel a booking",
+            description = "Customers can cancel their own pending or confirmed bookings at most 3 times per day and only if the appointment is at least 30 minutes away. Admins can cancel without these two limits.")
     public Map<String, Object> cancel(@PathVariable Long id, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
