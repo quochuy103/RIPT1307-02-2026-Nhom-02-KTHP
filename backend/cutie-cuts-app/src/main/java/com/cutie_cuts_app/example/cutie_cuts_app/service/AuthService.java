@@ -97,9 +97,10 @@ public class AuthService {
         auth.setVerificationOtpLastSentAt(LocalDateTime.now());
 
         user.setAuthMethods(List.of(auth));
-        userRepository.save(user);
 
         emailService.sendRegistrationOtp(email, otp);
+
+        userRepository.save(user);
 
         return Map.of("message", "Registration successful. Please check your email for a verification code.");
     }
