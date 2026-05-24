@@ -12,8 +12,15 @@ public class BarberRequest {
     @Size(max = 100)
     private String role;
 
-    @NotBlank(message = "Image is required")
     private String image;
+
+    private String avatar;
+
+    private String objectKey;
+
+    private String contentType;
+
+    private Long fileSize;
 
     @NotNull(message = "Experience is required")
     @Min(value = 0, message = "Experience must be non-negative")
@@ -32,6 +39,14 @@ public class BarberRequest {
     public void setRole(String role) { this.role = role; }
     public String getImage() { return image; }
     public void setImage(String image) { this.image = image; }
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
+    public String getObjectKey() { return objectKey; }
+    public void setObjectKey(String objectKey) { this.objectKey = objectKey; }
+    public String getContentType() { return contentType; }
+    public void setContentType(String contentType) { this.contentType = contentType; }
+    public Long getFileSize() { return fileSize; }
+    public void setFileSize(Long fileSize) { this.fileSize = fileSize; }
     public Integer getExperience() { return experience; }
     public void setExperience(Integer experience) { this.experience = experience; }
     public String getSpecialties() { return specialties; }

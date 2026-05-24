@@ -3,10 +3,14 @@
     "home": "Home",
     "services": "Services",
     "bookNow": "Book Now",
+    "myBookings": "My Bookings",
+    "myOrders": "My Orders",
     "shop": "Shop",
     "gallery": "Gallery",
     "about": "About",
-    "contact": "Contact"
+    "contact": "Contact",
+    "profile": "Profile",
+    "logout": "Logout"
   },
   "hero": {
     "est": "Est. 2010",
@@ -52,7 +56,9 @@
       "styling": "Styling",
       "coloring": "Coloring",
       "grooming": "Grooming"
-    }
+    },
+    "empty": "No services are available right now.",
+    "loadError": "Unable to load services. Showing fallback services for now."
   },
   "serviceItems": {
     "classicHaircut": "Classic Haircut",
@@ -102,15 +108,34 @@
       "serviceRequired": "Select a service",
       "barberRequired": "Select a barber",
       "dateRequired": "Select a date",
-      "timeRequired": "Select a time"
+      "timeRequired": "Select a time",
+      "submitFailed": "Unable to create booking. Please try again."
     },
     "successToast": "Booking confirmed!"
+  },
+  "myBookings": {
+    "title": "My",
+    "highlight": "Bookings",
+    "subtitle": "Review and manage your upcoming appointments",
+    "empty": "You do not have any bookings yet.",
+    "loadError": "Unable to load your bookings.",
+    "cancel": "Cancel Booking",
+    "cancelConfirm": "Cancel this booking?",
+    "cancelSuccess": "Booking cancelled.",
+    "cancelError": "Unable to cancel booking.",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    }
   },
   "shop": {
     "title": "The",
     "highlight": "Shop",
     "subtitle": "Premium grooming products for home care",
-    "add": "Add"
+    "add": "Add",
+    "empty": "No products available right now."
   },
   "cart": {
     "title": "Cart",
@@ -128,15 +153,37 @@
     "shipping": "Shipping",
     "free": "Free",
     "total": "Total",
-    "fullName": "Full Name",
-    "phone": "Phone",
+    "fullName": "Full Name (optional)",
+    "phone": "Phone (optional)",
     "address": "Delivery Address",
     "placeOrder": "Place Order",
     "orderPlaced": "Order Placed!",
-    "thankYou": "Thank you, {{name}}. We'll contact you shortly.",
+    "thankYou": "Your order has been received.",
     "continueShopping": "Continue Shopping",
-    "fillAll": "Please fill all fields",
-    "cartEmpty": "Cart is empty"
+    "fillAll": "Please enter your delivery address.",
+    "cartEmpty": "Cart is empty",
+    "errorUnauthenticated": "Please sign in to place an order.",
+    "errorStock": "One or more items are out of stock.",
+    "errorValidation": "Invalid order details. Please check your cart.",
+    "errorServer": "Order failed. Please try again."
+  },
+  "myOrders": {
+    "title": "My",
+    "highlight": "Orders",
+    "subtitle": "Track and review your purchase history",
+    "empty": "You do not have any orders yet.",
+    "loadError": "Unable to load your orders.",
+    "orderId": "Order",
+    "products": "Products",
+    "total": "Total",
+    "status": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "shipping": "Shipping",
+      "shipped": "Shipped",
+      "cancelled": "Cancelled",
+      "delivered": "Delivered"
+    }
   },
   "gallery": {
     "title": "Our",
@@ -202,6 +249,51 @@
     "accountCreated": "Account created!",
     "welcomeBackToast": "Welcome back!"
   },
+  "profile": {
+    "title": "My",
+    "highlight": "Profile",
+    "subtitle": "View and update your account information",
+    "personalInfo": "Personal information",
+    "accountInfo": "Account information",
+    "edit": "Edit",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "empty": "No profile information was found.",
+    "unknown": "User",
+    "notProvided": "Not provided",
+    "changeAvatar": "Change avatar",
+    "avatarHint": "JPEG, PNG, WebP, or GIF up to 5 MB.",
+    "saveSuccess": "Profile updated.",
+    "avatarSuccess": "Avatar updated.",
+    "fields": {
+      "fullName": "Full name",
+      "phone": "Phone number",
+      "gender": "Gender",
+      "address": "Address",
+      "email": "Email",
+      "role": "Role",
+      "provider": "Provider",
+      "createdAt": "Created date"
+    },
+    "placeholders": {
+      "phone": "+1 (555) 000-0000",
+      "address": "Enter your address"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other"
+    },
+    "errors": {
+      "load": "Unable to load your profile.",
+      "save": "Unable to update your profile.",
+      "avatar": "Unable to update your avatar.",
+      "avatarType": "Only JPEG, PNG, WebP, or GIF images are allowed.",
+      "avatarSize": "Image must be under 5 MB.",
+      "nameRequired": "Full name is required.",
+      "refreshTitle": "Could not refresh profile"
+    }
+  },
   "admin": {
     "title": "Admin",
     "highlight": "Dashboard",
@@ -243,7 +335,10 @@
     "copyright": "© {{year}} Blade & Co. All rights reserved."
   },
   "common": {
-    "yearsExperience": "years experience"
+    "yearsExperience": "years experience",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "saving": "Please wait..."
   },
   "reviews": {
     "r1": "Best fade I've ever had. Marcus is a true artist.",

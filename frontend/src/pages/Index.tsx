@@ -28,10 +28,10 @@ const Index = () => {
     const loadData = async () => {
       try {
         const [loadedServices, loadedBarbers, loadedReviews, loadedGallery] = await Promise.all([
-          api.getServices(),
-          api.getBarbers(),
-          api.getReviews(),
-          api.getGallery(),
+          api.services.getAll(),
+          api.barbers.getAll(),
+          api.reviews.getAll(),
+          api.gallery.getAll(),
         ]);
         setServiceList(loadedServices);
         setBarberList(loadedBarbers);

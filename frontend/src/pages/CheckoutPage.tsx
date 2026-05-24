@@ -3,37 +3,58 @@ import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Minus, Plus, Trash2, CheckCircle } from 'lucide-react';
+import { Minus, Plus, Trash2, CheckCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 
 const CheckoutPage = () => {
   const { items, totalPrice, updateQuantity, removeFromCart, clearCart } = useCart();
   const [form, setForm] = useState({ name: '', phone: '', address: '' });
   const [ordered, setOrdered] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.phone || !form.address) { toast.error(t('checkout.fillAll')); return; }
+    if (!form.address) { toast.error(t('checkout.fillAll')); return; }
     if (items.length === 0) { toast.error(t('checkout.cartEmpty')); return; }
+
+    setIsSubmitting(true);
     try {
-      await api.createOrder({
+      await api.orders.create({
         address: form.address,
         items: items.map((item) => ({
           productId: Number(item.product.id),
           quantity: item.quantity,
         })),
       });
+      // Only clear cart after successful order creation
+      clearCart();
+      setOrdered(true);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Order failed');
-      return;
+      if (error instanceof ApiError) {
+        if (error.status === 401) {
+          toast.error(t('checkout.errorUnauthenticated', { defaultValue: 'Please sign in to place an order.' }));
+          navigate('/auth');
+          return;
+        }
+        if (error.status === 409) {
+          toast.error(t('checkout.errorStock', { defaultValue: 'One or more items are out of stock.' }));
+          return;
+        }
+        if (error.status === 400) {
+          toast.error(t('checkout.errorValidation', { defaultValue: error.message || 'Invalid order details.' }));
+          return;
+        }
+      }
+      toast.error(error instanceof Error ? error.message : t('checkout.errorServer', { defaultValue: 'Order failed. Please try again.' }));
+    } finally {
+      setIsSubmitting(false);
     }
-    setOrdered(true);
-    clearCart();
   };
 
   if (ordered) {
@@ -42,7 +63,7 @@ const CheckoutPage = () => {
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
           <CheckCircle className="h-20 w-20 text-primary mx-auto mb-6" />
           <h2 className="font-display text-3xl font-bold mb-3">{t('checkout.orderPlaced')}</h2>
-          <p className="text-muted-foreground mb-6">{t('checkout.thankYou', { name: form.name })}</p>
+          <p className="text-muted-foreground mb-6">{t('checkout.thankYou')}</p>
           <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
             <Link to="/shop">{t('checkout.continueShopping')}</Link>
           </Button>
@@ -94,7 +115,11 @@ const CheckoutPage = () => {
                 <Input placeholder={t('checkout.fullName')} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="bg-secondary border-border" />
                 <Input placeholder={t('checkout.phone')} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} className="bg-secondary border-border" />
                 <Textarea placeholder={t('checkout.address')} value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} className="bg-secondary border-border" />
-                <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">{t('checkout.placeOrder')}</Button>
+                <Button type="submit" disabled={isSubmitting} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  {isSubmitting ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('common.saving')}</>
+                  ) : t('checkout.placeOrder')}
+                </Button>
               </form>
             </div>
           </div>

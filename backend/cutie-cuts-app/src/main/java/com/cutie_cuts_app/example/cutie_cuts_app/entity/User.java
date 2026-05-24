@@ -18,6 +18,12 @@ public class User {
     @Column(nullable = true)
     private String phone;
 
+    @Column
+    private String gender;
+
+    @Column
+    private String address;
+
     @Column(name = "avatar_url")
     private String avatarUrl;
 
@@ -41,6 +47,10 @@ public class User {
     public void setName(String name) { this.name = name; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
     public String getRole() { return role; }
