@@ -46,6 +46,8 @@ type BarberRow = { id: number; name: string; role: string; image: string; experi
 type ProductRow = { id: number; name: string; price: number; image: string; rating: number; category: string; description: string };
 export interface Order {
   id: string;
+  /** Numeric id as returned by backend — needed to create a payment */
+  numericId: number;
   userId?: string;
   customerName?: string;
   products: { name: string; qty: number; price: number }[];
@@ -53,6 +55,25 @@ export interface Order {
   address: string;
   status: OrderStatus;
   createdAt: string;
+}
+
+/** Shape of a VietQR payment as returned by the backend */
+export interface PaymentInfo {
+  id: number;
+  paymentCode: string;
+  orderId: number;
+  amount: number;
+  /** Payment status: PENDING | COMPLETED | EXPIRED */
+  status: string;
+  /** Base64 QR image data URL — use directly as <img src> */
+  qrCodeUrl?: string | null;
+  /** Raw QR data URL fallback */
+  qrDataUrl?: string | null;
+  bankAccount?: string | null;
+  bankCode?: string | null;
+  bankName?: string | null;
+  expiredAt?: string | null;
+  createdAt?: string | null;
 }
 
 export interface UserProfile {
@@ -245,6 +266,7 @@ const mapBooking = (row: BookingRow): Booking => ({
 
 const mapOrder = (row: OrderRow): Order => ({
   id: String(row.id),
+  numericId: row.id,
   userId: row.userId === undefined ? undefined : String(row.userId),
   customerName: row.customerName,
   products: row.products ?? [],
@@ -339,6 +361,29 @@ export const api = {
       const row = await request<OrderRow>('/api/orders', { method: 'POST', body: JSON.stringify(payload) }, true);
       return mapOrder(row);
     },
+  },
+
+  payments: {
+    /**
+     * Create a VietQR payment for an existing order.
+     * Backend path: POST /api/payments  body: { orderId: number }
+     */
+    create: async (orderId: number): Promise<PaymentInfo> =>
+      request<PaymentInfo>('/api/payments', { method: 'POST', body: JSON.stringify({ orderId }) }, true),
+
+    /**
+     * Poll payment status by paymentCode.
+     * Backend path: GET /api/payments/{paymentCode}
+     */
+    getByCode: async (paymentCode: string): Promise<PaymentInfo> =>
+      request<PaymentInfo>(`/api/payments/${paymentCode}`, undefined, true),
+
+    /**
+     * List all payments for the current user.
+     * Backend path: GET /api/payments/my-payments  (note: NOT /my)
+     */
+    getMyPayments: async (): Promise<PaymentInfo[]> =>
+      request<PaymentInfo[]>('/api/payments/my-payments', undefined, true),
   },
 
   admin: {
