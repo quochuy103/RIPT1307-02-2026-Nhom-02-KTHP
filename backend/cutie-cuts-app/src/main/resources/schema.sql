@@ -126,6 +126,39 @@ alter table if exists bookings
 
 drop index if exists idx_booking_active_slot_unique;
 
+-- Relax old verified column so Hibernate INSERTs without it succeed
+alter table if exists user_auth alter column verified drop not null;
+alter table if exists user_auth alter column verified set default true;
+
+-- Password Reset OTP columns on user_auth
+alter table if exists user_auth
+    add column if not exists reset_otp_hash varchar(128);
+
+alter table if exists user_auth
+    add column if not exists reset_otp_expiry timestamp;
+
+alter table if exists user_auth
+    add column if not exists reset_otp_attempts int not null default 0;
+
+alter table if exists user_auth
+    add column if not exists reset_otp_last_sent_at timestamp;
+
+-- Email Verification columns on user_auth
+alter table if exists user_auth
+    add column if not exists email_verified boolean not null default true;
+
+alter table if exists user_auth
+    add column if not exists verification_otp_hash varchar(128);
+
+alter table if exists user_auth
+    add column if not exists verification_otp_expiry timestamp;
+
+alter table if exists user_auth
+    add column if not exists verification_otp_attempts int not null default 0;
+
+alter table if exists user_auth
+    add column if not exists verification_otp_last_sent_at timestamp;
+
 create unique index if not exists idx_booking_active_slot_unique
     on bookings (barber_id, "date", "time")
     where lower(status) <> 'cancelled';
