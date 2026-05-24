@@ -71,6 +71,7 @@ const AdminProducts = () => {
 
   const handleSubmit = () => {
     if (!form.name) { toast.error('Name is required'); return; }
+    if (!editing && (!form.image || form.image === '/placeholder.svg' || !form.objectKey)) { toast.error('Image is required'); return; }
     if (editing) updateMutation.mutate({ id: editing.id, payload: form });
     else createMutation.mutate(form);
   };

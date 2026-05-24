@@ -58,7 +58,10 @@ public class PresignService {
     @Value("${s3.bucket-barbers:barbers}")
     private String barbersBucket;
 
-    public PresignService() {
+    private final S3StorageService s3StorageService;
+
+    public PresignService(S3StorageService s3StorageService) {
+        this.s3StorageService = s3StorageService;
         this.presigner = null;
     }
 
@@ -96,6 +99,8 @@ public class PresignService {
         String extension = extensionFromContentType(contentType);
         String objectKey = generateObjectKey(normalizedContext, extension);
         String bucket = bucketForContext(normalizedContext);
+
+        s3StorageService.ensureBucketExists(bucket);
 
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucket)

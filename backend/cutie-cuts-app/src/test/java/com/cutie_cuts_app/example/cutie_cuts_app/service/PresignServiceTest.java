@@ -15,7 +15,8 @@ class PresignServiceTest {
 
     @BeforeEach
     void setUp() {
-        presignService = new PresignService();
+        S3StorageService mockS3StorageService = org.mockito.Mockito.mock(S3StorageService.class);
+        presignService = new PresignService(mockS3StorageService);
         ReflectionTestUtils.setField(presignService, "endpoint", "http://localhost:9000");
         ReflectionTestUtils.setField(presignService, "publicUrl", "http://localhost:9000");
         ReflectionTestUtils.setField(presignService, "accessKey", "minioadmin");
