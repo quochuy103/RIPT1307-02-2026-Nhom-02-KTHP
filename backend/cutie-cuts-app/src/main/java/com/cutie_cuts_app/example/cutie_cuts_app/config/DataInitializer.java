@@ -114,7 +114,7 @@ public class DataInitializer {
                 auth.setAuthType("email");
                 auth.setAuthValue("admin@cutiecuts.com");
                 auth.setPasswordHash(passwordEncoder.encode("123456"));
-                auth.setVerified(true);
+                auth.setEmailVerified(true);
                 userAuthRepository.save(auth);
             }
 
@@ -129,7 +129,7 @@ public class DataInitializer {
                 auth.setAuthType("email");
                 auth.setAuthValue("user@cutiecuts.com");
                 auth.setPasswordHash(passwordEncoder.encode("123456"));
-                auth.setVerified(true);
+                auth.setEmailVerified(true);
                 userAuthRepository.save(auth);
             }
         };
