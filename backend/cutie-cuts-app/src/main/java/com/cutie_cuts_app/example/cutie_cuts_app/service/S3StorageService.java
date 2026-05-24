@@ -57,7 +57,7 @@ public class S3StorageService {
                 .build();
     }
 
-    private void ensureBucketExists(String bucketName) {
+    public void ensureBucketExists(String bucketName) {
         boolean bucketExisted = true;
         try {
             s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
@@ -73,6 +73,29 @@ public class S3StorageService {
         }
         // Always ensure public read policy is applied (covers new and pre-existing buckets)
         applyPublicReadPolicy(bucketName);
+        applyCorsPolicy(bucketName);
+    }
+
+    private void applyCorsPolicy(String bucketName) {
+        try {
+            software.amazon.awssdk.services.s3.model.CORSRule rule = software.amazon.awssdk.services.s3.model.CORSRule.builder()
+                    .allowedMethods("GET", "PUT", "POST", "DELETE", "HEAD")
+                    .allowedOrigins("*")
+                    .allowedHeaders("*")
+                    .exposeHeaders("ETag")
+                    .maxAgeSeconds(3000)
+                    .build();
+
+            s3Client.putBucketCors(software.amazon.awssdk.services.s3.model.PutBucketCorsRequest.builder()
+                    .bucket(bucketName)
+                    .corsConfiguration(software.amazon.awssdk.services.s3.model.CORSConfiguration.builder()
+                            .corsRules(rule)
+                            .build())
+                    .build());
+            log.info("Applied CORS policy to bucket: {}", bucketName);
+        } catch (Exception e) {
+            log.warn("Failed to apply CORS policy to bucket {}: {}", bucketName, e.getMessage());
+        }
     }
 
 

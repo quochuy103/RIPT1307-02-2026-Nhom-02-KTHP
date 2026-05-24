@@ -109,9 +109,7 @@ type OrderRow = {
   createdAt: string;
 };
 
-type AvatarUploadResponse = {
-  url: string;
-};
+
 
 type BookingRow = {
   id: number;
@@ -176,41 +174,7 @@ async function requestWithNotFoundFallback<T>(path: string, fallbackPath: string
   }
 }
 
-async function requestForm<T>(path: string, formData: FormData, auth = false): Promise<T> {
-  const headers = new Headers();
 
-  if (auth) {
-    const token = getToken();
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-  }
-
-  const response = await fetch(`${API_BASE_URL}${path}`, { method: 'POST', headers, body: formData });
-
-  if (auth && response.status === 401) {
-    dispatchUnauthorizedEvent();
-  }
-
-  if (!response.ok) {
-    let message = `Request failed (${response.status})`;
-    try {
-      const body = await response.json() as { message?: string; error?: string; detail?: string };
-      if (body.message) message = body.message;
-      else if (body.detail) message = body.detail;
-      else if (body.error) message = body.error;
-    } catch {
-      // ignore
-    }
-    throw new ApiError(message, response.status);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return await response.json() as T;
-}
 
 const initials = (name: string) => {
   const parts = name.trim().split(/\s+/);
@@ -282,11 +246,6 @@ export const api = {
     updateProfile: async (payload: UpdateUserProfilePayload): Promise<UserProfile> => (
       request<UserProfile>('/api/user/me', { method: 'PATCH', body: JSON.stringify(payload) }, true)
     ),
-    uploadAvatar: async (file: File): Promise<AvatarUploadResponse> => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return requestForm<AvatarUploadResponse>('/api/users/me/avatar', formData, true);
-    },
   },
 
   services: {
