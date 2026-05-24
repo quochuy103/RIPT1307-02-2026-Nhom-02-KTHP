@@ -24,9 +24,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final InMemoryRateLimiter rateLimiter;
 
-    public SecurityConfig(JwtFilter jwtFilter) {
+    public SecurityConfig(JwtFilter jwtFilter, InMemoryRateLimiter rateLimiter) {
         this.jwtFilter = jwtFilter;
+        this.rateLimiter = rateLimiter;
     }
 
     @Bean
@@ -70,7 +72,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/bookings/{id}/status").authenticated()
                         .requestMatchers("/bookings/**").authenticated()
                         .anyRequest().permitAll())
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new RateLimitFilter(rateLimiter), JwtFilter.class);
 
         return http.build();
     }
