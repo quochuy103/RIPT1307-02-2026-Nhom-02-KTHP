@@ -11,4 +11,8 @@ public interface UserAuthRepository extends JpaRepository<UserAuth, Long> {
     Optional<UserAuth> findByAuthTypeAndAuthValue(String authType, String authValue);
 
     Optional<UserAuth> findFirstByUserAndAuthTypeIgnoreCase(User user, String authType);
+
+    Optional<UserAuth> findByResetOtpHash(String resetOtpHash);
+
+    Optional<UserAuth> findByVerificationOtpHash(String verificationOtpHash);
 }

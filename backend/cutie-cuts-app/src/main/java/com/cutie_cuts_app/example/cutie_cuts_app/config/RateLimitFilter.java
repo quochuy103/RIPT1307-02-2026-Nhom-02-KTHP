@@ -55,7 +55,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
             new Rule("/bookings", HttpMethod.POST, 10, Duration.ofMinutes(10), this::userOrIpKey),
             new Rule("/api/orders", HttpMethod.POST, 20, Duration.ofMinutes(10), this::userOrIpKey),
             new Rule("/api/uploads/presign", HttpMethod.POST, 30, Duration.ofMinutes(5), this::userOrIpKey),
-            new Rule("/api/reviews", HttpMethod.POST, 20, Duration.ofMinutes(10), this::userOrIpKey)
+            new Rule("/api/reviews", HttpMethod.POST, 20, Duration.ofMinutes(10), this::userOrIpKey),
+            new Rule("/auth/forgot-password", HttpMethod.POST, 3, Duration.ofMinutes(60), this::ipKey),
+            new Rule("/auth/reset-password", HttpMethod.POST, 5, Duration.ofMinutes(15), this::ipKey),
+            new Rule("/auth/verify-email", HttpMethod.POST, 5, Duration.ofMinutes(15), this::ipKey),
+            new Rule("/auth/resend-verification", HttpMethod.POST, 3, Duration.ofMinutes(60), this::ipKey)
     );
 
     @Override
