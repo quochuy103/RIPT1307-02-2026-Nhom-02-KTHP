@@ -27,12 +27,13 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 public class PresignService {
 
     private static final Logger log = LoggerFactory.getLogger(PresignService.class);
-    private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-    private static final Duration PRESIGN_EXPIRY = Duration.ofMinutes(5);
-    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+
+    public static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+    public static final Duration PRESIGN_EXPIRY = Duration.ofMinutes(5);
+    public static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg", "image/png", "image/webp", "image/gif");
-    private static final Set<String> ADMIN_CONTEXTS = Set.of("BARBER", "GALLERY", "PRODUCT");
-    private static final Set<String> ALL_CONTEXTS = Set.of("BARBER", "GALLERY", "PRODUCT", "AVATAR");
+    public static final Set<String> ADMIN_CONTEXTS = Set.of("BARBER", "GALLERY", "PRODUCT");
+    public static final Set<String> ALL_CONTEXTS = Set.of("BARBER", "GALLERY", "PRODUCT", "AVATAR");
 
     private final S3Presigner presigner;
 
@@ -57,7 +58,10 @@ public class PresignService {
     @Value("${s3.bucket-barbers:barbers}")
     private String barbersBucket;
 
-    public PresignService() {
+    private final S3StorageService s3StorageService;
+
+    public PresignService(S3StorageService s3StorageService) {
+        this.s3StorageService = s3StorageService;
         this.presigner = null;
     }
 
@@ -95,6 +99,8 @@ public class PresignService {
         String extension = extensionFromContentType(contentType);
         String objectKey = generateObjectKey(normalizedContext, extension);
         String bucket = bucketForContext(normalizedContext);
+
+        s3StorageService.ensureBucketExists(bucket);
 
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
@@ -137,6 +143,42 @@ public class PresignService {
         };
     }
 
+    public String derivePublicUrl(String context, String objectKey) {
+        String bucket = bucketForContext(context.toUpperCase());
+        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, objectKey);
+    }
+
+    public boolean isValidObjectKey(String context, String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) return false;
+        if (objectKey.contains("..") || objectKey.startsWith("/") || objectKey.startsWith("http"))
+            return false;
+
+        return switch (context.toUpperCase()) {
+            case "AVATAR" -> objectKey.startsWith("avatars/") && objectKey.split("/").length >= 3;
+            case "GALLERY" -> objectKey.startsWith("images/");
+            case "BARBER" -> !objectKey.contains("/");
+            case "PRODUCT" -> objectKey.startsWith("products/");
+            default -> false;
+        };
+    }
+
+    public void validateObjectKeyForContext(String context, String objectKey) {
+        if (!isValidObjectKey(context, objectKey)) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "objectKey does not match expected prefix for context: " + context);
+        }
+    }
+
+    public String bucketForContext(String context) {
+        return switch (context.toUpperCase()) {
+            case "BARBER" -> barbersBucket;
+            case "GALLERY" -> galleryBucket;
+            case "AVATAR" -> avatarsBucket;
+            case "PRODUCT" -> barbersBucket;
+            default -> throw new ResponseStatusException(BAD_REQUEST, "Unknown context: " + context);
+        };
+    }
+
     private String generateObjectKey(String context, String extension) {
         String uuid = UUID.randomUUID().toString();
         return switch (context) {
@@ -144,16 +186,6 @@ public class PresignService {
             case "GALLERY" -> "images/" + uuid + extension;
             case "PRODUCT" -> "products/" + uuid + extension;
             case "AVATAR" -> "avatars/" + uuid + extension;
-            default -> throw new ResponseStatusException(BAD_REQUEST, "Unknown context: " + context);
-        };
-    }
-
-    private String bucketForContext(String context) {
-        return switch (context) {
-            case "BARBER" -> barbersBucket;
-            case "GALLERY" -> galleryBucket;
-            case "AVATAR" -> avatarsBucket;
-            case "PRODUCT" -> barbersBucket;
             default -> throw new ResponseStatusException(BAD_REQUEST, "Unknown context: " + context);
         };
     }

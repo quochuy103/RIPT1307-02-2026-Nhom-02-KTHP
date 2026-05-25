@@ -1,12 +1,15 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.controller;
 
+import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.CreateOrderRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.UpdateStatusRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.OrderItem;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.Product;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.ShopOrder;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.UserAddress;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ProductRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserAddressRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +36,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @ExtendWith(MockitoExtension.class)
 class OrderControllerTest {
@@ -49,6 +53,9 @@ class OrderControllerTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private UserAddressRepository userAddressRepository;
+
     private OrderController orderController;
 
     @BeforeEach
@@ -57,7 +64,8 @@ class OrderControllerTest {
                 orderRepository,
                 productRepository,
                 currentUserService,
-                notificationService);
+                notificationService,
+                userAddressRepository);
     }
 
     @Test
@@ -194,6 +202,181 @@ class OrderControllerTest {
         assertEquals(100L, products.get(0).get("productId"));
     }
 
+    // ── Create-order tests ─────────────────────────────────────────────────
+
+    @Test
+    void createWithRawAddressSucceeds() {
+        User user = createUser(10L, "Customer");
+        CreateOrderRequest request = new CreateOrderRequest();
+        request.setAddress("123 Main St, Hanoi");
+        CreateOrderRequest.CreateOrderItemRequest itemRequest = new CreateOrderRequest.CreateOrderItemRequest();
+        itemRequest.setProductId(100L);
+        itemRequest.setQuantity(1);
+        request.setItems(List.of(itemRequest));
+        Authentication authentication = userAuthentication();
+
+        Product product = new Product();
+        ReflectionTestUtils.setField(product, "id", 100L);
+        product.setName("Pomade");
+        product.setPrice(50.0);
+        product.setStock(5);
+
+        when(currentUserService.getByEmail("user@example.com")).thenReturn(user);
+        when(productRepository.findById(100L)).thenReturn(Optional.of(product));
+        when(productRepository.deductStock(100L, 1)).thenReturn(1);
+        when(orderRepository.save(any(ShopOrder.class))).thenAnswer(inv -> {
+            ShopOrder o = inv.getArgument(0);
+            ReflectionTestUtils.setField(o, "id", 1L);
+            ReflectionTestUtils.setField(o, "createdAt", LocalDateTime.now());
+            return o;
+        });
+
+        Map<String, Object> response = orderController.create(request, authentication);
+
+        assertEquals("123 Main St, Hanoi", response.get("address"));
+        assertEquals("pending", response.get("status"));
+    }
+
+    @Test
+    void createWithAddressIdSucceedsAndStoresSnapshot() {
+        User user = createUser(10L, "Customer");
+        UserAddress address = createUserAddress(5L, user, false);
+        CreateOrderRequest request = new CreateOrderRequest();
+        request.setAddressId(5L);
+        CreateOrderRequest.CreateOrderItemRequest itemRequest = new CreateOrderRequest.CreateOrderItemRequest();
+        itemRequest.setProductId(100L);
+        itemRequest.setQuantity(1);
+        request.setItems(List.of(itemRequest));
+        Authentication authentication = userAuthentication();
+
+        Product product = new Product();
+        ReflectionTestUtils.setField(product, "id", 100L);
+        product.setName("Pomade");
+        product.setPrice(50.0);
+        product.setStock(5);
+
+        when(currentUserService.getByEmail("user@example.com")).thenReturn(user);
+        when(userAddressRepository.findByIdAndUserIdAndDeletedFalse(5L, 10L))
+                .thenReturn(Optional.of(address));
+        when(productRepository.findById(100L)).thenReturn(Optional.of(product));
+        when(productRepository.deductStock(100L, 1)).thenReturn(1);
+        when(orderRepository.save(any(ShopOrder.class))).thenAnswer(inv -> {
+            ShopOrder o = inv.getArgument(0);
+            ReflectionTestUtils.setField(o, "id", 1L);
+            ReflectionTestUtils.setField(o, "createdAt", LocalDateTime.now());
+            return o;
+        });
+
+        Map<String, Object> response = orderController.create(request, authentication);
+
+        String expectedSnapshot = "Nguyen Van A - 0912345678 - 123 Nguyen Trai, Ward 5, District 1, Ho Chi Minh. Note: Call before delivery";
+        assertEquals(expectedSnapshot, response.get("address"));
+        assertEquals("pending", response.get("status"));
+        verify(userAddressRepository).findByIdAndUserIdAndDeletedFalse(5L, 10L);
+    }
+
+    @Test
+    void createWithAddressIdAndRawAddressUsesAddressIdSnapshot() {
+        User user = createUser(10L, "Customer");
+        UserAddress address = createUserAddress(5L, user, false);
+        CreateOrderRequest request = new CreateOrderRequest();
+        request.setAddress("This should be ignored");
+        request.setAddressId(5L);
+        CreateOrderRequest.CreateOrderItemRequest itemRequest = new CreateOrderRequest.CreateOrderItemRequest();
+        itemRequest.setProductId(100L);
+        itemRequest.setQuantity(1);
+        request.setItems(List.of(itemRequest));
+        Authentication authentication = userAuthentication();
+
+        Product product = new Product();
+        ReflectionTestUtils.setField(product, "id", 100L);
+        product.setName("Pomade");
+        product.setPrice(50.0);
+        product.setStock(5);
+
+        when(currentUserService.getByEmail("user@example.com")).thenReturn(user);
+        when(userAddressRepository.findByIdAndUserIdAndDeletedFalse(5L, 10L))
+                .thenReturn(Optional.of(address));
+        when(productRepository.findById(100L)).thenReturn(Optional.of(product));
+        when(productRepository.deductStock(100L, 1)).thenReturn(1);
+        when(orderRepository.save(any(ShopOrder.class))).thenAnswer(inv -> {
+            ShopOrder o = inv.getArgument(0);
+            ReflectionTestUtils.setField(o, "id", 1L);
+            ReflectionTestUtils.setField(o, "createdAt", LocalDateTime.now());
+            return o;
+        });
+
+        Map<String, Object> response = orderController.create(request, authentication);
+
+        String expectedSnapshot = "Nguyen Van A - 0912345678 - 123 Nguyen Trai, Ward 5, District 1, Ho Chi Minh. Note: Call before delivery";
+        assertEquals(expectedSnapshot, response.get("address"));
+    }
+
+    @Test
+    void createWithAnotherUsersAddressIdFails() {
+        User user = createUser(10L, "Customer");
+        CreateOrderRequest request = new CreateOrderRequest();
+        request.setAddressId(5L);
+        CreateOrderRequest.CreateOrderItemRequest itemRequest = new CreateOrderRequest.CreateOrderItemRequest();
+        itemRequest.setProductId(100L);
+        itemRequest.setQuantity(1);
+        request.setItems(List.of(itemRequest));
+        Authentication authentication = userAuthentication();
+
+        when(currentUserService.getByEmail("user@example.com")).thenReturn(user);
+        when(userAddressRepository.findByIdAndUserIdAndDeletedFalse(5L, 10L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> orderController.create(request, authentication));
+
+        assertEquals(NOT_FOUND, exception.getStatusCode());
+        assertEquals("Address not found", exception.getReason());
+    }
+
+    @Test
+    void createWithoutAddressAndWithoutAddressIdFails() {
+        User user = createUser(10L, "Customer");
+        CreateOrderRequest request = new CreateOrderRequest();
+        CreateOrderRequest.CreateOrderItemRequest itemRequest = new CreateOrderRequest.CreateOrderItemRequest();
+        itemRequest.setProductId(100L);
+        itemRequest.setQuantity(1);
+        request.setItems(List.of(itemRequest));
+        Authentication authentication = userAuthentication();
+
+        when(currentUserService.getByEmail("user@example.com")).thenReturn(user);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> orderController.create(request, authentication));
+
+        assertEquals(BAD_REQUEST, exception.getStatusCode());
+        assertEquals("Address is required", exception.getReason());
+    }
+
+    @Test
+    void createWithDeletedAddressFails() {
+        User user = createUser(10L, "Customer");
+        UserAddress deletedAddr = createUserAddress(5L, user, true);
+        CreateOrderRequest request = new CreateOrderRequest();
+        request.setAddressId(5L);
+        CreateOrderRequest.CreateOrderItemRequest itemRequest = new CreateOrderRequest.CreateOrderItemRequest();
+        itemRequest.setProductId(100L);
+        itemRequest.setQuantity(1);
+        request.setItems(List.of(itemRequest));
+        Authentication authentication = userAuthentication();
+
+        when(currentUserService.getByEmail("user@example.com")).thenReturn(user);
+        when(userAddressRepository.findByIdAndUserIdAndDeletedFalse(5L, 10L))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> orderController.create(request, authentication));
+
+        assertEquals(NOT_FOUND, exception.getStatusCode());
+    }
+
+    // ── Helper methods ──────────────────────────────────────────────────────
+
     private Authentication userAuthentication() {
         return new UsernamePasswordAuthenticationToken(
                 "user@example.com",
@@ -240,5 +423,21 @@ class OrderControllerTest {
         item.setOrder(order);
         ReflectionTestUtils.setField(order, "createdAt", LocalDateTime.of(2026, 5, 15, 10, 0));
         return order;
+    }
+
+    private UserAddress createUserAddress(Long id, User user, boolean deleted) {
+        UserAddress address = new UserAddress();
+        ReflectionTestUtils.setField(address, "id", id);
+        address.setUser(user);
+        address.setRecipientName("Nguyen Van A");
+        address.setPhone("0912345678");
+        address.setAddressLine("123 Nguyen Trai");
+        address.setWard("Ward 5");
+        address.setDistrict("District 1");
+        address.setCity("Ho Chi Minh");
+        address.setNote("Call before delivery");
+        address.setIsDefault(false);
+        address.setDeleted(deleted);
+        return address;
     }
 }

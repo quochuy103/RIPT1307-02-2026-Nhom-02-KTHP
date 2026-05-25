@@ -1,5 +1,6 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.service;
 
+import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.GalleryImageConfirmRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.gallery.GalleryImageRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.gallery.GalleryImageResponse;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.GalleryImage;
@@ -10,12 +11,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @Service
 public class GalleryImageService {
@@ -23,15 +24,17 @@ public class GalleryImageService {
     private final GalleryImageRepository galleryImageRepository;
     private final S3StorageService s3StorageService;
     private final ImageStorageService imageStorageService;
+    private final PresignService presignService;
 
     @Value("${s3.bucket-gallery:gallery}")
     private String galleryBucket;
 
     public GalleryImageService(GalleryImageRepository galleryImageRepository, S3StorageService s3StorageService,
-            ImageStorageService imageStorageService) {
+            ImageStorageService imageStorageService, PresignService presignService) {
         this.galleryImageRepository = galleryImageRepository;
         this.s3StorageService = s3StorageService;
         this.imageStorageService = imageStorageService;
+        this.presignService = presignService;
     }
 
     @Transactional(readOnly = true)
@@ -57,13 +60,30 @@ public class GalleryImageService {
     }
 
     @Transactional
-    public GalleryImageResponse upload(MultipartFile file, GalleryImageRequest request) {
-        String url;
-        try {
-            url = s3StorageService.uploadGalleryImage(file, file.getOriginalFilename());
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to upload file: " + e.getMessage());
+    public GalleryImageResponse confirm(GalleryImageConfirmRequest request) {
+        if (!PresignService.ALLOWED_CONTENT_TYPES.contains(request.getContentType())) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Unsupported content type. Allowed: image/jpeg, image/png, image/webp, image/gif");
         }
+
+        if (request.getFileSize() <= 0 || request.getFileSize() > PresignService.MAX_IMAGE_SIZE) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "File size must be between 1 byte and 5 MB");
+        }
+
+        String objectKey = request.getObjectKey();
+        if (!presignService.isValidObjectKey("GALLERY", objectKey)) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "objectKey does not match expected prefix for GALLERY context");
+        }
+
+        String bucket = presignService.bucketForContext("GALLERY");
+        if (!s3StorageService.objectExists(bucket, objectKey)) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Object not found in storage. Upload may not have completed.");
+        }
+
+        String url = s3StorageService.derivePublicUrl(bucket, objectKey);
 
         GalleryImage image = new GalleryImage();
         image.setUrl(url);

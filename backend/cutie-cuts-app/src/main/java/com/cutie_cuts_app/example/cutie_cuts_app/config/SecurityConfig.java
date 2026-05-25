@@ -24,9 +24,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final InMemoryRateLimiter rateLimiter;
 
-    public SecurityConfig(JwtFilter jwtFilter) {
+    public SecurityConfig(JwtFilter jwtFilter, InMemoryRateLimiter rateLimiter) {
         this.jwtFilter = jwtFilter;
+        this.rateLimiter = rateLimiter;
     }
 
     @Bean
@@ -52,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/services/**").hasRole("ADMIN")
                         .requestMatchers("/api/bookings/**").authenticated()
                         .requestMatchers("/api/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/gallery/confirm").hasRole("ADMIN")
                         .requestMatchers("/api/gallery/**").authenticated()
                         .requestMatchers("/api/orders/**").authenticated()
                         .requestMatchers("/api/payments/**").authenticated()
@@ -59,7 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/notifications/**").authenticated()
                         .requestMatchers("/api/uploads/**").authenticated()
-                        .requestMatchers("/api/users/me/avatar").authenticated()
+                        .requestMatchers("/api/users/me/avatar/**").authenticated()
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .requestMatchers("/api/user/register").permitAll()
                         .requestMatchers("/api/user/**").authenticated()
@@ -69,7 +72,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/bookings/{id}/status").authenticated()
                         .requestMatchers("/bookings/**").authenticated()
                         .anyRequest().permitAll())
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new RateLimitFilter(rateLimiter), JwtFilter.class);
 
         return http.build();
     }
