@@ -25,6 +25,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
@@ -37,6 +38,15 @@ public class BookingService {
     private static final long MIN_CANCEL_NOTICE_MINUTES = 30;
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Logger log = LoggerFactory.getLogger(BookingService.class);
+
+    // Per-slot lock registry for single-instance race-condition prevention.
+    // Key = "{barberId}_{date}_{time}". Lock is removed via remove(key, lock)
+    // so a replacement lock created by another thread is never discarded.
+    // TODO: Multi-instance deployments need a DB-level solution:
+    //   - partial unique index on (barber_id, date, time) WHERE status <> 'cancelled', or
+    //   - a dedicated booking_slots table, or
+    //   - a database advisory lock.
+    private final ConcurrentHashMap<String, Object> slotLocks = new ConcurrentHashMap<>();
 
     private final BookingRepository bookingRepository;
     private final SalonServiceRepository salonServiceRepository;
@@ -78,46 +88,61 @@ public class BookingService {
         return bookingRepository.findByUser(user);
     }
 
+    @Transactional
     public Booking createBooking(User user, CreateBookingRequest request) {
         SalonService service = salonServiceRepository.findById(request.getServiceId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Service not found"));
         Barber barber = barberRepository.findById(request.getBarberId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Barber not found"));
 
-        if (bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
-                barber,
-                request.getDate(),
-                request.getTime(),
-                "cancelled")) {
-            throw new SlotAlreadyBookedException();
+        LocalDateTime bookingDateTime = LocalDateTime.of(request.getDate(), request.getTime());
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (bookingDateTime.isBefore(now)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Booking date/time cannot be in the past");
         }
 
-        Booking booking = new Booking();
-        booking.setUser(user);
-        booking.setService(service);
-        booking.setBarber(barber);
-        booking.setDate(request.getDate());
-        booking.setTime(request.getTime());
-        booking.setPrice(service.getPrice().doubleValue());
+        String slotKey = barber.getId() + "_" + request.getDate() + "_" + request.getTime();
+        Object lock = slotLocks.computeIfAbsent(slotKey, k -> new Object());
+        synchronized (lock) {
+            try {
+                if (bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
+                        barber,
+                        request.getDate(),
+                        request.getTime(),
+                        "cancelled")) {
+                    throw new SlotAlreadyBookedException();
+                }
 
-        Booking saved;
-        try {
-            saved = bookingRepository.save(booking);
-        } catch (DataIntegrityViolationException exception) {
-            if (isActiveSlotConflict(exception)) {
-                throw new SlotAlreadyBookedException();
+                Booking booking = new Booking();
+                booking.setUser(user);
+                booking.setService(service);
+                booking.setBarber(barber);
+                booking.setDate(request.getDate());
+                booking.setTime(request.getTime());
+                booking.setPrice(service.getPrice().doubleValue());
+
+                Booking saved;
+                try {
+                    saved = bookingRepository.save(booking);
+                } catch (DataIntegrityViolationException exception) {
+                    if (isActiveSlotConflict(exception)) {
+                        throw new SlotAlreadyBookedException();
+                    }
+                    throw exception;
+                }
+
+                try {
+                    notificationService.notify(user, NotificationType.BOOKING_CREATED,
+                            "Booking created for " + service.getName() + " with " + barber.getName() + " on " + request.getDate() + " at " + request.getTime(),
+                            "booking", saved.getId());
+                } catch (RuntimeException exception) {
+                    log.warn("Failed to persist booking notification for bookingId={}", saved.getId(), exception);
+                }
+                return saved;
+            } finally {
+                slotLocks.remove(slotKey, lock);
             }
-            throw exception;
         }
-
-        try {
-            notificationService.notify(user, NotificationType.BOOKING_CREATED,
-                    "Booking created for " + service.getName() + " with " + barber.getName() + " on " + request.getDate() + " at " + request.getTime(),
-                    "booking", saved.getId());
-        } catch (RuntimeException exception) {
-            log.warn("Failed to persist booking notification for bookingId={}", saved.getId(), exception);
-        }
-        return saved;
     }
 
     public Booking updateStatus(Long id, String status, User user, boolean isAdmin) {
