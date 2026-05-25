@@ -162,3 +162,28 @@ alter table if exists user_auth
 create unique index if not exists idx_booking_active_slot_unique
     on bookings (barber_id, "date", "time")
     where lower(status) <> 'cancelled';
+
+-- User addresses
+create table if not exists user_addresses (
+    id              bigserial primary key,
+    user_id         bigint not null references users(id),
+    recipient_name  varchar(100),
+    phone           varchar(20),
+    address_line    varchar(500) not null,
+    ward            varchar(255),
+    district        varchar(255),
+    city            varchar(255) not null,
+    note            varchar(500),
+    is_default      boolean not null default false,
+    deleted         boolean not null default false,
+    deleted_at      timestamp,
+    created_at      timestamp,
+    updated_at      timestamp
+);
+
+create index if not exists idx_user_addresses_user on user_addresses(user_id);
+create index if not exists idx_user_addresses_user_default on user_addresses(user_id, is_default);
+
+create unique index if not exists ux_user_addresses_one_default
+    on user_addresses(user_id)
+    where is_default = true and deleted = false;
