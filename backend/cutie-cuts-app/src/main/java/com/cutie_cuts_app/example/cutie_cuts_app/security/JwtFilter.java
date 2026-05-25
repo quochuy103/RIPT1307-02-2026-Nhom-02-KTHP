@@ -2,6 +2,7 @@ package com.cutie_cuts_app.example.cutie_cuts_app.security;
 
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
+import com.cutie_cuts_app.example.cutie_cuts_app.service.TokenRevocationService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,10 +22,15 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final CurrentUserService currentUserService;
+    private final TokenRevocationService tokenRevocationService;
 
-    public JwtFilter(JwtUtil jwtUtil, CurrentUserService currentUserService) {
+    public JwtFilter(
+            JwtUtil jwtUtil,
+            CurrentUserService currentUserService,
+            TokenRevocationService tokenRevocationService) {
         this.jwtUtil = jwtUtil;
         this.currentUserService = currentUserService;
+        this.tokenRevocationService = tokenRevocationService;
     }
 
     @Override
@@ -42,6 +48,9 @@ public class JwtFilter extends OncePerRequestFilter {
             try {
                 String username = jwtUtil.extractUsername(token);
                 User user = currentUserService.getByEmail(username);
+                if (tokenRevocationService.isTokenInvalidated(token, user)) {
+                    throw new BadCredentialsException("Token has been revoked");
+                }
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 username,

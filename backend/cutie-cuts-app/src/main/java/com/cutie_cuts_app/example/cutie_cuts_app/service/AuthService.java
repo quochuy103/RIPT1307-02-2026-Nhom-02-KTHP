@@ -1,6 +1,7 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.service;
 
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.auth.AuthResponse;
+import com.cutie_cuts_app.example.cutie_cuts_app.dto.auth.ChangePasswordRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.auth.LoginRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.auth.RegisterRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.auth.UserResponse;
@@ -12,6 +13,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -31,6 +33,8 @@ public class AuthService {
     private final UserAuthRepository userAuthRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+
+    private final TokenRevocationService tokenRevocationService;
     private final TokenService tokenService;
     private final EmailService emailService;
     private final int passwordResetOtpExpiryMinutes;
@@ -45,6 +49,7 @@ public class AuthService {
             UserAuthRepository userAuthRepository,
             PasswordEncoder passwordEncoder,
             JwtUtil jwtUtil,
+            TokenRevocationService tokenRevocationService,
             TokenService tokenService,
             EmailService emailService,
             @Value("${app.password-reset.otp-expiry-minutes}") int passwordResetOtpExpiryMinutes,
@@ -58,6 +63,7 @@ public class AuthService {
         this.userAuthRepository = userAuthRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.tokenRevocationService = tokenRevocationService;
         this.tokenService = tokenService;
         this.emailService = emailService;
         this.passwordResetOtpExpiryMinutes = passwordResetOtpExpiryMinutes;
@@ -138,6 +144,40 @@ public class AuthService {
         ensureActiveUser(auth.getUser());
 
         return UserResponse.from(auth.getUser(), auth.getAuthValue());
+    }
+
+    @Transactional
+    public void changePassword(String email, ChangePasswordRequest request, String authorizationHeader) {
+        String normalizedEmail = normalizeEmail(email);
+        String currentPassword = requireValue(request.getCurrentPassword(), "Current password is required");
+        String newPassword = requireValue(request.getNewPassword(), "New password is required");
+
+        UserAuth auth = userAuthRepository
+                .findByAuthTypeAndAuthValue("email", normalizedEmail)
+                .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "User not found"));
+
+        ensureActiveUser(auth.getUser());
+
+        if (auth.getPasswordHash() == null || auth.getPasswordHash().isBlank()) {
+            throw new ResponseStatusException(BAD_REQUEST, "Password change is not available for this account");
+        }
+
+        if (!passwordEncoder.matches(currentPassword, auth.getPasswordHash())) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Current password is incorrect");
+        }
+
+        if (passwordEncoder.matches(newPassword, auth.getPasswordHash())) {
+            throw new ResponseStatusException(BAD_REQUEST, "New password must be different from current password");
+        }
+
+        auth.setPasswordHash(passwordEncoder.encode(newPassword));
+
+        User user = auth.getUser();
+        user.setCredentialsUpdatedAt(LocalDateTime.now());
+
+        userAuthRepository.save(auth);
+        userRepository.save(user);
+        tokenRevocationService.revokeBearerToken(authorizationHeader, user, "PASSWORD_CHANGED");
     }
 
     // ── Password reset OTP ──────────────────────────────────────────────
