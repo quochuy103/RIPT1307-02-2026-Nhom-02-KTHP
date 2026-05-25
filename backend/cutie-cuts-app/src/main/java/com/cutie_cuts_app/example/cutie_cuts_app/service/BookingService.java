@@ -11,7 +11,10 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ public class BookingService {
     private static final int MAX_DAILY_CANCELLATIONS = 3;
     private static final long MIN_CANCEL_NOTICE_MINUTES = 30;
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final Logger log = LoggerFactory.getLogger(BookingService.class);
 
     private final BookingRepository bookingRepository;
     private final SalonServiceRepository salonServiceRepository;
@@ -96,10 +100,23 @@ public class BookingService {
         booking.setTime(request.getTime());
         booking.setPrice(service.getPrice().doubleValue());
 
-        Booking saved = bookingRepository.save(booking);
-        notificationService.notify(user, NotificationType.BOOKING_CREATED,
-                "Booking created for " + service.getName() + " with " + barber.getName() + " on " + request.getDate() + " at " + request.getTime(),
-                "booking", saved.getId());
+        Booking saved;
+        try {
+            saved = bookingRepository.save(booking);
+        } catch (DataIntegrityViolationException exception) {
+            if (isActiveSlotConflict(exception)) {
+                throw new SlotAlreadyBookedException();
+            }
+            throw exception;
+        }
+
+        try {
+            notificationService.notify(user, NotificationType.BOOKING_CREATED,
+                    "Booking created for " + service.getName() + " with " + barber.getName() + " on " + request.getDate() + " at " + request.getTime(),
+                    "booking", saved.getId());
+        } catch (RuntimeException exception) {
+            log.warn("Failed to persist booking notification for bookingId={}", saved.getId(), exception);
+        }
         return saved;
     }
 
@@ -114,9 +131,13 @@ public class BookingService {
 
         booking.setStatus(normalizedStatus);
         Booking saved = bookingRepository.save(booking);
-        notificationService.notify(booking.getUser(), NotificationType.BOOKING_STATUS_UPDATED,
-                "Booking status updated to: " + normalizedStatus,
-                "booking", saved.getId());
+        try {
+            notificationService.notify(booking.getUser(), NotificationType.BOOKING_STATUS_UPDATED,
+                    "Booking status updated to: " + normalizedStatus,
+                    "booking", saved.getId());
+        } catch (RuntimeException exception) {
+            log.warn("Failed to persist booking status notification for bookingId={}", saved.getId(), exception);
+        }
         return saved;
     }
 
@@ -138,9 +159,13 @@ public class BookingService {
         booking.setStatus("cancelled");
         booking.setCancelledAt(LocalDateTime.now(clock));
         Booking saved = bookingRepository.save(booking);
-        notificationService.notify(booking.getUser(), NotificationType.BOOKING_CANCELLED,
-                "Booking cancelled for " + booking.getService().getName() + " with " + booking.getBarber().getName(),
-                "booking", saved.getId());
+        try {
+            notificationService.notify(booking.getUser(), NotificationType.BOOKING_CANCELLED,
+                    "Booking cancelled for " + booking.getService().getName() + " with " + booking.getBarber().getName(),
+                    "booking", saved.getId());
+        } catch (RuntimeException exception) {
+            log.warn("Failed to persist booking cancellation notification for bookingId={}", saved.getId(), exception);
+        }
         return saved;
     }
 
@@ -165,5 +190,18 @@ public class BookingService {
         if (cancelledCount >= MAX_DAILY_CANCELLATIONS) {
             throw new ResponseStatusException(BAD_REQUEST, "You can cancel at most 3 bookings per day");
         }
+    }
+
+    private boolean isActiveSlotConflict(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null && (message.contains("idx_booking_active_slot_unique")
+                    || message.contains("uk_booking_barber_date_time"))) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }

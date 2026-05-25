@@ -8,6 +8,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BarberRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -95,6 +97,64 @@ class BookingServiceTest {
     }
 
     @Test
+    void createBookingTranslatesActiveSlotConstraintViolation() {
+        User user = createUser(10L, "Customer");
+        Barber barber = createBarber(20L, "Barber A");
+        SalonService service = createSalonService(30L, "Haircut", 120);
+        CreateBookingRequest request = new CreateBookingRequest();
+        request.setBarberId(20L);
+        request.setServiceId(30L);
+        request.setDate(LocalDate.of(2026, 5, 20));
+        request.setTime(LocalTime.of(10, 0));
+
+        when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
+        when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
+        when(bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
+                barber,
+                request.getDate(),
+                request.getTime(),
+                "cancelled")).thenReturn(false);
+        when(bookingRepository.save(any(Booking.class))).thenThrow(
+                new DataIntegrityViolationException(
+                        "duplicate key value violates unique constraint \"idx_booking_active_slot_unique\""));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> bookingService.createBooking(user, request));
+
+        assertEquals(409, exception.getStatusCode().value());
+        assertEquals("Barber already booked at this time", exception.getReason());
+    }
+
+    @Test
+    void createBookingReturnsSavedBookingWhenNotificationFails() {
+        User user = createUser(10L, "Customer");
+        Barber barber = createBarber(20L, "Barber A");
+        SalonService service = createSalonService(30L, "Haircut", 120);
+        CreateBookingRequest request = new CreateBookingRequest();
+        request.setBarberId(20L);
+        request.setServiceId(30L);
+        request.setDate(LocalDate.of(2026, 5, 20));
+        request.setTime(LocalTime.of(10, 0));
+
+        when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
+        when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
+        when(bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
+                barber,
+                request.getDate(),
+                request.getTime(),
+                "cancelled")).thenReturn(false);
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new RuntimeException("notifications unavailable"))
+                .when(notificationService)
+                .notify(eq(user), eq(NotificationType.BOOKING_CREATED), contains("Booking created"), eq("booking"), any());
+
+        Booking booking = bookingService.createBooking(user, request);
+
+        assertEquals("pending", booking.getStatus());
+        assertEquals(user, booking.getUser());
+    }
+
+    @Test
     void updateStatusRejectsNonAdminUsers() {
         User user = createUser(10L, "Customer");
 
@@ -103,6 +163,24 @@ class BookingServiceTest {
 
         assertEquals(FORBIDDEN, exception.getStatusCode());
         verify(bookingRepository, never()).findById(any());
+    }
+
+    @Test
+    void updateStatusReturnsSavedBookingWhenNotificationFails() {
+        User admin = createUser(99L, "Admin");
+        User owner = createUser(10L, "Customer");
+        Booking booking = createBooking(1L, owner, "pending");
+
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(booking)).thenReturn(booking);
+        doThrow(new RuntimeException("notifications unavailable"))
+                .when(notificationService)
+                .notify(eq(owner), eq(NotificationType.BOOKING_STATUS_UPDATED),
+                        contains("Booking status updated"), eq("booking"), eq(1L));
+
+        Booking updated = bookingService.updateStatus(1L, "done", admin, true);
+
+        assertEquals("done", updated.getStatus());
     }
 
     @Test
@@ -128,6 +206,29 @@ class BookingServiceTest {
                 contains("Booking cancelled"),
                 eq("booking"),
                 eq(1L));
+    }
+
+    @Test
+    void cancelBookingReturnsSavedBookingWhenNotificationFails() {
+        User owner = createUser(10L, "Customer");
+        Booking booking = createBooking(1L, owner, "pending");
+
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.countByUserAndStatusAndCancelledAtBetween(
+                eq(owner),
+                eq("cancelled"),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class))).thenReturn(0L);
+        when(bookingRepository.save(booking)).thenReturn(booking);
+        doThrow(new RuntimeException("notifications unavailable"))
+                .when(notificationService)
+                .notify(eq(owner), eq(NotificationType.BOOKING_CANCELLED),
+                        contains("Booking cancelled"), eq("booking"), eq(1L));
+
+        Booking cancelled = bookingService.cancelBooking(1L, owner, false);
+
+        assertEquals("cancelled", cancelled.getStatus());
+        assertEquals(LocalDateTime.now(fixedClock), cancelled.getCancelledAt());
     }
 
     @Test
