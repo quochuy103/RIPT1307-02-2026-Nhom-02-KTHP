@@ -20,6 +20,23 @@ alter table if exists users
 alter table if exists users
     add column if not exists address text;
 
+alter table if exists users
+    add column if not exists credentials_updated_at timestamp;
+
+create table if not exists revoked_tokens
+(
+    id          bigserial primary key,
+    jti         varchar(255) not null unique,
+    user_id     bigint not null references users (id),
+    reason      varchar(100) not null,
+    revoked_at  timestamp not null default current_timestamp,
+    expires_at  timestamp not null
+);
+
+create index if not exists idx_revoked_tokens_jti on revoked_tokens (jti);
+create index if not exists idx_revoked_tokens_user on revoked_tokens (user_id);
+create index if not exists idx_revoked_tokens_expires_at on revoked_tokens (expires_at);
+
 -- Add deleted columns to products table
 alter table if exists products
     add column if not exists deleted boolean;
