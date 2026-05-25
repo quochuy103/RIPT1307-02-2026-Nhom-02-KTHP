@@ -316,6 +316,20 @@ export const api = {
       const rows = await request<OrderRow[]>('/api/orders/my', undefined, true);
       return rows.map(mapOrder);
     },
+    getMyOrdersPaged: async (page: number, size = 10): Promise<{ content: Order[]; totalPages: number; totalElements: number; number: number }> => {
+      const raw = await request<{
+        content: OrderRow[];
+        totalPages: number;
+        totalElements: number;
+        number: number;
+      }>(`/api/orders/my/page?page=${page}&size=${size}&sort=createdAt,desc`, undefined, true);
+      return {
+        content: raw.content.map(mapOrder),
+        totalPages: raw.totalPages,
+        totalElements: raw.totalElements,
+        number: raw.number,
+      };
+    },
     create: async (payload: { address: string; items: Array<{ productId: number; quantity: number }> }): Promise<Order> => {
       const row = await request<OrderRow>('/api/orders', { method: 'POST', body: JSON.stringify(payload) }, true);
       return mapOrder(row);
