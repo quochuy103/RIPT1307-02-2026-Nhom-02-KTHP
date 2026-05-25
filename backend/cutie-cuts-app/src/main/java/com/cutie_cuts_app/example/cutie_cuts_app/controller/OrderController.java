@@ -6,8 +6,10 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.OrderItem;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.Product;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.ShopOrder;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.UserAddress;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ProductRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserAddressRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.NotificationService;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
@@ -47,16 +49,19 @@ public class OrderController {
     private final ProductRepository productRepository;
     private final CurrentUserService currentUserService;
     private final NotificationService notificationService;
+    private final UserAddressRepository userAddressRepository;
 
     public OrderController(
             ShopOrderRepository orderRepository,
             ProductRepository productRepository,
             CurrentUserService currentUserService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            UserAddressRepository userAddressRepository) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.currentUserService = currentUserService;
         this.notificationService = notificationService;
+        this.userAddressRepository = userAddressRepository;
     }
 
     @GetMapping
@@ -137,10 +142,11 @@ public class OrderController {
         }
 
         User user = currentUserService.getByEmail(authentication.getName());
+        String resolvedAddress = resolveOrderAddress(user, request);
 
         ShopOrder order = new ShopOrder();
         order.setUser(user);
-        order.setAddress(request.getAddress());
+        order.setAddress(resolvedAddress);
 
         List<OrderItem> items = new ArrayList<>();
         double total = 0;
@@ -281,6 +287,53 @@ public class OrderController {
                 "Order cancelled. Stock restored.",
                 "order", saved.getId());
         return toResponse(saved);
+    }
+
+    private String resolveOrderAddress(User user, CreateOrderRequest request) {
+        if (request.getAddressId() != null) {
+            UserAddress userAddress = userAddressRepository
+                    .findByIdAndUserIdAndDeletedFalse(request.getAddressId(), user.getId())
+                    .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Address not found"));
+            return formatAddressSnapshot(userAddress);
+        }
+
+        if (request.getAddress() == null || request.getAddress().isBlank()) {
+            throw new ResponseStatusException(BAD_REQUEST, "Address is required");
+        }
+
+        return request.getAddress().trim();
+    }
+
+    private String formatAddressSnapshot(UserAddress a) {
+        StringBuilder sb = new StringBuilder();
+
+        boolean hasRecipient = a.getRecipientName() != null && !a.getRecipientName().isBlank();
+        boolean hasPhone = a.getPhone() != null && !a.getPhone().isBlank();
+
+        if (hasRecipient) {
+            sb.append(a.getRecipientName().trim());
+            if (hasPhone) {
+                sb.append(" - ").append(a.getPhone().trim());
+            }
+            sb.append(" - ");
+        } else if (hasPhone) {
+            sb.append(a.getPhone().trim()).append(" - ");
+        }
+
+        sb.append(a.getAddressLine().trim());
+
+        String ward = a.getWard();
+        String district = a.getDistrict();
+        if (ward != null && !ward.isBlank()) sb.append(", ").append(ward.trim());
+        if (district != null && !district.isBlank()) sb.append(", ").append(district.trim());
+        sb.append(", ").append(a.getCity().trim());
+
+        String note = a.getNote();
+        if (note != null && !note.isBlank()) {
+            sb.append(". Note: ").append(note.trim());
+        }
+
+        return sb.toString();
     }
 
     private boolean isAdmin(Authentication authentication) {
