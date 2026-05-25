@@ -57,7 +57,7 @@ public class S3StorageService {
                 .build();
     }
 
-    private void ensureBucketExists(String bucketName) {
+    public void ensureBucketExists(String bucketName) {
         boolean bucketExisted = true;
         try {
             s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
@@ -73,7 +73,31 @@ public class S3StorageService {
         }
         // Always ensure public read policy is applied (covers new and pre-existing buckets)
         applyPublicReadPolicy(bucketName);
+        applyCorsPolicy(bucketName);
     }
+
+    private void applyCorsPolicy(String bucketName) {
+        try {
+            software.amazon.awssdk.services.s3.model.CORSRule rule = software.amazon.awssdk.services.s3.model.CORSRule.builder()
+                    .allowedMethods("GET", "PUT", "POST", "DELETE", "HEAD")
+                    .allowedOrigins("*")
+                    .allowedHeaders("*")
+                    .exposeHeaders("ETag")
+                    .maxAgeSeconds(3000)
+                    .build();
+
+            s3Client.putBucketCors(software.amazon.awssdk.services.s3.model.PutBucketCorsRequest.builder()
+                    .bucket(bucketName)
+                    .corsConfiguration(software.amazon.awssdk.services.s3.model.CORSConfiguration.builder()
+                            .corsRules(rule)
+                            .build())
+                    .build());
+            log.info("Applied CORS policy to bucket: {}", bucketName);
+        } catch (Exception e) {
+            log.warn("Failed to apply CORS policy to bucket {}: {}", bucketName, e.getMessage());
+        }
+    }
+
 
     public String uploadFile(MultipartFile file, String bucket, String path) throws IOException {
         ensureBucketExists(bucket);
@@ -100,10 +124,29 @@ public class S3StorageService {
         return uploadFile(file, avatarsBucket, path);
     }
 
-    public String uploadGalleryImage(MultipartFile file, String filename) throws IOException {
-        String path = "images";
-        return uploadFile(file, galleryBucket, path);
+    public boolean objectExists(String bucket, String key) {
+        try {
+            s3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build());
+            return true;
+        } catch (NoSuchKeyException e) {
+            return false;
+        } catch (Exception e) {
+            log.warn("headObject failed for bucket={} key={}: {}", bucket, key, e.getMessage());
+            return false;
+        }
     }
+
+    public String derivePublicUrl(String bucket, String key) {
+        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
+
+    }
+
+    public String getAvatarsBucket() { return avatarsBucket; }
+    public String getGalleryBucket() { return galleryBucket; }
+    public String getBarbersBucket() { return barbersBucket; }
 
     public String uploadBarberImage(byte[] imageBytes, String contentType, String extension) throws IOException {
         return uploadBytesToBucket(imageBytes, contentType, extension, barbersBucket);

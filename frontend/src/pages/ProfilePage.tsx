@@ -3,6 +3,7 @@ import { Camera, Loader2, Mail, MapPin, Phone, RefreshCw, Save, Shield, UserRoun
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { ApiError, api, type UserProfile } from '@/lib/api';
+import { uploadImage } from '@/services/uploadService';
 import { useAuth } from '@/context/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -164,7 +165,7 @@ const ProfilePage = () => {
 
     try {
       setIsUploading(true);
-      await api.user.uploadAvatar(file);
+      await uploadImage({ file, context: 'AVATAR' });
       const nextProfile = await api.user.getMe();
       setProfile(nextProfile);
       setForm(toForm(nextProfile));

@@ -80,7 +80,7 @@ public class OAuthService {
         UserAuth oauthAuthMethod = new UserAuth();
         oauthAuthMethod.setAuthType(normalizedProvider);
         oauthAuthMethod.setAuthValue(authValue);
-        oauthAuthMethod.setVerified(true);
+        oauthAuthMethod.setEmailVerified(true);
         oauthAuthMethod.setUser(newUser);
 
         // Also store email as a separate auth method if available
@@ -89,7 +89,7 @@ public class OAuthService {
             emailAuthMethod.setAuthType("email");
             emailAuthMethod.setAuthValue(oauthInfo.email().toLowerCase());
             emailAuthMethod.setPasswordHash(null); // No password for OAuth-created accounts
-            emailAuthMethod.setVerified(true);
+            emailAuthMethod.setEmailVerified(true);
             emailAuthMethod.setUser(newUser);
             newUser.setAuthMethods(List.of(oauthAuthMethod, emailAuthMethod));
         } else {
@@ -126,7 +126,7 @@ public class OAuthService {
         UserAuth oauthAuth = new UserAuth();
         oauthAuth.setAuthType(provider);
         oauthAuth.setAuthValue(authValue);
-        oauthAuth.setVerified(true);
+        oauthAuth.setEmailVerified(true);
         oauthAuth.setUser(user);
 
         List<UserAuth> methods = user.getAuthMethods();

@@ -103,6 +103,13 @@
 
 		</dependency>
 
+		<!-- RESEND EMAIL -->
+		<dependency>
+			<groupId>com.resend</groupId>
+			<artifactId>resend-java</artifactId>
+			<version>4.4.0</version>
+		</dependency>
+
 		<!-- AWS S3 SDK -->
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>

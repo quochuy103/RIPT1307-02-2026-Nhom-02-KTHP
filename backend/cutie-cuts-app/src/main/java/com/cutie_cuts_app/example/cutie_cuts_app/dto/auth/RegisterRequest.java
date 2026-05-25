@@ -1,6 +1,7 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class RegisterRequest {
 
@@ -11,6 +12,7 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank
+    @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
     public String getName() {

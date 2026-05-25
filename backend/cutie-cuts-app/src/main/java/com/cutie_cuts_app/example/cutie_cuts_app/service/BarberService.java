@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
@@ -20,10 +21,15 @@ public class BarberService {
 
     private final BarberRepository barberRepository;
     private final ImageStorageService imageStorageService;
+    private final PresignService presignService;
+    private final S3StorageService s3StorageService;
 
-    public BarberService(BarberRepository barberRepository, ImageStorageService imageStorageService) {
+    public BarberService(BarberRepository barberRepository, ImageStorageService imageStorageService,
+                         PresignService presignService, S3StorageService s3StorageService) {
         this.barberRepository = barberRepository;
         this.imageStorageService = imageStorageService;
+        this.presignService = presignService;
+        this.s3StorageService = s3StorageService;
     }
 
     @Transactional(readOnly = true)
@@ -56,9 +62,7 @@ public class BarberService {
         Barber barber = new Barber();
         barber.setName(request.getName());
         barber.setRole(request.getRole());
-        String rawImage = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
-        ImageStorageService.UploadResult result = imageStorageService.storeImage(rawImage, ImageStorageService.ImageContext.BARBER);
-        barber.setImage(result.url());
+        barber.setImage(resolveBarberImage(request));
         barber.setExperience(request.getExperience());
         barber.setSpecialties(request.getSpecialties());
         barber.setRating(request.getRating() != null ? request.getRating() : 4.8);
@@ -73,9 +77,7 @@ public class BarberService {
         String oldImage = barber.getImage();
         barber.setName(request.getName());
         barber.setRole(request.getRole());
-        String rawImage = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
-        ImageStorageService.UploadResult result = imageStorageService.storeImage(rawImage);
-        String newImage = result.url();
+        String newImage = resolveBarberImage(request);
         barber.setImage(newImage);
         barber.setExperience(request.getExperience());
         barber.setSpecialties(request.getSpecialties());
@@ -84,7 +86,6 @@ public class BarberService {
         }
         Barber saved = barberRepository.save(barber);
 
-        // Clean up old managed MinIO image when replaced with a new one
         if (oldImage != null && !oldImage.isBlank() && !oldImage.equals(newImage)) {
             imageStorageService.deleteImage(oldImage);
         }
@@ -113,6 +114,32 @@ public class BarberService {
         return barberRepository.findBySpecialtiesContainingIgnoreCase(specialty).stream()
                 .map(BarberResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    private String resolveBarberImage(BarberRequest request) {
+        if (request.getObjectKey() != null && !request.getObjectKey().isBlank()) {
+            presignService.validateObjectKeyForContext("BARBER", request.getObjectKey());
+
+            if (request.getContentType() != null && !PresignService.ALLOWED_CONTENT_TYPES.contains(request.getContentType())) {
+                throw new ResponseStatusException(BAD_REQUEST,
+                        "Unsupported content type. Allowed: image/jpeg, image/png, image/webp, image/gif");
+            }
+            if (request.getFileSize() != null && (request.getFileSize() <= 0 || request.getFileSize() > PresignService.MAX_IMAGE_SIZE)) {
+                throw new ResponseStatusException(BAD_REQUEST,
+                        "File size must be between 1 byte and 5 MB");
+            }
+
+            String bucket = presignService.bucketForContext("BARBER");
+            if (!s3StorageService.objectExists(bucket, request.getObjectKey())) {
+                throw new ResponseStatusException(BAD_REQUEST, "Uploaded object not found in storage");
+            }
+
+            return presignService.derivePublicUrl("BARBER", request.getObjectKey());
+        }
+
+        // Legacy: manual URL or data URL — backward compat, not part of presigned upload security model
+        String rawImage = request.getImage() != null && !request.getImage().isBlank() ? request.getImage() : request.getAvatar();
+        return imageStorageService.storeImage(rawImage, ImageStorageService.ImageContext.BARBER).url();
     }
 
     public static class BarberNotFoundException extends ResponseStatusException {

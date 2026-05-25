@@ -2,19 +2,22 @@ package com.cutie_cuts_app.example.cutie_cuts_app.dto.domain;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public class CreateOrderRequest {
-    @NotBlank(message = "Address is required")
+
     private String address;
+
+    private Long addressId;
 
     @Valid
     private List<CreateOrderItemRequest> items;
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+    public Long getAddressId() { return addressId; }
+    public void setAddressId(Long addressId) { this.addressId = addressId; }
     public List<CreateOrderItemRequest> getItems() { return items; }
     public void setItems(List<CreateOrderItemRequest> items) { this.items = items; }
 
