@@ -172,11 +172,11 @@ const Index = () => {
               'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=400',
               'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400',
               'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400'])
-            .slice(0, 4).map((img, i) => (
-              <motion.div key={i} {...fadeUp} transition={{ delay: i * 0.1 }} className="aspect-square overflow-hidden rounded-lg">
-                <img src={img} alt="Hairstyle" loading="lazy" className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
-              </motion.div>
-            ))}
+              .slice(0, 4).map((img, i) => (
+                <motion.div key={i} {...fadeUp} transition={{ delay: i * 0.1 }} className="aspect-square overflow-hidden rounded-lg">
+                  <img src={img} alt="Hairstyle" loading="lazy" className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+                </motion.div>
+              ))}
           </div>
           <div className="text-center mt-10">
             <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
