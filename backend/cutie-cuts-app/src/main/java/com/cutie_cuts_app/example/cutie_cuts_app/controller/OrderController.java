@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,6 +100,22 @@ public class OrderController {
         }
         User user = currentUserService.getByEmail(authentication.getName());
         return orderRepository.findByUser(user).stream().map(this::toResponse).toList();
+    }
+
+    @GetMapping("/my/page")
+    @Operation(summary = "Get current user's orders (paginated)", description = "Returns the authenticated user's orders sorted by creation date descending, with pagination.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Authentication required")
+    })
+    public Page<Map<String, Object>> myOrdersPaged(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        User user = currentUserService.getByEmail(authentication.getName());
+        return orderRepository.findByUser(user, pageable).map(this::toResponse);
     }
 
     @PostMapping
