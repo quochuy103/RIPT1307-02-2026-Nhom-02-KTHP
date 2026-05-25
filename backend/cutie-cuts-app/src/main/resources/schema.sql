@@ -143,6 +143,64 @@ alter table if exists bookings
 
 drop index if exists idx_booking_active_slot_unique;
 
+-- Relax old verified column so Hibernate INSERTs without it succeed
+alter table if exists user_auth alter column verified drop not null;
+alter table if exists user_auth alter column verified set default true;
+
+-- Password Reset OTP columns on user_auth
+alter table if exists user_auth
+    add column if not exists reset_otp_hash varchar(128);
+
+alter table if exists user_auth
+    add column if not exists reset_otp_expiry timestamp;
+
+alter table if exists user_auth
+    add column if not exists reset_otp_attempts int not null default 0;
+
+alter table if exists user_auth
+    add column if not exists reset_otp_last_sent_at timestamp;
+
+-- Email Verification columns on user_auth
+alter table if exists user_auth
+    add column if not exists email_verified boolean not null default true;
+
+alter table if exists user_auth
+    add column if not exists verification_otp_hash varchar(128);
+
+alter table if exists user_auth
+    add column if not exists verification_otp_expiry timestamp;
+
+alter table if exists user_auth
+    add column if not exists verification_otp_attempts int not null default 0;
+
+alter table if exists user_auth
+    add column if not exists verification_otp_last_sent_at timestamp;
+
 create unique index if not exists idx_booking_active_slot_unique
     on bookings (barber_id, "date", "time")
     where lower(status) <> 'cancelled';
+
+-- User addresses
+create table if not exists user_addresses (
+    id              bigserial primary key,
+    user_id         bigint not null references users(id),
+    recipient_name  varchar(100),
+    phone           varchar(20),
+    address_line    varchar(500) not null,
+    ward            varchar(255),
+    district        varchar(255),
+    city            varchar(255) not null,
+    note            varchar(500),
+    is_default      boolean not null default false,
+    deleted         boolean not null default false,
+    deleted_at      timestamp,
+    created_at      timestamp,
+    updated_at      timestamp
+);
+
+create index if not exists idx_user_addresses_user on user_addresses(user_id);
+create index if not exists idx_user_addresses_user_default on user_addresses(user_id, is_default);
+
+create unique index if not exists ux_user_addresses_one_default
+    on user_addresses(user_id)
+    where is_default = true and deleted = false;

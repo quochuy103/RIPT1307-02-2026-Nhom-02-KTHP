@@ -6,10 +6,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
+
+import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
 @RestController
 @RequestMapping("/api/webhooks")
@@ -17,23 +22,35 @@ import java.util.Map;
 public class PaymentWebhookController {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentWebhookController.class);
+    private static final String WEBHOOK_SECRET_HEADER = "X-Webhook-Secret";
 
     private final PaymentWebhookService webhookService;
+    private final String webhookSecret;
 
-    public PaymentWebhookController(PaymentWebhookService webhookService) {
+    public PaymentWebhookController(
+            PaymentWebhookService webhookService,
+            @Value("${app.payment.webhook-secret:}") String webhookSecret) {
         this.webhookService = webhookService;
+        this.webhookSecret = webhookSecret;
     }
 
     @PostMapping("/payment")
     @Operation(summary = "Receive payment webhook from bank")
-    public ResponseEntity<Map<String, String>> handlePaymentWebhook(@RequestBody WebhookPayload payload) {
-        try {
-            logger.info("Received webhook for payment: {}", payload.getPaymentCode());
-            webhookService.processWebhook(payload);
-            return ResponseEntity.ok(Map.of("status", "success", "message", "Webhook processed"));
-        } catch (Exception e) {
-            logger.error("Error processing webhook: {}", e.getMessage(), e);
-            return ResponseEntity.ok(Map.of("status", "error", "message", e.getMessage()));
+    public ResponseEntity<Map<String, String>> handlePaymentWebhook(
+            @RequestBody WebhookPayload payload,
+            @RequestHeader(value = WEBHOOK_SECRET_HEADER, required = false) String providedSecret) {
+        validateWebhookSecret(providedSecret);
+        logger.info("Received webhook for payment: {}", payload.getPaymentCode());
+        String message = webhookService.processWebhook(payload);
+        return ResponseEntity.ok(Map.of("status", "success", "message", message));
+    }
+
+    private void validateWebhookSecret(String providedSecret) {
+        if (webhookSecret == null || webhookSecret.isBlank()) {
+            throw new ResponseStatusException(SERVICE_UNAVAILABLE, "Payment webhook secret is not configured");
+        }
+        if (!webhookSecret.equals(providedSecret)) {
+            throw new ResponseStatusException(FORBIDDEN, "Invalid webhook secret");
         }
     }
 }

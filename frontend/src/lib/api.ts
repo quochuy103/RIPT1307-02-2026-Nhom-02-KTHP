@@ -109,9 +109,7 @@ type OrderRow = {
   createdAt: string;
 };
 
-type AvatarUploadResponse = {
-  url: string;
-};
+
 
 type BookingRow = {
   id: number;
@@ -176,41 +174,7 @@ async function requestWithNotFoundFallback<T>(path: string, fallbackPath: string
   }
 }
 
-async function requestForm<T>(path: string, formData: FormData, auth = false): Promise<T> {
-  const headers = new Headers();
 
-  if (auth) {
-    const token = getToken();
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-  }
-
-  const response = await fetch(`${API_BASE_URL}${path}`, { method: 'POST', headers, body: formData });
-
-  if (auth && response.status === 401) {
-    dispatchUnauthorizedEvent();
-  }
-
-  if (!response.ok) {
-    let message = `Request failed (${response.status})`;
-    try {
-      const body = await response.json() as { message?: string; error?: string; detail?: string };
-      if (body.message) message = body.message;
-      else if (body.detail) message = body.detail;
-      else if (body.error) message = body.error;
-    } catch {
-      // ignore
-    }
-    throw new ApiError(message, response.status);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return await response.json() as T;
-}
 
 const initials = (name: string) => {
   const parts = name.trim().split(/\s+/);
@@ -282,11 +246,6 @@ export const api = {
     updateProfile: async (payload: UpdateUserProfilePayload): Promise<UserProfile> => (
       request<UserProfile>('/api/user/me', { method: 'PATCH', body: JSON.stringify(payload) }, true)
     ),
-    uploadAvatar: async (file: File): Promise<AvatarUploadResponse> => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return requestForm<AvatarUploadResponse>('/api/users/me/avatar', formData, true);
-    },
   },
 
   services: {
@@ -357,6 +316,20 @@ export const api = {
       const rows = await request<OrderRow[]>('/api/orders/my', undefined, true);
       return rows.map(mapOrder);
     },
+    getMyOrdersPaged: async (page: number, size = 10): Promise<{ content: Order[]; totalPages: number; totalElements: number; number: number }> => {
+      const raw = await request<{
+        content: OrderRow[];
+        totalPages: number;
+        totalElements: number;
+        number: number;
+      }>(`/api/orders/my/page?page=${page}&size=${size}&sort=createdAt,desc`, undefined, true);
+      return {
+        content: raw.content.map(mapOrder),
+        totalPages: raw.totalPages,
+        totalElements: raw.totalElements,
+        number: raw.number,
+      };
+    },
     create: async (payload: { address: string; items: Array<{ productId: number; quantity: number }> }): Promise<Order> => {
       const row = await request<OrderRow>('/api/orders', { method: 'POST', body: JSON.stringify(payload) }, true);
       return mapOrder(row);
@@ -399,20 +372,20 @@ export const api = {
       const rows = await request<Array<{ id: number; name: string; category: string; price: number; stock: number; image: string; description: string }>>('/api/products', undefined, true);
       return rows.map((r) => ({ id: String(r.id), name: r.name, category: r.category, price: r.price, stock: r.stock, image: r.image, description: r.description }));
     },
-    createProduct: async (payload: Omit<AdminProduct, 'id'>) => request('/api/products', { method: 'POST', body: JSON.stringify(payload) }, true),
-    updateProduct: async (id: string, payload: Omit<AdminProduct, 'id'>) => request(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, true),
+    createProduct: async (payload: Omit<AdminProduct, 'id'> & { objectKey?: string; contentType?: string; fileSize?: number }) => request('/api/products', { method: 'POST', body: JSON.stringify(payload) }, true),
+    updateProduct: async (id: string, payload: Omit<AdminProduct, 'id'> & { objectKey?: string; contentType?: string; fileSize?: number }) => request(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, true),
     deleteProduct: async (id: string) => request(`/api/products/${id}`, { method: 'DELETE' }, true),
 
     getBarbers: async (): Promise<AdminBarber[]> => {
       const rows = await request<Array<{ id: number; name: string; experience: number; image: string; specialties: string }>>('/api/barbers', undefined, true);
       return rows.map((r) => ({ id: String(r.id), name: r.name, experience: r.experience, avatar: r.image, specialties: r.specialties ? r.specialties.split(',').map((s) => s.trim()) : [] }));
     },
-    createBarber: async (payload: Omit<AdminBarber, 'id'>) => {
-      const body = { ...payload, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8 };
+    createBarber: async (payload: Omit<AdminBarber, 'id'> & { objectKey?: string; contentType?: string; fileSize?: number }) => {
+      const body = { name: payload.name, experience: payload.experience, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8, objectKey: payload.objectKey, contentType: payload.contentType, fileSize: payload.fileSize };
       return request('/api/barbers', { method: 'POST', body: JSON.stringify(body) }, true);
     },
-    updateBarber: async (id: string, payload: Omit<AdminBarber, 'id'>) => {
-      const body = { ...payload, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8 };
+    updateBarber: async (id: string, payload: Omit<AdminBarber, 'id'> & { objectKey?: string; contentType?: string; fileSize?: number }) => {
+      const body = { name: payload.name, experience: payload.experience, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8, objectKey: payload.objectKey, contentType: payload.contentType, fileSize: payload.fileSize };
       return request(`/api/barbers/${id}`, { method: 'PUT', body: JSON.stringify(body) }, true);
     },
     deleteBarber: async (id: string) => request(`/api/barbers/${id}`, { method: 'DELETE' }, true),
@@ -439,7 +412,6 @@ export const api = {
       const rows = await request<Array<{ id: number; url: string; alt: string; uploadedAt: string }>>('/api/gallery');
       return rows.map((r) => ({ ...r, id: String(r.id), uploadedAt: r.uploadedAt?.slice(0, 10) ?? '' }));
     },
-    createGalleryImage: async (payload: { url: string; alt: string }) => request('/api/gallery', { method: 'POST', body: JSON.stringify({ ...payload, category: 'modern' }) }),
     deleteGalleryImage: async (id: string) => request(`/api/gallery/${id}`, { method: 'DELETE' }),
 
     getUsers: async (): Promise<AdminUser[]> => {

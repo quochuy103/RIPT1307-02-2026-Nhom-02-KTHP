@@ -8,11 +8,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import ImageUploader from '@/components/ImageUploader';
+import { confirmUpload, type UploadMetadata } from '@/services/uploadService';
+
+interface GalleryForm {
+  objectKey: string;
+  contentType: string;
+  fileSize: number;
+  alt: string;
+  previewUrl: string;
+}
 
 const AdminGallery = () => {
   const [images, setImages] = useState(mockGallery);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ url: '', alt: '' });
+  const [form, setForm] = useState<GalleryForm>({ objectKey: '', contentType: '', fileSize: 0, alt: '', previewUrl: '' });
 
   useEffect(() => {
     const load = async () => {
@@ -26,13 +35,14 @@ const AdminGallery = () => {
   }, []);
 
   const handleUpload = async () => {
-    if (!form.url) { toast.error('URL is required'); return; }
+    if (!form.objectKey) { toast.error('Please upload an image first'); return; }
     try {
-      await api.admin.createGalleryImage(form);
+      const metadata: UploadMetadata = { alt: form.alt, category: 'general' };
+      await confirmUpload('GALLERY', form.objectKey, form.contentType, form.fileSize, metadata);
       setImages(await api.admin.getGallery());
       toast.success('Image added');
       setModalOpen(false);
-      setForm({ url: '', alt: '' });
+      setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', previewUrl: '' });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Upload failed');
     }
@@ -55,7 +65,7 @@ const AdminGallery = () => {
           <h1 className="text-2xl font-bold text-foreground">Gallery Management</h1>
           <p className="text-sm text-muted-foreground">{images.length} images</p>
         </div>
-        <Button onClick={() => { setForm({ url: '', alt: '' }); setModalOpen(true); }}>
+        <Button onClick={() => { setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', previewUrl: '' }); setModalOpen(true); }}>
           <Plus className="mr-1 h-4 w-4" /> Add Image
         </Button>
       </div>
@@ -82,14 +92,10 @@ const AdminGallery = () => {
             <Label>Image</Label>
             <ImageUploader
               context="GALLERY"
-              onUploaded={(publicUrl) => setForm({ ...form, url: publicUrl })}
+              onUploaded={(publicUrl, objectKey, contentType, fileSize) =>
+                setForm({ ...form, objectKey, contentType, fileSize, previewUrl: publicUrl })
+              }
               onError={(msg) => toast.error(msg)}
-            />
-            <Input
-              value={form.url}
-              onChange={(e) => setForm({ ...form, url: e.target.value })}
-              placeholder="Or paste image URL manually"
-              className="mt-2"
             />
           </div>
           <div><Label>Alt Text</Label><Input value={form.alt} onChange={(e) => setForm({ ...form, alt: e.target.value })} placeholder="Description" /></div>

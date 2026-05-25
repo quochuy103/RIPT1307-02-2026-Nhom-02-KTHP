@@ -16,12 +16,16 @@ import {
   AlertCircle,
   RefreshCw,
   ShoppingBag,
+  MapPin,
+  Phone,
+  Mail,
+  User,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { api, ApiError, type PaymentInfo, type Order } from '@/lib/api';
+import { api, ApiError, type PaymentInfo, type Order, type UserProfile } from '@/lib/api';
 import { formatVND } from '@/lib/format';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -56,14 +60,27 @@ const formatCountdown = (seconds: number): string => {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+type ShippingMode = 'profile' | 'custom';
+
 const CheckoutPage = () => {
   const { items, totalPrice, updateQuantity, removeFromCart, clearCart } = useCart();
-  const [form, setForm] = useState({ name: '', phone: '', address: '' });
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('QR');
   const [step, setStep] = useState<CheckoutStep>('idle');
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const [payment, setPayment] = useState<PaymentInfo | null>(null);
-  const [countdown, setCountdown] = useState<number>(300); // 5 min in seconds
+  const [countdown, setCountdown] = useState<number>(300);
+
+  // Shipping state
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [shippingMode, setShippingMode] = useState<ShippingMode>('custom');
+  const [customForm, setCustomForm] = useState({
+    recipientName: '',
+    phone: '',
+    email: '',
+    shippingAddress: '',
+    note: '',
+  });
 
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -88,6 +105,33 @@ const CheckoutPage = () => {
 
   // ── Cleanup on unmount ─────────────────────────────────────────────────────
   useEffect(() => () => stopPolling(), [stopPolling]);
+
+  // ── Profile helpers ───────────────────────────────────────────────────────
+  const isProfileComplete = useCallback((p: UserProfile | null): p is UserProfile => {
+    if (!p) return false;
+    const name = (p.fullName || p.name || '').trim();
+    return name.length > 0 && !!p.phone?.trim() && !!p.address?.trim();
+  }, []);
+
+  // ── Fetch profile on mount ────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await api.user.getMe();
+        if (!cancelled) {
+          setProfile(data);
+          setShippingMode(isProfileComplete(data) ? 'profile' : 'custom');
+        }
+      } catch {
+        // Not authenticated or error — stay in custom mode
+      } finally {
+        if (!cancelled) setProfileLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [isProfileComplete]);
 
   // ── Expiry countdown ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -157,9 +201,43 @@ const CheckoutPage = () => {
       toast.error(t('checkout.cartEmpty'));
       return;
     }
-    if (!form.address.trim()) {
-      toast.error(t('checkout.fillAll'));
-      return;
+
+    // ── Build address string ──────────────────────────────────────────────
+    let shippingAddress: string;
+    if (shippingMode === 'profile') {
+      if (!isProfileComplete(profile)) {
+        toast.error(t('checkout.profileIncomplete'));
+        return;
+      }
+      const parts = [
+        profile.fullName || profile.name,
+        profile.phone,
+        profile.email,
+        profile.address,
+      ].filter(Boolean);
+      shippingAddress = parts.join(' | ');
+    } else {
+      // Validate custom form
+      if (!customForm.recipientName.trim()) {
+        toast.error(t('checkout.errorRecipientRequired'));
+        return;
+      }
+      if (!customForm.phone.trim()) {
+        toast.error(t('checkout.errorPhoneRequired'));
+        return;
+      }
+      if (!customForm.shippingAddress.trim()) {
+        toast.error(t('checkout.errorAddressRequired'));
+        return;
+      }
+      const parts = [
+        customForm.recipientName.trim(),
+        customForm.phone.trim(),
+        customForm.email.trim(),
+        customForm.shippingAddress.trim(),
+        customForm.note.trim(),
+      ].filter(Boolean);
+      shippingAddress = parts.join(' | ');
     }
 
     // ── Step 1: Create order ──────────────────────────────────────────────
@@ -167,7 +245,7 @@ const CheckoutPage = () => {
     let order: Order;
     try {
       order = await api.orders.create({
-        address: form.address.trim(),
+        address: shippingAddress,
         items: items.map((item) => ({
           productId: Number(item.product.id),
           quantity: item.quantity,
@@ -200,17 +278,14 @@ const CheckoutPage = () => {
       return;
     }
 
-    // Order created — safe to clear cart now
     setCreatedOrder(order);
     clearCart();
 
-    // ── Step 2: COD path ──────────────────────────────────────────────────
     if (paymentMethod === 'COD') {
       setStep('order_success');
       return;
     }
 
-    // ── Step 3: QR payment path ───────────────────────────────────────────
     setStep('creating_payment');
     try {
       const paymentInfo = await api.payments.create(order.numericId);
@@ -218,15 +293,11 @@ const CheckoutPage = () => {
       setStep('waiting_payment');
       startPolling(paymentInfo.paymentCode);
     } catch (error) {
-      // Order was created but payment failed — inform user, don't reset order
       setStep('payment_failed');
       toast.error(
         error instanceof Error
           ? error.message
-          : t('checkout.errorPayment', {
-              defaultValue:
-                'Payment initialization failed. Your order was created. Please try again from My Orders.',
-            }),
+          : t('checkout.errorPayment', { defaultValue: 'Payment initialization failed. Your order was created. Please try again from My Orders.' }),
       );
     }
   };
@@ -522,28 +593,140 @@ const CheckoutPage = () => {
                 <span className="text-primary">{formatVND(totalPrice)}</span>
               </div>
 
-              <form onSubmit={handleOrder} className="space-y-3">
-                <Input
-                  placeholder={t('checkout.fullName')}
-                  value={form.name}
-                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                  className="bg-secondary border-border"
-                />
-                <Input
-                  placeholder={t('checkout.phone')}
-                  value={form.phone}
-                  onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                  className="bg-secondary border-border"
-                />
-                <Textarea
-                  placeholder={t('checkout.address')}
-                  value={form.address}
-                  onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
-                  className="bg-secondary border-border"
-                />
+              <form onSubmit={handleOrder} className="space-y-4">
+                {/* ── Shipping Information ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-semibold">{t('checkout.shippingInfo')}</p>
+                  </div>
+
+                  {/* Mode selector */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      id="shipping-mode-profile"
+                      disabled={!isProfileComplete(profile) || profileLoading}
+                      onClick={() => setShippingMode('profile')}
+                      className={`flex flex-col items-start gap-1 rounded-lg border p-3 text-left text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                        shippingMode === 'profile'
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border hover:border-primary/50 hover:bg-secondary/50'
+                      }`}
+                    >
+                      <User className="h-4 w-4 mb-0.5" />
+                      {t('checkout.useProfileInfo')}
+                      <span className="text-muted-foreground font-normal leading-tight">{t('checkout.useProfileInfoDesc')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="shipping-mode-custom"
+                      onClick={() => setShippingMode('custom')}
+                      className={`flex flex-col items-start gap-1 rounded-lg border p-3 text-left text-xs font-medium transition-all ${
+                        shippingMode === 'custom'
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border hover:border-primary/50 hover:bg-secondary/50'
+                      }`}
+                    >
+                      <MapPin className="h-4 w-4 mb-0.5" />
+                      {t('checkout.useDifferentInfo')}
+                      <span className="text-muted-foreground font-normal leading-tight">{t('checkout.useDifferentInfoDesc')}</span>
+                    </button>
+                  </div>
+
+                  {/* Profile incomplete warning */}
+                  {!profileLoading && !isProfileComplete(profile) && (
+                    <div className="flex gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 p-3">
+                      <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                        {t('checkout.profileIncomplete')}{' '}
+                        <Link to="/profile" className="underline font-medium">{t('checkout.updateProfile')}</Link>
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Profile preview */}
+                  <AnimatePresence>
+                    {shippingMode === 'profile' && isProfileComplete(profile) && (
+                      <motion.div
+                        key="profile-preview"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1.5"
+                      >
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{t('checkout.profilePreview')}</p>
+                        <p className="font-semibold text-sm">{profile!.fullName || profile!.name}</p>
+                        {profile!.phone && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <Phone className="h-3 w-3" />{profile!.phone}
+                          </p>
+                        )}
+                        {profile!.email && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <Mail className="h-3 w-3" />{profile!.email}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <MapPin className="h-3 w-3" />{profile!.address}
+                        </p>
+                      </motion.div>
+                    )}
+
+                    {/* Custom form */}
+                    {shippingMode === 'custom' && (
+                      <motion.div
+                        key="custom-form"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-2"
+                      >
+                        <Input
+                          id="recipient-name"
+                          placeholder={t('checkout.recipientNamePlaceholder')}
+                          value={customForm.recipientName}
+                          onChange={(e) => setCustomForm((p) => ({ ...p, recipientName: e.target.value }))}
+                          className="bg-secondary border-border"
+                        />
+                        <Input
+                          id="shipping-phone"
+                          placeholder={t('checkout.phonePlaceholder')}
+                          value={customForm.phone}
+                          onChange={(e) => setCustomForm((p) => ({ ...p, phone: e.target.value }))}
+                          className="bg-secondary border-border"
+                        />
+                        <Input
+                          id="shipping-email"
+                          type="email"
+                          placeholder={t('checkout.emailPlaceholder')}
+                          value={customForm.email}
+                          onChange={(e) => setCustomForm((p) => ({ ...p, email: e.target.value }))}
+                          className="bg-secondary border-border"
+                        />
+                        <Textarea
+                          id="shipping-address"
+                          placeholder={t('checkout.shippingAddressPlaceholder')}
+                          value={customForm.shippingAddress}
+                          onChange={(e) => setCustomForm((p) => ({ ...p, shippingAddress: e.target.value }))}
+                          className="bg-secondary border-border"
+                          rows={2}
+                        />
+                        <Textarea
+                          id="shipping-note"
+                          placeholder={t('checkout.notePlaceholder')}
+                          value={customForm.note}
+                          onChange={(e) => setCustomForm((p) => ({ ...p, note: e.target.value }))}
+                          className="bg-secondary border-border"
+                          rows={2}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
                 {/* ── Payment method selector ── */}
-                <div className="space-y-2 pt-1">
+                <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">{t('checkout.paymentMethod')}</p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
