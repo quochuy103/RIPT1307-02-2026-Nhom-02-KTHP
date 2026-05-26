@@ -59,6 +59,22 @@ class PresignServiceTest {
     }
 
     @Test
+    @DisplayName("generateUploadUrl requires user id for AVATAR")
+    void generateUploadUrl_avatarWithoutUserId_throws() {
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> presignService.generateUploadUrl("AVATAR", "image/png", 1024));
+        assertTrue(ex.getMessage().contains("userId is required"));
+    }
+
+    @Test
+    @DisplayName("generateUploadUrl returns user-scoped AVATAR key")
+    void generateUploadUrl_avatarWithUserId_returnsScopedKey() {
+        var result = presignService.generateUploadUrl("AVATAR", "image/png", 1024, 42L);
+        assertTrue(result.objectKey().startsWith("avatars/42/"));
+        assertTrue(result.objectKey().endsWith(".png"));
+    }
+
+    @Test
     @DisplayName("isAdminContext returns true for GALLERY")
     void isAdminContext_gallery_returnsTrue() {
         assertTrue(presignService.isAdminContext("GALLERY"));

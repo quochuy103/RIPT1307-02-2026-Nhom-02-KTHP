@@ -79,6 +79,10 @@ public class PresignService {
     }
 
     public PresignResult generateUploadUrl(String context, String contentType, long sizeBytes) {
+        return generateUploadUrl(context, contentType, sizeBytes, null);
+    }
+
+    public PresignResult generateUploadUrl(String context, String contentType, long sizeBytes, Long userId) {
         if (!ALL_CONTEXTS.contains(context.toUpperCase())) {
             throw new ResponseStatusException(BAD_REQUEST,
                     "Invalid context. Allowed: " + String.join(", ", ALL_CONTEXTS));
@@ -97,7 +101,12 @@ public class PresignService {
         }
 
         String extension = extensionFromContentType(contentType);
-        String objectKey = generateObjectKey(normalizedContext, extension);
+        if ("AVATAR".equals(normalizedContext) && userId == null) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "userId is required for avatar uploads");
+        }
+
+        String objectKey = generateObjectKey(normalizedContext, extension, userId);
         String bucket = bucketForContext(normalizedContext);
 
         s3StorageService.ensureBucketExists(bucket);
@@ -179,13 +188,13 @@ public class PresignService {
         };
     }
 
-    private String generateObjectKey(String context, String extension) {
+    private String generateObjectKey(String context, String extension, Long userId) {
         String uuid = UUID.randomUUID().toString();
         return switch (context) {
             case "BARBER" -> uuid + extension;
             case "GALLERY" -> "images/" + uuid + extension;
             case "PRODUCT" -> "products/" + uuid + extension;
-            case "AVATAR" -> "avatars/" + uuid + extension;
+            case "AVATAR" -> "avatars/" + userId + "/" + uuid + extension;
             default -> throw new ResponseStatusException(BAD_REQUEST, "Unknown context: " + context);
         };
     }
