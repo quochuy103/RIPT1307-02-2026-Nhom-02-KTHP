@@ -42,6 +42,12 @@ class AuthServiceTest {
     @Mock
     private TokenRevocationService tokenRevocationService;
 
+    @Mock
+    private TokenService tokenService;
+
+    @Mock
+    private EmailService emailService;
+
     private AuthService authService;
 
     @BeforeEach
@@ -51,7 +57,15 @@ class AuthServiceTest {
                 userAuthRepository,
                 passwordEncoder,
                 jwtUtil,
-                tokenRevocationService);
+                tokenRevocationService,
+                tokenService,
+                emailService,
+                10,
+                5,
+                60,
+                10,
+                5,
+                60);
     }
 
     @Test
