@@ -79,21 +79,11 @@ class BookingServiceTest {
 
         when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
         when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
-        when(bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
-                barber,
-                request.getDate(),
-                request.getTime(),
-                "cancelled")).thenReturn(false);
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Booking booking = bookingService.createBooking(user, request);
 
         assertEquals("pending", booking.getStatus());
-        verify(bookingRepository).existsByBarberAndDateAndTimeAndStatusNot(
-                barber,
-                request.getDate(),
-                request.getTime(),
-                "cancelled");
     }
 
     @Test
@@ -109,11 +99,6 @@ class BookingServiceTest {
 
         when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
         when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
-        when(bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
-                barber,
-                request.getDate(),
-                request.getTime(),
-                "cancelled")).thenReturn(false);
         when(bookingRepository.save(any(Booking.class))).thenThrow(
                 new DataIntegrityViolationException(
                         "duplicate key value violates unique constraint \"idx_booking_active_slot_unique\""));
@@ -138,11 +123,6 @@ class BookingServiceTest {
 
         when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
         when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
-        when(bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
-                barber,
-                request.getDate(),
-                request.getTime(),
-                "cancelled")).thenReturn(false);
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
         doThrow(new RuntimeException("notifications unavailable"))
                 .when(notificationService)
@@ -152,6 +132,27 @@ class BookingServiceTest {
 
         assertEquals("pending", booking.getStatus());
         assertEquals(user, booking.getUser());
+    }
+
+    @Test
+    void createBookingRejectsBookingsWithinThirtyMinutes() {
+        User user = createUser(10L, "Customer");
+        Barber barber = createBarber(20L, "Barber A");
+        SalonService service = createSalonService(30L, "Haircut", 120);
+        CreateBookingRequest request = new CreateBookingRequest();
+        request.setBarberId(20L);
+        request.setServiceId(30L);
+        request.setDate(LocalDate.of(2026, 5, 16));
+        request.setTime(LocalTime.of(9, 20));
+
+        when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
+        when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> bookingService.createBooking(user, request));
+
+        assertEquals("Bookings must be made at least 30 minutes in advance", exception.getReason());
+        verify(bookingRepository, never()).save(any());
     }
 
     @Test
