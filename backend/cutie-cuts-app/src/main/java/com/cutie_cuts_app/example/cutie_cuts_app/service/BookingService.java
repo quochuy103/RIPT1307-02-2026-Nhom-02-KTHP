@@ -35,6 +35,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class BookingService {
 
     private static final int MAX_DAILY_CANCELLATIONS = 3;
+    private static final long MIN_BOOKING_LEAD_TIME_MINUTES = 30;
     private static final long MIN_CANCEL_NOTICE_MINUTES = 30;
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Logger log = LoggerFactory.getLogger(BookingService.class);
@@ -96,9 +97,9 @@ public class BookingService {
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Barber not found"));
 
         LocalDateTime bookingDateTime = LocalDateTime.of(request.getDate(), request.getTime());
-        LocalDateTime now = LocalDateTime.now(clock);
-        if (bookingDateTime.isBefore(now)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Booking date/time cannot be in the past");
+        LocalDateTime minimumBookingDateTime = LocalDateTime.now(clock).plusMinutes(MIN_BOOKING_LEAD_TIME_MINUTES);
+        if (bookingDateTime.isBefore(minimumBookingDateTime)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Bookings must be made at least 30 minutes in advance");
         }
 
 
