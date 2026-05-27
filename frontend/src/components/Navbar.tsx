@@ -105,7 +105,7 @@ const Navbar = () => {
                   <DropdownMenuSeparator />
                   {user?.role === 'admin' && (
                     <DropdownMenuItem asChild>
-                      <Link to="/admin">Admin Dashboard</Link>
+                      <Link to="/admin">{t('admin.dashboard')}</Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
