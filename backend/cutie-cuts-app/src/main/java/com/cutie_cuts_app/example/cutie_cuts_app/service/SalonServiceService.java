@@ -6,8 +6,10 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.SalonService;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,6 +33,15 @@ public class SalonServiceService {
     @Transactional(readOnly = true)
     public Page<SalonServiceResponse> findAllPaginated(Pageable pageable) {
         return repository.findAll(pageable).map(SalonServiceResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SalonServiceResponse> findAllFiltered(String search, String category,
+                                                       Integer minPrice, Integer maxPrice,
+                                                       Integer minDuration, Integer maxDuration,
+                                                       Pageable pageable) {
+        return repository.findAllFiltered(search, category, minPrice, maxPrice,
+                minDuration, maxDuration, pageable).map(SalonServiceResponse::from);
     }
 
     @Transactional(readOnly = true)
@@ -93,6 +104,7 @@ public class SalonServiceService {
         service.setDeletedAt(java.time.LocalDateTime.now());
     }
 
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public static class SalonServiceNotFoundException extends RuntimeException {
         public SalonServiceNotFoundException(Long id) {
             super("SalonService not found: id=" + id);

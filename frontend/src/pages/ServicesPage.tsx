@@ -3,13 +3,14 @@ import type { Service } from '@/data/mockData';
 import ServiceCard from '@/components/ServiceCard';
 import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
+import { useTranslation } from 'react-i18next';
 
 const categories = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'haircut', label: 'Cắt tóc' },
-  { value: 'styling', label: 'Tạo kiểu' },
-  { value: 'coloring', label: 'Nhuộm' },
-  { value: 'care', label: 'Chăm sóc' },
+  'all',
+  'haircut',
+  'styling',
+  'coloring',
+  'care',
 ] as const;
 
 const serviceList: Service[] = [
@@ -256,6 +257,7 @@ const serviceList: Service[] = [
 ];
 
 const ServicesPage = () => {
+  const { t } = useTranslation();
   const [category, setCategory] = useState<string>('all');
   const [services, setServices] = useState<Service[]>(serviceList);
   const [isLoading, setIsLoading] = useState(true);
@@ -285,25 +287,25 @@ const ServicesPage = () => {
       <div className="container mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto mb-10 max-w-2xl text-center">
           <h1 className="font-display text-4xl font-bold leading-tight md:text-5xl">
-            <span className="block">Bảng Dịch Vụ</span>
+            <span className="block">{t('services.menuTitle')}</span>
             <span className="block text-gradient-gold">Lì He Men's Hair Designer</span>
           </h1>
           <p className="mt-3 text-muted-foreground">
-            Chọn dịch vụ phù hợp với nhu cầu cắt tóc, tạo kiểu, nhuộm hoặc chăm sóc thư giãn.
+            {t('services.menuSubtitle')}
           </p>
         </motion.div>
 
         <div className="mb-10 flex flex-wrap justify-center gap-2">
           {categories.map((cat) => (
             <button
-              key={cat.value}
-              onClick={() => setCategory(cat.value)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${category === cat.value
+              key={cat}
+              onClick={() => setCategory(cat)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${category === cat
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-secondary text-muted-foreground hover:text-foreground'
                 }`}
             >
-              {cat.label}
+              {t(`services.categories.${cat}`)}
             </button>
           ))}
         </div>
@@ -315,7 +317,7 @@ const ServicesPage = () => {
         )}
 
         {isLoading && (
-          <div className="mb-6 text-center text-sm text-muted-foreground">Đang tải dịch vụ...</div>
+          <div className="mb-6 text-center text-sm text-muted-foreground">{t('common.loading')}</div>
         )}
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

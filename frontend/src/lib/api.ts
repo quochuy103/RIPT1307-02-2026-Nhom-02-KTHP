@@ -10,12 +10,10 @@ import type {
   AdminUser,
 } from '@/data/adminMockData';
 import { dispatchUnauthorizedEvent } from '@/lib/auth-events';
+import { API_BASE_HAS_API_PREFIX, API_BASE_URL, API_DEBUG } from '@/lib/runtime-config';
 import type { OrderStatus, OrderStatusUpdate } from '@/types/order';
+import { getServiceI18nMeta } from '@/lib/service-i18n';
 
-const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8081')
-  .replace(/\/+$/, '');
-const API_BASE_HAS_API_PREFIX = /\/api$/i.test(API_BASE_URL);
-const API_DEBUG = (import.meta.env.VITE_API_DEBUG as string | undefined) !== 'false';
 
 const getToken = () => localStorage.getItem('cutie_cuts_token');
 
@@ -293,28 +291,23 @@ const initials = (name: string) => {
   return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 };
 
-const serviceCategoryLabels: Record<string, string> = {
-  haircut: 'Cắt tóc',
-  styling: 'Tạo kiểu',
-  coloring: 'Nhuộm',
-  care: 'Chăm sóc',
-  grooming: 'Chăm sóc',
-};
+const mapService = (row: ServiceRow): Service => {
+  const meta = getServiceI18nMeta(row.name);
 
-const mapService = (row: ServiceRow): Service => ({
-  id: String(row.id),
-  nameKey: '',
-  descKey: '',
-  name: row.name,
-  description: row.description,
-  price: row.price,
-  displayPrice: row.displayPrice,
-  priceLabel: row.displayPrice,
-  duration: row.duration,
-  category: row.category as Service['category'],
-  categoryLabel: serviceCategoryLabels[row.category] ?? row.category,
-  actionLabel: 'Đặt',
-});
+  return {
+    id: String(row.id),
+    slug: meta?.slug,
+    nameKey: meta?.nameKey ?? '',
+    descKey: meta?.descKey ?? '',
+    name: row.name,
+    description: row.description,
+    price: row.price,
+    displayPrice: row.displayPrice,
+    priceLabel: row.displayPrice,
+    duration: row.duration,
+    category: row.category as Service['category'],
+  };
+};
 
 const mapBarber = (row: BarberRow): Barber => ({
   id: String(row.id),

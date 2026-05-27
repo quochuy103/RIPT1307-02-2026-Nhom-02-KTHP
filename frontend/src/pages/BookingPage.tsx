@@ -13,21 +13,18 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { ApiError, api } from '@/lib/api';
 
-const toApiTime = (timeLabel: string) => {
-  const match = timeLabel.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!match) return timeLabel;
+import { ApiError, api, type Booking } from '@/lib/api';
+import {
+  BOOKING_NOTICE_MINUTES,
+  MAX_BOOKINGS_PER_DATE,
+  getAvailableTimeSlots,
+  hasReachedBookingLimitForDate,
+  isBookingTimeSelectable,
+  isPastBookingDate,
+  toApiTime,
+} from '@/lib/booking-policy';
 
-  const [, hourValue, minute, periodValue] = match;
-  const period = periodValue.toUpperCase();
-  let hour = Number(hourValue);
-
-  if (period === 'PM' && hour < 12) hour += 12;
-  if (period === 'AM' && hour === 12) hour = 0;
-
-  return `${String(hour).padStart(2, '0')}:${minute}:00`;
-};
 
 const getBookingErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof ApiError && error.status === 409) {
@@ -36,6 +33,10 @@ const getBookingErrorMessage = (error: unknown, fallback: string) => {
 
   if (error instanceof ApiError && error.status === 401) {
     return 'Please sign in again before booking.';
+  }
+
+  if (error instanceof ApiError && error.status === 400 && error.message.includes('at most 3 bookings')) {
+    return `You can only create ${MAX_BOOKINGS_PER_DATE} bookings for the same appointment date, even if some were cancelled.`;
   }
 
   if (error instanceof Error) {
@@ -65,27 +66,59 @@ const BookingPage = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
-
+  const [existingBookings, setExistingBookings] = useState<Booking[]>([]);
+  const availableTimeSlots = getAvailableTimeSlots(date, timeSlots);
+  const selectedDateKey = date ? format(date, 'yyyy-MM-dd') : null;
+  const hasReachedBookingLimit = selectedDateKey ? hasReachedBookingLimitForDate(existingBookings, selectedDateKey) : false;
   const selectedService = serviceList.find((service) => service.id === form.service);
+
 
   useEffect(() => {
     const load = async () => {
       try {
         setIsLoadingOptions(true);
         setLoadError(null);
-        const [loadedServices, loadedBarbers] = await Promise.all([api.services.getAll(), api.barbers.getAll()]);
-        setServiceList(loadedServices);
-        setBarberList(loadedBarbers);
+        const [loadedServices, loadedBarbers, loadedBookings] = await Promise.allSettled([
+          api.services.getAll(),
+          api.barbers.getAll(),
+          api.bookings.getMine(),
+        ]);
+
+        if (loadedServices.status === 'fulfilled') setServiceList(loadedServices.value);
+        else setServiceList(services);
+
+        if (loadedBarbers.status === 'fulfilled') setBarberList(loadedBarbers.value);
+        else setBarberList(barbers);
+
+        if (loadedBookings.status === 'fulfilled') setExistingBookings(loadedBookings.value);
+        else setExistingBookings([]);
+
+        if (loadedServices.status === 'rejected' || loadedBarbers.status === 'rejected') {
+          setLoadError('Unable to load booking options');
+        }
       } catch (error) {
         setLoadError(error instanceof Error ? error.message : 'Unable to load booking options');
         setServiceList(services);
         setBarberList(barbers);
+        setExistingBookings([]);
       } finally {
         setIsLoadingOptions(false);
       }
     };
     void load();
   }, []);
+
+  useEffect(() => {
+    if (time && !getAvailableTimeSlots(date, timeSlots).includes(time)) {
+      setTime('');
+    }
+  }, [date, time]);
+
+  useEffect(() => {
+    if (hasReachedBookingLimit) {
+      setTime('');
+    }
+  }, [hasReachedBookingLimit]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -96,6 +129,9 @@ const BookingPage = () => {
     if (!form.barber) e.barber = t('booking.errors.barberRequired');
     if (!date) e.date = t('booking.errors.dateRequired');
     if (!time) e.time = t('booking.errors.timeRequired');
+    if (selectedDateKey && hasReachedBookingLimit) {
+      e.date = `You already created ${MAX_BOOKINGS_PER_DATE} bookings on ${selectedDateKey}. Cancelling one does not reopen that date.`;
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -114,6 +150,17 @@ const BookingPage = () => {
     e.preventDefault();
     if (isSubmitting) return;
     if (!validate()) return;
+    if (!date || !isBookingTimeSelectable(date, time)) {
+      setErrors((previous) => ({
+        ...previous,
+        time: t('booking.errors.timeUnavailable', { defaultValue: 'This time slot is no longer available. Please choose another one.' }),
+      }));
+      toast.error(t('booking.errors.sameDayLeadTime', {
+        minutes: BOOKING_NOTICE_MINUTES,
+        defaultValue: 'Please choose a slot at least {{minutes}} minutes from now.',
+      }));
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -123,6 +170,14 @@ const BookingPage = () => {
         date: date ? format(date, 'yyyy-MM-dd') : '',
         time: toApiTime(time),
       });
+      setExistingBookings((previous) => previous.concat({
+        id: `local-${Date.now()}`,
+        serviceName: '',
+        barberName: '',
+        date: format(date, 'yyyy-MM-dd'),
+        time: toApiTime(time),
+        status: 'pending',
+      }));
     } catch (error) {
       toast.error(getBookingErrorMessage(error, t('booking.errors.submitFailed')));
       return;
@@ -197,14 +252,14 @@ const BookingPage = () => {
                       {selectedService ? (
                         <span className="flex min-w-0 items-center gap-2">
                           <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                            {selectedService.name || t(`serviceItems.${selectedService.nameKey}`)}
+                            {getServiceDisplayName(selectedService, t)}
                           </span>
                           <span className="shrink-0 text-xs text-muted-foreground">
                             {getServicePriceLabel(selectedService)}
                           </span>
                         </span>
                       ) : (
-                        <span>{isLoadingOptions ? t('common.loading') : 'Chọn dịch vụ'}</span>
+                        <span>{isLoadingOptions ? t('common.loading') : t('booking.selectService')}</span>
                       )}
                     </span>
                     <Plus className="h-4 w-4 shrink-0 text-primary" />
@@ -214,18 +269,19 @@ const BookingPage = () => {
                   <DialogHeader className="border-b border-border px-5 py-4 pr-12 text-left">
                     <DialogTitle className="flex items-center gap-2 font-display text-2xl">
                       <Scissors className="h-5 w-5 text-primary" />
-                      Chọn dịch vụ
+                      {t('booking.selectService')}
                     </DialogTitle>
                     <DialogDescription>
-                      Chọn một dịch vụ phù hợp để tiếp tục đặt lịch.
+                      {t('booking.selectServiceDescription')}
                     </DialogDescription>
                   </DialogHeader>
 
                   <div className="max-h-[70vh] overflow-y-auto px-5 pb-5">
                     <div className="grid grid-cols-1 gap-3 py-5 sm:grid-cols-2 lg:grid-cols-3">
                       {serviceList.map((service) => {
-                        const serviceName = service.name || t(`serviceItems.${service.nameKey}`);
-                        const serviceDescription = service.description || t(`serviceItems.${service.descKey}`);
+                        const serviceName = getServiceDisplayName(service, t);
+                        const serviceDescription = getServiceDescription(service, t);
+                        const serviceCategory = getServiceCategoryLabel(service, t);
                         const isSelected = form.service === service.id;
 
                         return (
@@ -241,7 +297,7 @@ const BookingPage = () => {
                             <div className="mb-3 flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <span className="mb-2 inline-flex rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                                  {service.categoryLabel ?? service.category}
+                                  {serviceCategory}
                                 </span>
                                 <h3 className="line-clamp-2 min-h-[3rem] font-display text-base font-semibold leading-snug text-foreground">
                                   {serviceName}
@@ -260,7 +316,7 @@ const BookingPage = () => {
                               <span className="font-bold text-primary">{getServicePriceLabel(service)}</span>
                               <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Clock className="h-3.5 w-3.5 text-primary" />
-                                {service.duration} phút
+                                {service.duration} {t('services.min')}
                               </span>
                             </div>
                           </button>
@@ -294,7 +350,7 @@ const BookingPage = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={date} onSelect={setDate} disabled={d => d < new Date()} className="p-3 pointer-events-auto" />
+                <Calendar mode="single" selected={date} onSelect={setDate} disabled={isPastBookingDate} className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
             {errors.date && <p className="text-destructive text-xs mt-1">{errors.date}</p>}
@@ -302,25 +358,45 @@ const BookingPage = () => {
 
           <div>
             <label className="text-sm font-medium mb-1.5 block">{t('booking.time')}</label>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {timeSlots.map(slot => (
-                <button
-                  type="button"
-                  key={slot}
-                  onClick={() => setTime(slot)}
-                  className={cn(
-                    'py-2 px-1 rounded-md text-xs font-medium transition-all',
-                    time === slot ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-muted'
-                  )}
-                >
-                  {slot}
-                </button>
-              ))}
-            </div>
+            {!hasReachedBookingLimit && (
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {availableTimeSlots.map(slot => (
+                  <button
+                    type="button"
+                    key={slot}
+                    onClick={() => setTime(slot)}
+                    className={cn(
+                      'py-2 px-1 rounded-md text-xs font-medium transition-all',
+                      time === slot ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-muted'
+                    )}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            )}
+            {selectedDateKey && hasReachedBookingLimit && (
+              <p className="text-muted-foreground text-xs mt-2">
+                {`You already created ${MAX_BOOKINGS_PER_DATE} bookings on ${selectedDateKey}. Cancelling one does not let you book another on that date.`}
+              </p>
+            )}
+            {date && availableTimeSlots.length === 0 && (
+              <p className="text-muted-foreground text-xs mt-2">
+                {t('booking.noAvailableSlots', { defaultValue: 'There are no remaining bookable time slots for the selected day.' })}
+              </p>
+            )}
+            {date && availableTimeSlots.length > 0 && availableTimeSlots.length < timeSlots.length && (
+              <p className="text-muted-foreground text-xs mt-2">
+                {t('booking.todayLeadTimeNotice', {
+                  minutes: BOOKING_NOTICE_MINUTES,
+                  defaultValue: 'Same-day bookings must be made at least {{minutes}} minutes in advance.',
+                })}
+              </p>
+            )}
             {errors.time && <p className="text-destructive text-xs mt-1">{errors.time}</p>}
           </div>
 
-          <Button type="submit" disabled={isSubmitting || isLoadingOptions} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-base py-6">
+          <Button type="submit" disabled={isSubmitting || isLoadingOptions || hasReachedBookingLimit} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-base py-6">
             {isSubmitting ? t('common.saving') : t('booking.confirm')}
           </Button>
         </form>
