@@ -184,6 +184,21 @@ create unique index if not exists idx_booking_active_slot_unique
     on bookings (barber_id, "date", "time")
     where lower(status) <> 'cancelled';
 
+-- Notifications
+create table if not exists notifications (
+    id              bigserial primary key,
+    user_id         bigint not null references users(id),
+    type            varchar(255) not null,
+    message         varchar(255) not null,
+    reference_type  varchar(255),
+    reference_id    bigint,
+    is_read         boolean not null default false,
+    created_at      timestamp default current_timestamp
+);
+
+create index if not exists idx_notification_user on notifications(user_id);
+create index if not exists idx_notification_user_read on notifications(user_id, is_read);
+
 -- User addresses
 create table if not exists user_addresses (
     id              bigserial primary key,
