@@ -41,6 +41,12 @@ public class BarberController {
             @RequestParam(required = false) Integer minExperience,
             @RequestParam(required = false) Integer maxExperience) {
 
+        if (minExperience != null && minExperience < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "minExperience must be >= 0");
+        }
+        if (maxExperience != null && maxExperience < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "maxExperience must be >= 0");
+        }
         if (minExperience != null && maxExperience != null && minExperience > maxExperience) {
             throw new ResponseStatusException(BAD_REQUEST, "minExperience must be <= maxExperience");
         }

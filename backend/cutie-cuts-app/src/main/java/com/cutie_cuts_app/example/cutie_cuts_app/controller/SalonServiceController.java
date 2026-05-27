@@ -42,8 +42,20 @@ public class SalonServiceController {
             @RequestParam(required = false) Integer minDuration,
             @RequestParam(required = false) Integer maxDuration) {
 
+        if (minPrice != null && minPrice < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "minPrice must be >= 0");
+        }
+        if (maxPrice != null && maxPrice < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "maxPrice must be >= 0");
+        }
         if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
             throw new ResponseStatusException(BAD_REQUEST, "minPrice must be <= maxPrice");
+        }
+        if (minDuration != null && minDuration < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "minDuration must be >= 0");
+        }
+        if (maxDuration != null && maxDuration < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "maxDuration must be >= 0");
         }
         if (minDuration != null && maxDuration != null && minDuration > maxDuration) {
             throw new ResponseStatusException(BAD_REQUEST, "minDuration must be <= maxDuration");

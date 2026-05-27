@@ -81,6 +81,12 @@ public class PaymentController {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
 
+        if (minAmount != null && minAmount < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "minAmount must be >= 0");
+        }
+        if (maxAmount != null && maxAmount < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "maxAmount must be >= 0");
+        }
         if (minAmount != null && maxAmount != null && minAmount > maxAmount) {
             throw new ResponseStatusException(BAD_REQUEST, "minAmount must be <= maxAmount");
         }
@@ -112,6 +118,12 @@ public class PaymentController {
             throw new ResponseStatusException(FORBIDDEN, "Only admins can view all payments");
         }
 
+        if (minAmount != null && minAmount < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "minAmount must be >= 0");
+        }
+        if (maxAmount != null && maxAmount < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "maxAmount must be >= 0");
+        }
         if (minAmount != null && maxAmount != null && minAmount > maxAmount) {
             throw new ResponseStatusException(BAD_REQUEST, "minAmount must be <= maxAmount");
         }
