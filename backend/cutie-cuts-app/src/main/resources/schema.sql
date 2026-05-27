@@ -184,6 +184,56 @@ create unique index if not exists idx_booking_active_slot_unique
     on bookings (barber_id, "date", "time")
     where lower(status) <> 'cancelled';
 
+-- Reviews
+create table if not exists reviews (
+    id          bigserial primary key,
+    user_id     bigint not null references users(id),
+    booking_id  bigint references bookings(id),
+    service_id  bigint references services(id),
+    barber_id   bigint references barbers(id),
+    order_id    bigint references orders(id),
+    product_id  bigint references products(id),
+    rating      integer not null,
+    comment     varchar(2000) not null,
+    created_at  timestamp default current_timestamp,
+    deleted     boolean not null default false,
+    deleted_at  timestamp
+);
+
+alter table if exists reviews
+    add column if not exists order_id bigint;
+
+alter table if exists reviews
+    add column if not exists product_id bigint;
+
+alter table if exists reviews
+    add column if not exists deleted boolean;
+
+update reviews
+set deleted = false
+where deleted is null;
+
+alter table if exists reviews
+    alter column deleted set default false;
+
+alter table if exists reviews
+    alter column deleted set not null;
+
+alter table if exists reviews
+    add column if not exists deleted_at timestamp;
+
+create index if not exists idx_review_user on reviews(user_id);
+create index if not exists idx_review_product on reviews(product_id);
+create index if not exists idx_review_order on reviews(order_id);
+
+create unique index if not exists ux_review_booking
+    on reviews(booking_id)
+    where booking_id is not null;
+
+create unique index if not exists uk_review_order_product
+    on reviews(order_id, product_id)
+    where order_id is not null and product_id is not null;
+
 -- Notifications
 create table if not exists notifications (
     id              bigserial primary key,
