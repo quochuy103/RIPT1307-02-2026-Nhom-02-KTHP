@@ -46,6 +46,14 @@ public class BarberService {
     }
 
     @Transactional(readOnly = true)
+    public Page<BarberResponse> findAllFiltered(String search, String specialty,
+                                                 Integer minExperience, Integer maxExperience,
+                                                 Pageable pageable) {
+        return barberRepository.findAllFiltered(search, specialty, minExperience, maxExperience, pageable)
+                .map(BarberResponse::from);
+    }
+
+    @Transactional(readOnly = true)
     public BarberResponse findById(Long id) {
         Barber barber = barberRepository.findById(id)
                 .orElseThrow(() -> new BarberNotFoundException(id));

@@ -45,6 +45,14 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
+    public Page<ProductResponse> findAllFiltered(String search, String category,
+                                                  Double minPrice, Double maxPrice,
+                                                  Boolean inStock, Pageable pageable) {
+        return productRepository.findAllFiltered(search, category, minPrice, maxPrice, inStock, pageable)
+                .map(ProductResponse::from);
+    }
+
+    @Transactional(readOnly = true)
     public ProductResponse findById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
