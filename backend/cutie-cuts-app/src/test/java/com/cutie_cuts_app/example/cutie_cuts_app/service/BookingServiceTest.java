@@ -8,13 +8,13 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BarberRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
-import org.springframework.dao.DataIntegrityViolationException;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -67,7 +67,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBookingIgnoresCancelledSlots() {
+    void createBookingAllowsThirdBookingWhenAppointmentDateHasOnlyTwoExistingBookings() {
         User user = createUser(10L, "Customer");
         Barber barber = createBarber(20L, "Barber A");
         SalonService service = createSalonService(30L, "Haircut", 120);
@@ -79,11 +79,34 @@ class BookingServiceTest {
 
         when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
         when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
+        when(bookingRepository.countByUserAndDate(user, LocalDate.of(2026, 5, 20))).thenReturn(2L);
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Booking booking = bookingService.createBooking(user, request);
 
         assertEquals("pending", booking.getStatus());
+    }
+
+    @Test
+    void createBookingRejectsFourthBookingOnSameAppointmentDateEvenAfterCancellation() {
+        User user = createUser(10L, "Customer");
+        Barber barber = createBarber(20L, "Barber A");
+        SalonService service = createSalonService(30L, "Haircut", 120);
+        CreateBookingRequest request = new CreateBookingRequest();
+        request.setBarberId(20L);
+        request.setServiceId(30L);
+        request.setDate(LocalDate.of(2026, 5, 20));
+        request.setTime(LocalTime.of(10, 0));
+
+        when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
+        when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
+        when(bookingRepository.countByUserAndDate(user, LocalDate.of(2026, 5, 20))).thenReturn(3L);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> bookingService.createBooking(user, request));
+
+        assertEquals("You can create at most 3 bookings on the selected appointment date", exception.getReason());
+        verify(bookingRepository, never()).save(any());
     }
 
     @Test
@@ -99,6 +122,7 @@ class BookingServiceTest {
 
         when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
         when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
+        when(bookingRepository.countByUserAndDate(user, LocalDate.of(2026, 5, 20))).thenReturn(2L);
         when(bookingRepository.save(any(Booking.class))).thenThrow(
                 new DataIntegrityViolationException(
                         "duplicate key value violates unique constraint \"idx_booking_active_slot_unique\""));
@@ -123,6 +147,7 @@ class BookingServiceTest {
 
         when(barberRepository.findById(20L)).thenReturn(Optional.of(barber));
         when(salonServiceRepository.findById(30L)).thenReturn(Optional.of(service));
+        when(bookingRepository.countByUserAndDate(user, LocalDate.of(2026, 5, 20))).thenReturn(2L);
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
         doThrow(new RuntimeException("notifications unavailable"))
                 .when(notificationService)
@@ -190,11 +215,8 @@ class BookingServiceTest {
         Booking booking = createBooking(1L, owner, "pending");
 
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
-        when(bookingRepository.countByUserAndStatusAndCancelledAtBetween(
-                eq(owner),
-                eq("cancelled"),
-                any(LocalDateTime.class),
-                any(LocalDateTime.class))).thenReturn(0L);
+        when(bookingRepository.countByUserAndDateWithStatus(owner, LocalDate.of(2026, 5, 20), "cancelled"))
+                .thenReturn(0L);
         when(bookingRepository.save(booking)).thenReturn(booking);
 
         Booking cancelled = bookingService.cancelBooking(1L, owner, false);
@@ -215,11 +237,8 @@ class BookingServiceTest {
         Booking booking = createBooking(1L, owner, "pending");
 
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
-        when(bookingRepository.countByUserAndStatusAndCancelledAtBetween(
-                eq(owner),
-                eq("cancelled"),
-                any(LocalDateTime.class),
-                any(LocalDateTime.class))).thenReturn(0L);
+        when(bookingRepository.countByUserAndDateWithStatus(owner, LocalDate.of(2026, 5, 20), "cancelled"))
+                .thenReturn(0L);
         when(bookingRepository.save(booking)).thenReturn(booking);
         doThrow(new RuntimeException("notifications unavailable"))
                 .when(notificationService)
@@ -248,22 +267,35 @@ class BookingServiceTest {
     }
 
     @Test
-    void cancelBookingRejectsFourthCancellationInSameDay() {
+    void cancelBookingRejectsFourthCancellationForSameAppointmentDate() {
         User owner = createUser(10L, "Customer");
         Booking booking = createBooking(1L, owner, "pending");
 
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
-        when(bookingRepository.countByUserAndStatusAndCancelledAtBetween(
-                eq(owner),
-                eq("cancelled"),
-                any(LocalDateTime.class),
-                any(LocalDateTime.class))).thenReturn(3L);
+        when(bookingRepository.countByUserAndDateWithStatus(owner, LocalDate.of(2026, 5, 20), "cancelled"))
+                .thenReturn(3L);
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> bookingService.cancelBooking(1L, owner, false));
 
-        assertEquals("You can cancel at most 3 bookings per day", exception.getReason());
+        assertEquals("You can cancel at most 3 bookings for the selected appointment date", exception.getReason());
         verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelBookingChecksLimitPerAppointmentDateInsteadOfCurrentDate() {
+        User owner = createUser(10L, "Customer");
+        Booking booking = createBooking(1L, owner, "pending");
+        booking.setDate(LocalDate.of(2026, 5, 21));
+
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.countByUserAndDateWithStatus(owner, LocalDate.of(2026, 5, 21), "cancelled"))
+                .thenReturn(0L);
+        when(bookingRepository.save(booking)).thenReturn(booking);
+
+        Booking cancelled = bookingService.cancelBooking(1L, owner, false);
+
+        assertEquals("cancelled", cancelled.getStatus());
     }
 
     @Test
@@ -297,11 +329,7 @@ class BookingServiceTest {
         Booking cancelled = bookingService.cancelBooking(1L, admin, true);
 
         assertEquals("cancelled", cancelled.getStatus());
-        verify(bookingRepository, never()).countByUserAndStatusAndCancelledAtBetween(
-                any(),
-                any(),
-                any(),
-                any());
+        verify(bookingRepository, never()).countByUserAndDateWithStatus(any(), any(), any());
     }
 
     private Booking createBooking(Long bookingId, User user, String status) {
