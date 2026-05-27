@@ -41,7 +41,7 @@
     "viewGallery": "Xem Bộ Sưu Tập",
     "ctaTitle": "Sẵn Sàng Cho",
     "ctaHighlight": "Diện Mạo Mới?",
-    "ctaSubtitle": "Đặt lịch hẹn ngay hôm nay và trải nghiệm sự khác biệt tại Blade & Co.",
+    "ctaSubtitle": "Đặt lịch hẹn ngay hôm nay và trải nghiệm sự khác biệt tại Lì He Men's Hair Designer.",
     "ctaButton": "Đặt Lịch Hẹn"
   },
   "services": {
@@ -240,10 +240,10 @@
   },
   "about": {
     "title": "Giới Thiệu",
-    "highlight": "Blade & Co",
+    "highlight": "Lì He Men's Hair Designer",
     "subtitle": "Nơi truyền thống gặp gỡ sự xuất sắc trong chăm sóc hiện đại",
     "storyTitle": "Câu Chuyện",
-    "storyText": "Thành lập năm 2010, Blade & Co khởi đầu từ một tiệm cắt tóc nhỏ với tầm nhìn mang đến dịch vụ chăm sóc cao cấp cho tất cả mọi người. Ngày nay, chúng tôi là điểm đến uy tín nhất thành phố về phong cách và chăm sóc.",
+    "storyText": "Lì He Men's Hair Designer mang đến dịch vụ cắt tóc, tạo kiểu và chăm sóc tóc nam chỉn chu, hiện đại, tập trung vào trải nghiệm riêng cho từng khách hàng.",
     "missionTitle": "Sứ Mệnh",
     "missionText": "Chúng tôi tin rằng mỗi khách hàng xứng đáng có một trải nghiệm riêng biệt. Các barber kết hợp nhiều năm đào tạo với đam mê thực sự để tạo ra kiểu tóc phản ánh cá tính của bạn.",
     "valuesTitle": "Giá Trị",
@@ -275,7 +275,7 @@
     "welcomeBack": "Chào Mừng Trở Lại",
     "createAccount": "Tạo Tài Khoản",
     "signInSubtitle": "Đăng nhập vào tài khoản của bạn",
-    "signUpSubtitle": "Gia nhập gia đình Blade & Co",
+    "signUpSubtitle": "Gia nhập gia đình Lì He Men's Hair Designer",
     "fullName": "Họ và tên",
     "email": "Email",
     "password": "Mật khẩu",
@@ -373,7 +373,7 @@
     "contact": "Liên Hệ",
     "address": "123 Đường Chính, Trung Tâm",
     "phone": "(028) 1234-5678",
-    "copyright": "© {{year}} Blade & Co. Bảo lưu mọi quyền."
+    "copyright": "© {{year}} Lì He Men's Hair Designer. Bảo lưu mọi quyền."
   },
   "common": {
     "yearsExperience": "năm kinh nghiệm",
