@@ -37,7 +37,8 @@ async function apiRequest<T>(path: string, init?: RequestInit, auth = true): Pro
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+  const normalizedPath = API_BASE_HAS_API_PREFIX && path.startsWith('/api/') ? path.slice(4) : path;
+  const response = await fetch(`${API_BASE_URL}${normalizedPath}`, { ...init, headers });
 
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
@@ -128,7 +129,7 @@ export async function confirmUpload(
           contentType,
           fileSize,
           alt: metadata?.alt ?? '',
-          category: metadata?.category ?? 'general',
+          category: metadata?.category ?? 'fade',
         }),
       },
     );

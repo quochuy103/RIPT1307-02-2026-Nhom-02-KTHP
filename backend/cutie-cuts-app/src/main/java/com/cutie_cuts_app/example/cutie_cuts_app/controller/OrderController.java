@@ -359,7 +359,7 @@ public class OrderController {
         map.put("totalPrice", order.getTotalPrice());
         map.put("address", order.getAddress());
         map.put("status", DomainStatusRules.normalizeOrderStatusForResponse(order.getStatus()));
-        map.put("createdAt", String.valueOf(order.getCreatedAt()).substring(0, 10));
+        map.put("createdAt", order.getCreatedAt() == null ? null : order.getCreatedAt().toLocalDate().toString());
         return map;
     }
 }
