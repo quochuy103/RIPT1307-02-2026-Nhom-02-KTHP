@@ -106,12 +106,25 @@ public class PaymentService {
         payment.setQrCodeUrl(qrResponse.getData().getQrCode());
         payment.setQrDataUrl(qrResponse.getData().getQrDataURL());
 
+        if (qrResponse == null) {
+            logger.error("VietQR API call failed (network/config error) for order: {}", orderId);
+            throw new RuntimeException("Không thể kết nối đến dịch vụ thanh toán. Vui lòng thử lại sau.");
+        }
+        if (qrResponse.getData() == null) {
+            logger.error("VietQR API returned no data for order: {}. Response code: {}, desc: {}",
+                    orderId, qrResponse.getCode(), qrResponse.getDesc());
+            throw new RuntimeException("Dịch vụ VietQR từ chối tạo mã QR: " + qrResponse.getDesc());
+        }
+        if (qrResponse.getData().getQrDataURL() == null) {
+            logger.error("VietQR API returned data but qrDataURL is null for order: {}", orderId);
+
         // If VietQR API fails (network error, invalid config, etc.), the QR image will be null.
         // Creating a PENDING payment without a QR code leaves users stuck: they can see the
         // "waiting" screen but have nothing to scan. Fail fast here so the @Transactional
         // rolls back the payment record and the frontend shows a recoverable error instead.
         if (isBlank(payment.getQrCodeUrl()) && isBlank(payment.getQrDataUrl())) {
             logger.error("VietQR API returned no QR image for order: {}. Aborting payment creation.", orderId);
+
             throw new RuntimeException("Không thể tạo mã QR thanh toán. Vui lòng thử lại sau.");
         }
 

@@ -297,7 +297,14 @@ const CheckoutPage = () => {
       toast.error(
         error instanceof Error
           ? error.message
+
+          : t('checkout.errorPayment', {
+            defaultValue:
+              'Payment initialization failed. Your order was created. Please try again from My Orders.',
+          }),
+
           : t('checkout.errorPayment', { defaultValue: 'Payment initialization failed. Your order was created. Please try again from My Orders.' }),
+
       );
     }
   };
@@ -379,11 +386,10 @@ const CheckoutPage = () => {
             >
               {/* Status bar */}
               <div
-                className={`px-6 py-3 flex items-center justify-between text-sm font-medium ${
-                  isSuccess
+                className={`px-6 py-3 flex items-center justify-between text-sm font-medium ${isSuccess
                     ? 'bg-green-500/10 text-green-600 border-b border-green-500/20'
                     : 'bg-primary/10 text-primary border-b border-primary/20'
-                }`}
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   {isWaiting && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
@@ -733,11 +739,10 @@ const CheckoutPage = () => {
                       type="button"
                       id="payment-method-qr"
                       onClick={() => setPaymentMethod('QR')}
-                      className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-sm font-medium transition-all ${
-                        paymentMethod === 'QR'
+                      className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-sm font-medium transition-all ${paymentMethod === 'QR'
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border hover:border-primary/50 hover:bg-secondary/50'
-                      }`}
+                        }`}
                     >
                       <QrCode className="h-5 w-5" />
                       {t('checkout.payQR')}
@@ -746,11 +751,10 @@ const CheckoutPage = () => {
                       type="button"
                       id="payment-method-cod"
                       onClick={() => setPaymentMethod('COD')}
-                      className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-sm font-medium transition-all ${
-                        paymentMethod === 'COD'
+                      className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-sm font-medium transition-all ${paymentMethod === 'COD'
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border hover:border-primary/50 hover:bg-secondary/50'
-                      }`}
+                        }`}
                     >
                       <Banknote className="h-5 w-5" />
                       {t('checkout.payCOD')}
