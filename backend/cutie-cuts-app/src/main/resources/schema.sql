@@ -108,11 +108,15 @@ create table if not exists payments
     bank_code       varchar(20),
     bank_name       varchar(100),
     payment_method  varchar(50),
+    transaction_id  varchar(100),
     expired_at      timestamp,
     paid_at         timestamp,
     created_at      timestamp                    default current_timestamp,
     updated_at      timestamp                    default current_timestamp
 );
+
+alter table if exists payments
+    add column if not exists transaction_id varchar(100);
 
 create table if not exists payment_transactions
 (
