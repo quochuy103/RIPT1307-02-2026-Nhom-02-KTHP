@@ -3,6 +3,7 @@ import { Service } from '@/data/mockData';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { getServiceCategoryLabel, getServiceDescription, getServiceDisplayName } from '@/lib/service-i18n';
 
 interface Props {
   service: Service;
@@ -10,11 +11,11 @@ interface Props {
 
 const ServiceCard = ({ service }: Props) => {
   const { t } = useTranslation();
-  const serviceName = service.name || t(`serviceItems.${service.nameKey}`);
-  const serviceDescription = service.description || t(`serviceItems.${service.descKey}`);
+  const serviceName = getServiceDisplayName(service, t);
+  const serviceDescription = getServiceDescription(service, t);
   const price = service.displayPrice ?? service.priceLabel ?? `${service.price.toLocaleString('vi-VN')}đ`;
-  const category = service.categoryLabel ?? t(`services.categories.${service.category}`, { defaultValue: service.category });
-  const actionLabel = service.actionLabel ?? t('services.book');
+  const category = getServiceCategoryLabel(service, t);
+  const actionLabel = t('services.book');
 
   return (
     <div className="group flex h-full flex-col rounded-lg border border-border bg-card p-5 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
@@ -30,7 +31,7 @@ const ServiceCard = ({ service }: Props) => {
       <p className="mb-5 line-clamp-3 flex-1 text-sm leading-6 text-muted-foreground">{serviceDescription}</p>
       <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" /> {service.duration} phút</span>
+          <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" /> {service.duration} {t('services.min')}</span>
           <span className="flex items-center gap-1.5"><Tag className="h-3.5 w-3.5 text-primary" /> {category}</span>
         </div>
         <Button asChild size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground">
