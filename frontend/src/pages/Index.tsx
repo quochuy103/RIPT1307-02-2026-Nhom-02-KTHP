@@ -126,7 +126,7 @@ const Index = () => {
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.barbersTitle')} <span className="text-gradient-gold">{t('home.barbersHighlight')}</span></h2>
             <p className="text-muted-foreground">{t('home.barbersSubtitle')}</p>
           </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-3xl mx-auto">
+          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5">
             {barberList.map((b, i) => (
               <motion.div key={b.id} {...fadeUp} transition={{ duration: 0.6, delay: i * 0.15 }}>
                 <BarberCard barber={b} />
