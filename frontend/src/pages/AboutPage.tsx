@@ -24,7 +24,10 @@ const AboutPage = () => {
     <div className="pt-24 pb-20">
       <div className="container mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-          <h1 className="font-display text-4xl md:text-5xl font-bold mb-3">{t('about.title')} <span className="text-gradient-gold">{t('about.highlight')}</span></h1>
+          <h1 className="mb-3 font-display text-4xl font-bold leading-tight md:text-5xl">
+            <span className="block">{t('about.title')}</span>
+            <span className="block text-gradient-gold">{t('about.highlight')}</span>
+          </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">{t('about.subtitle')}</p>
         </motion.div>
 

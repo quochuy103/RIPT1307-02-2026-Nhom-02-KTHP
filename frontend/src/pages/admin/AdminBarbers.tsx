@@ -70,10 +70,18 @@ const AdminBarbers = () => {
   const openEdit = (b: AdminBarber) => { setEditing(b); setForm({ ...b, objectKey: '', contentType: '', fileSize: 0 }); setModalOpen(true); };
 
   const handleSubmit = () => {
-    if (!form.name) { toast.error('Name is required'); return; }
+    const payload = {
+      ...form,
+      name: form.name.trim(),
+      specialties: form.specialties.map((specialty) => specialty.trim()).filter(Boolean),
+    };
+
+    if (!payload.name) { toast.error('Name is required'); return; }
     if (!form.avatar) { toast.error('Avatar image is required'); return; }
-    if (editing) updateMutation.mutate({ id: editing.id, payload: form });
-    else createMutation.mutate(form);
+    if (payload.specialties.length === 0) { toast.error('Specialties is required'); return; }
+
+    if (editing) updateMutation.mutate({ id: editing.id, payload });
+    else createMutation.mutate(payload);
   };
 
   const deleteBarber = (id: string) => deleteMutation.mutate(id);
@@ -132,7 +140,14 @@ const AdminBarbers = () => {
               />
             )}
           </div>
-          <div><Label>Specialties (comma-separated)</Label><Input value={form.specialties.join(', ')} onChange={(e) => setForm({ ...form, specialties: e.target.value.split(',').map((s) => s.trim()) })} /></div>
+          <div>
+            <Label>Specialties (comma-separated)</Label>
+            <Input
+              value={form.specialties.join(', ')}
+              placeholder="Fade, Classic Cuts, Styling"
+              onChange={(e) => setForm({ ...form, specialties: e.target.value.split(',').map((s) => s.trim()) })}
+            />
+          </div>
         </div>
       </FormModal>
     </div>
