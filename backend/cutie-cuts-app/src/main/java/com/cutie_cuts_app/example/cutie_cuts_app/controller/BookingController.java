@@ -11,14 +11,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
@@ -42,13 +45,29 @@ public class BookingController {
         return bookingService.getBookings().stream().map(this::toResponse).toList();
     }
 
+    private static final Set<String> VALID_BOOKING_STATUSES =
+            Set.of("pending", "confirmed", "done", "cancelled");
+
     @GetMapping("/page")
     public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable,
-            Authentication authentication) {
+            Authentication authentication,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long barberId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long serviceId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) Boolean upcoming) {
         if (authentication == null || !isAdmin(authentication)) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
-        return bookingService.getBookingsPaginated(pageable).map(this::toResponse);
+        if (status != null && !status.isBlank() && !VALID_BOOKING_STATUSES.contains(status.toLowerCase())) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Invalid status. Allowed: " + String.join(", ", VALID_BOOKING_STATUSES));
+        }
+        String statusLower = status != null && !status.isBlank() ? status.toLowerCase() : null;
+        return bookingService.getBookingsFiltered(statusLower, barberId, userId, serviceId,
+                dateFrom, dateTo, upcoming, pageable).map(this::toResponse);
     }
 
     @GetMapping("/my")

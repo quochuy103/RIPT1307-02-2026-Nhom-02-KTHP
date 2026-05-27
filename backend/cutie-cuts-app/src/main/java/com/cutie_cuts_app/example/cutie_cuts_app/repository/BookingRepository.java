@@ -41,4 +41,25 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             where b.user = :user and lower(b.status) = lower(:status)
             """)
     Double sumPriceByUserAndStatus(@Param("user") User user, @Param("status") String status);
+
+    @Query("""
+            SELECT b FROM Booking b WHERE
+            (:status IS NULL OR LOWER(b.status) = :status) AND
+            (:barberId IS NULL OR b.barber.id = :barberId) AND
+            (:userId IS NULL OR b.user.id = :userId) AND
+            (:serviceId IS NULL OR b.service.id = :serviceId) AND
+            (:dateFrom IS NULL OR b.date >= :dateFrom) AND
+            (:dateTo IS NULL OR b.date <= :dateTo) AND
+            (:upcoming IS NULL OR b.date > :todayDate OR (b.date = :todayDate AND b.time >= :nowTime))
+            """)
+    Page<Booking> findAllFiltered(@Param("status") String status,
+                                  @Param("barberId") Long barberId,
+                                  @Param("userId") Long userId,
+                                  @Param("serviceId") Long serviceId,
+                                  @Param("dateFrom") LocalDate dateFrom,
+                                  @Param("dateTo") LocalDate dateTo,
+                                  @Param("upcoming") Boolean upcoming,
+                                  @Param("todayDate") LocalDate todayDate,
+                                  @Param("nowTime") LocalTime nowTime,
+                                  Pageable pageable);
 }

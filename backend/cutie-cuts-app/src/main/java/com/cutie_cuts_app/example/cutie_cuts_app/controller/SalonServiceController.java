@@ -10,8 +10,11 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @RestController
 @RequestMapping("/api/services")
@@ -31,8 +34,28 @@ public class SalonServiceController {
 
     @GetMapping("/page")
     public ResponseEntity<Page<SalonServiceResponse>> getAllPaginated(
-            @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(salonServiceService.findAllPaginated(pageable));
+            @PageableDefault(size = 20) Pageable pageable,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Integer minPrice,
+            @RequestParam(required = false) Integer maxPrice,
+            @RequestParam(required = false) Integer minDuration,
+            @RequestParam(required = false) Integer maxDuration) {
+
+        if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+            throw new ResponseStatusException(BAD_REQUEST, "minPrice must be <= maxPrice");
+        }
+        if (minDuration != null && maxDuration != null && minDuration > maxDuration) {
+            throw new ResponseStatusException(BAD_REQUEST, "minDuration must be <= maxDuration");
+        }
+
+        String searchPattern = search != null && !search.isBlank()
+                ? "%" + search.toLowerCase() + "%" : null;
+        String categoryLower = category != null && !category.isBlank()
+                ? category.toLowerCase() : null;
+
+        return ResponseEntity.ok(salonServiceService.findAllFiltered(
+                searchPattern, categoryLower, minPrice, maxPrice, minDuration, maxDuration, pageable));
     }
 
     @GetMapping("/{id}")

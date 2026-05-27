@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,5 +38,22 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long> {
             where o.user = :user and lower(o.status) = lower(:status)
             """)
     Double sumTotalPriceByUserAndStatus(@Param("user") User user, @Param("status") String status);
+
+    @Query("""
+            SELECT o FROM ShopOrder o WHERE
+            (:status IS NULL OR LOWER(o.status) = :status) AND
+            (:userId IS NULL OR o.user.id = :userId) AND
+            o.createdAt >= :dateFrom AND
+            o.createdAt <= :dateTo AND
+            (:minTotal IS NULL OR o.totalPrice >= :minTotal) AND
+            (:maxTotal IS NULL OR o.totalPrice <= :maxTotal)
+            """)
+    Page<ShopOrder> findAllFiltered(@Param("status") String status,
+                                    @Param("userId") Long userId,
+                                    @Param("dateFrom") LocalDateTime dateFrom,
+                                    @Param("dateTo") LocalDateTime dateTo,
+                                    @Param("minTotal") Double minTotal,
+                                    @Param("maxTotal") Double maxTotal,
+                                    Pageable pageable);
 
 }

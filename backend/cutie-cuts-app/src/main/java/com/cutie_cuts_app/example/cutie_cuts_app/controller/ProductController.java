@@ -31,8 +31,18 @@ public class ProductController {
 
     @GetMapping("/page")
     public ResponseEntity<Page<ProductResponse>> getAllPaginated(
-            @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(productService.findAllPaginated(pageable));
+            @PageableDefault(size = 20) Pageable pageable,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Boolean inStock) {
+        String searchPattern = search != null && !search.isBlank()
+                ? "%" + search.toLowerCase() + "%" : null;
+        String categoryLower = category != null && !category.isBlank()
+                ? category.toLowerCase() : null;
+        return ResponseEntity.ok(productService.findAllFiltered(
+                searchPattern, categoryLower, minPrice, maxPrice, inStock, pageable));
     }
 
     @GetMapping("/{id}")

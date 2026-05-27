@@ -208,6 +208,9 @@ create index if not exists idx_user_auth_user on user_auth (user_id);
 create index if not exists idx_revoked_tokens_jti on revoked_tokens (jti);
 create index if not exists idx_revoked_tokens_user on revoked_tokens (user_id);
 create index if not exists idx_revoked_tokens_expires_at on revoked_tokens (expires_at);
+alter table if exists bookings
+    add column if not exists cancelled_at timestamp;
+
 create index if not exists idx_booking_user on bookings (user_id);
 create index if not exists idx_booking_barber on bookings (barber_id);
 create index if not exists idx_booking_service on bookings (service_id);

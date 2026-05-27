@@ -86,6 +86,20 @@ public class BookingService {
         return bookingRepository.findAll(pageable);
     }
 
+    public Page<Booking> getBookingsFiltered(String status, Long barberId, Long userId, Long serviceId,
+                                              java.time.LocalDate dateFrom, java.time.LocalDate dateTo,
+                                              Boolean upcoming, Pageable pageable) {
+        java.time.LocalDate today = null;
+        java.time.LocalTime now = null;
+        if (Boolean.TRUE.equals(upcoming)) {
+            java.time.ZonedDateTime nowHcm = java.time.ZonedDateTime.now(BUSINESS_ZONE);
+            today = nowHcm.toLocalDate();
+            now = nowHcm.toLocalTime();
+        }
+        return bookingRepository.findAllFiltered(status, barberId, userId, serviceId,
+                dateFrom, dateTo, upcoming, today, now, pageable);
+    }
+
     public List<Booking> getBookingsByUser(User user) {
         return bookingRepository.findByUser(user);
     }
