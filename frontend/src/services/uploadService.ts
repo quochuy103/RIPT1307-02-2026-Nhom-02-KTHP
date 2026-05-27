@@ -131,7 +131,7 @@ export async function confirmUpload(
           contentType,
           fileSize,
           alt: metadata?.alt ?? '',
-          category: metadata?.category ?? 'general',
+          category: metadata?.category ?? 'fade',
         }),
       },
     );
