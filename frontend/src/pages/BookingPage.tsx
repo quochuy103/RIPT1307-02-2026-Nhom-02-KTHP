@@ -44,6 +44,10 @@ const getBookingErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const getServicePriceLabel = (service: (typeof services)[number]) => (
+  service.displayPrice ?? service.priceLabel ?? `${service.price.toLocaleString('vi-VN')}đ`
+);
+
 const BookingPage = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
@@ -166,7 +170,7 @@ const BookingPage = () => {
               <Select value={form.service} onValueChange={v => setForm(p => ({ ...p, service: v }))} disabled={isLoadingOptions}>
                 <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder={isLoadingOptions ? t('common.loading') : t('booking.selectService')} /></SelectTrigger>
                 <SelectContent>
-                  {serviceList.map(s => <SelectItem key={s.id} value={s.id}>{s.name || t(`serviceItems.${s.nameKey}`)} - ${s.price}</SelectItem>)}
+                  {serviceList.map(s => <SelectItem key={s.id} value={s.id}>{s.name || t(`serviceItems.${s.nameKey}`)} - {getServicePriceLabel(s)}</SelectItem>)}
                 </SelectContent>
               </Select>
               {errors.service && <p className="text-destructive text-xs mt-1">{errors.service}</p>}

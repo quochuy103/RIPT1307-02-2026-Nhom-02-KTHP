@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Scissors, Star, Clock } from 'lucide-react';
+import { ArrowRight, Scissors, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { services, barbers, reviews } from '@/data/mockData';
 import { api } from '@/lib/api';
 import BarberCard from '@/components/BarberCard';
 import ReviewCard from '@/components/ReviewCard';
+import ServiceCard from '@/components/ServiceCard';
 import heroImage from '@/assets/hero-barber.jpg';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -103,20 +104,10 @@ const Index = () => {
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.servicesTitle')} <span className="text-gradient-gold">{t('home.servicesHighlight')}</span></h2>
             <p className="text-muted-foreground max-w-md mx-auto">{t('home.servicesSubtitle')}</p>
           </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {featured.map((s, i) => (
-              <motion.div key={s.id} {...fadeUp} transition={{ duration: 0.6, delay: i * 0.1 }}>
-                <div className="bg-card border border-border rounded-lg p-6 hover:border-primary/30 transition-all group">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <Scissors className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="font-display text-lg font-semibold mb-1">{s.name || t(`serviceItems.${s.nameKey}`)}</h3>
-                  <p className="text-sm text-muted-foreground mb-3">{s.description || t(`serviceItems.${s.descKey}`)}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-primary font-bold">${s.price}</span>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {s.duration}{t('services.min')}</span>
-                  </div>
-                </div>
+              <motion.div key={s.id} {...fadeUp} transition={{ duration: 0.6, delay: i * 0.1 }} className="flex h-full flex-col">
+                <ServiceCard service={s} />
               </motion.div>
             ))}
           </div>
