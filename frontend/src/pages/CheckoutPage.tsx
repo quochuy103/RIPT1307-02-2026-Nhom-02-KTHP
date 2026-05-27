@@ -297,14 +297,10 @@ const CheckoutPage = () => {
       toast.error(
         error instanceof Error
           ? error.message
-
           : t('checkout.errorPayment', {
-            defaultValue:
-              'Payment initialization failed. Your order was created. Please try again from My Orders.',
+              defaultValue:
+                'Payment initialization failed. Your order was created. Please try again from My Orders.',
           }),
-
-          : t('checkout.errorPayment', { defaultValue: 'Payment initialization failed. Your order was created. Please try again from My Orders.' }),
-
       );
     }
   };
