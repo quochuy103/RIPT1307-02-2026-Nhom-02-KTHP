@@ -79,6 +79,10 @@
     background: linear-gradient(135deg, hsl(var(--gold-light)), hsl(var(--gold)), hsl(var(--gold-dark)));
   }
 
+
+  .animate-gallery-marquee {
+    animation: gallery-marquee 42s linear infinite;
+
   .gallery-marquee {
     mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
   }
@@ -89,6 +93,7 @@
 
   .gallery-marquee:hover .gallery-marquee-track {
     animation-play-state: paused;
+
   }
 }
 
@@ -98,6 +103,9 @@
   }
 
   to {
+
+    transform: translateX(-50%);
+
     transform: translateX(calc(-50% - 0.375rem));
   }
 }

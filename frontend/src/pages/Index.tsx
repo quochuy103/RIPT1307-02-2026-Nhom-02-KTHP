@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { services, barbers, reviews } from '@/data/mockData';
+import { services, barbers, reviews, galleryImages } from '@/data/mockData';
 import { api } from '@/lib/api';
 import BarberCard from '@/components/BarberCard';
 import ReviewCard from '@/components/ReviewCard';
@@ -46,6 +46,10 @@ const Index = () => {
   }, []);
 
   const featured = serviceList.slice(0, 4);
+
+  const galleryPreviewImages = galleryList.length > 0 ? galleryList : galleryImages.map((image) => image.src);
+  const galleryMarqueeImages = [...galleryPreviewImages, ...galleryPreviewImages];
+
   const galleryPreviewImages = galleryList.length > 0 ? galleryList : [
     'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
     'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=400',
@@ -53,6 +57,7 @@ const Index = () => {
     'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400',
     'https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=400',
   ];
+
 
   return (
     <div>
@@ -133,7 +138,11 @@ const Index = () => {
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.barbersTitle')} <span className="text-gradient-gold">{t('home.barbersHighlight')}</span></h2>
             <p className="text-muted-foreground">{t('home.barbersSubtitle')}</p>
           </motion.div>
+
+          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5">
+
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6 max-w-6xl mx-auto">
+
             {barberList.map((b, i) => (
               <motion.div key={b.id} {...fadeUp} transition={{ duration: 0.6, delay: i * 0.15 }}>
                 <BarberCard barber={b} />
@@ -165,11 +174,21 @@ const Index = () => {
           <motion.div {...fadeUp} className="text-center mb-12">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.galleryTitle')} <span className="text-gradient-gold">{t('home.galleryHighlight')}</span></h2>
           </motion.div>
+
+          <div className="relative -mx-4 overflow-hidden px-4">
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-card/50 to-transparent md:w-28" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-card/50 to-transparent md:w-28" />
+            <div className="flex w-max animate-gallery-marquee gap-4 hover:[animation-play-state:paused]">
+              {galleryMarqueeImages.map((img, i) => (
+                <div key={`${img}-${i}`} className="h-52 w-72 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary sm:h-60 sm:w-80 lg:h-64 lg:w-96">
+                  <img src={img} alt="Hairstyle" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
+
           <div className="gallery-marquee overflow-hidden">
             <div className="gallery-marquee-track flex w-max gap-3">
               {[...galleryPreviewImages, ...galleryPreviewImages].map((img, i) => (
                 <div key={`${img}-${i}`} className="h-44 w-44 shrink-0 overflow-hidden rounded-lg md:h-56 md:w-56">
                   <img src={img} alt="Hairstyle" loading="lazy" className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+
                 </div>
               ))}
             </div>
