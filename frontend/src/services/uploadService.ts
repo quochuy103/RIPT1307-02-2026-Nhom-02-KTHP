@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '@/lib/runtime-config';
+import { API_BASE_HAS_API_PREFIX, API_BASE_URL } from '@/lib/runtime-config';
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];

@@ -14,20 +14,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { ApiError, api } from '@/lib/api';
-
-const toApiTime = (timeLabel: string) => {
-  const match = timeLabel.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!match) return timeLabel;
-
-  const [, hourValue, minute, periodValue] = match;
-  const period = periodValue.toUpperCase();
-  let hour = Number(hourValue);
-
-  if (period === 'PM' && hour < 12) hour += 12;
-  if (period === 'AM' && hour === 12) hour = 0;
-
-  return `${String(hour).padStart(2, '0')}:${minute}:00`;
-};
+import { BOOKING_NOTICE_MINUTES, getAvailableTimeSlots, isBookingTimeSelectable, isPastBookingDate, toApiTime } from '@/lib/booking-policy';
 
 const getBookingErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof ApiError && error.status === 409) {
@@ -64,9 +51,8 @@ const BookingPage = () => {
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
+  const availableTimeSlots = getAvailableTimeSlots(date, timeSlots);
 
-  const selectedService = serviceList.find((service) => service.id === form.service);
 
   useEffect(() => {
     const load = async () => {
@@ -86,6 +72,12 @@ const BookingPage = () => {
     };
     void load();
   }, []);
+
+  useEffect(() => {
+    if (time && !getAvailableTimeSlots(date, timeSlots).includes(time)) {
+      setTime('');
+    }
+  }, [date, time]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -114,6 +106,17 @@ const BookingPage = () => {
     e.preventDefault();
     if (isSubmitting) return;
     if (!validate()) return;
+    if (!date || !isBookingTimeSelectable(date, time)) {
+      setErrors((previous) => ({
+        ...previous,
+        time: t('booking.errors.timeUnavailable', { defaultValue: 'This time slot is no longer available. Please choose another one.' }),
+      }));
+      toast.error(t('booking.errors.sameDayLeadTime', {
+        minutes: BOOKING_NOTICE_MINUTES,
+        defaultValue: 'Please choose a slot at least {{minutes}} minutes from now.',
+      }));
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -294,7 +297,7 @@ const BookingPage = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={date} onSelect={setDate} disabled={d => d < new Date()} className="p-3 pointer-events-auto" />
+                <Calendar mode="single" selected={date} onSelect={setDate} disabled={isPastBookingDate} className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
             {errors.date && <p className="text-destructive text-xs mt-1">{errors.date}</p>}
@@ -303,7 +306,7 @@ const BookingPage = () => {
           <div>
             <label className="text-sm font-medium mb-1.5 block">{t('booking.time')}</label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {timeSlots.map(slot => (
+              {availableTimeSlots.map(slot => (
                 <button
                   type="button"
                   key={slot}
@@ -317,6 +320,19 @@ const BookingPage = () => {
                 </button>
               ))}
             </div>
+            {date && availableTimeSlots.length === 0 && (
+              <p className="text-muted-foreground text-xs mt-2">
+                {t('booking.noAvailableSlots', { defaultValue: 'There are no remaining bookable time slots for the selected day.' })}
+              </p>
+            )}
+            {date && availableTimeSlots.length > 0 && availableTimeSlots.length < timeSlots.length && (
+              <p className="text-muted-foreground text-xs mt-2">
+                {t('booking.todayLeadTimeNotice', {
+                  minutes: BOOKING_NOTICE_MINUTES,
+                  defaultValue: 'Same-day bookings must be made at least {{minutes}} minutes in advance.',
+                })}
+              </p>
+            )}
             {errors.time && <p className="text-destructive text-xs mt-1">{errors.time}</p>}
           </div>
 
