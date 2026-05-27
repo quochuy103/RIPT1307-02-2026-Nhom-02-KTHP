@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Scissors, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { services, barbers, reviews } from '@/data/mockData';
+import { services, barbers, reviews, galleryImages } from '@/data/mockData';
 import { api } from '@/lib/api';
 import BarberCard from '@/components/BarberCard';
 import ReviewCard from '@/components/ReviewCard';
@@ -46,6 +46,8 @@ const Index = () => {
   }, []);
 
   const featured = serviceList.slice(0, 4);
+  const galleryPreviewImages = galleryList.length > 0 ? galleryList : galleryImages.map((image) => image.src);
+  const galleryMarqueeImages = [...galleryPreviewImages, ...galleryPreviewImages];
 
   return (
     <div>
@@ -158,16 +160,16 @@ const Index = () => {
           <motion.div {...fadeUp} className="text-center mb-12">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.galleryTitle')} <span className="text-gradient-gold">{t('home.galleryHighlight')}</span></h2>
           </motion.div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {(galleryList.length > 0 ? galleryList : ['https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
-              'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=400',
-              'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400',
-              'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400'])
-              .slice(0, 4).map((img, i) => (
-                <motion.div key={i} {...fadeUp} transition={{ delay: i * 0.1 }} className="aspect-square overflow-hidden rounded-lg">
-                  <img src={img} alt="Hairstyle" loading="lazy" className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
-                </motion.div>
+          <div className="relative -mx-4 overflow-hidden px-4">
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-card/50 to-transparent md:w-28" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-card/50 to-transparent md:w-28" />
+            <div className="flex w-max animate-gallery-marquee gap-4 hover:[animation-play-state:paused]">
+              {galleryMarqueeImages.map((img, i) => (
+                <div key={`${img}-${i}`} className="h-52 w-72 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary sm:h-60 sm:w-80 lg:h-64 lg:w-96">
+                  <img src={img} alt="Hairstyle" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
+                </div>
               ))}
+            </div>
           </div>
           <div className="text-center mt-10">
             <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">

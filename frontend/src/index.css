@@ -78,6 +78,20 @@
   .bg-gold-gradient {
     background: linear-gradient(135deg, hsl(var(--gold-light)), hsl(var(--gold)), hsl(var(--gold-dark)));
   }
+
+  .animate-gallery-marquee {
+    animation: gallery-marquee 42s linear infinite;
+  }
+}
+
+@keyframes gallery-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 html {
