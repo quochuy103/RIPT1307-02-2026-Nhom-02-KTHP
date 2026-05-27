@@ -59,6 +59,7 @@ public class SalonServiceService {
         SalonService service = new SalonService();
         service.setName(request.getName());
         service.setPrice(request.getPrice());
+        service.setDisplayPrice(request.getDisplayPrice());
         service.setDuration(request.getDuration());
         service.setCategory(request.getCategory());
         service.setDescription(request.getDescription());
@@ -73,6 +74,7 @@ public class SalonServiceService {
                 .orElseThrow(() -> new SalonServiceNotFoundException(id));
         service.setName(request.getName());
         service.setPrice(request.getPrice());
+        service.setDisplayPrice(request.getDisplayPrice());
         service.setDuration(request.getDuration());
         service.setCategory(request.getCategory());
         service.setDescription(request.getDescription());
