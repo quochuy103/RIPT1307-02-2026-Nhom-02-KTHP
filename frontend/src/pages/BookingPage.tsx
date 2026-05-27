@@ -14,6 +14,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { ApiError, api } from '@/lib/api';
+import { getServiceCategoryLabel, getServiceDescription, getServiceDisplayName } from '@/lib/service-i18n';
 
 const toApiTime = (timeLabel: string) => {
   const match = timeLabel.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
@@ -197,14 +198,14 @@ const BookingPage = () => {
                       {selectedService ? (
                         <span className="flex min-w-0 items-center gap-2">
                           <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                            {selectedService.name || t(`serviceItems.${selectedService.nameKey}`)}
+                            {getServiceDisplayName(selectedService, t)}
                           </span>
                           <span className="shrink-0 text-xs text-muted-foreground">
                             {getServicePriceLabel(selectedService)}
                           </span>
                         </span>
                       ) : (
-                        <span>{isLoadingOptions ? t('common.loading') : 'Chọn dịch vụ'}</span>
+                        <span>{isLoadingOptions ? t('common.loading') : t('booking.selectService')}</span>
                       )}
                     </span>
                     <Plus className="h-4 w-4 shrink-0 text-primary" />
@@ -214,18 +215,19 @@ const BookingPage = () => {
                   <DialogHeader className="border-b border-border px-5 py-4 pr-12 text-left">
                     <DialogTitle className="flex items-center gap-2 font-display text-2xl">
                       <Scissors className="h-5 w-5 text-primary" />
-                      Chọn dịch vụ
+                      {t('booking.selectService')}
                     </DialogTitle>
                     <DialogDescription>
-                      Chọn một dịch vụ phù hợp để tiếp tục đặt lịch.
+                      {t('booking.selectServiceDescription')}
                     </DialogDescription>
                   </DialogHeader>
 
                   <div className="max-h-[70vh] overflow-y-auto px-5 pb-5">
                     <div className="grid grid-cols-1 gap-3 py-5 sm:grid-cols-2 lg:grid-cols-3">
                       {serviceList.map((service) => {
-                        const serviceName = service.name || t(`serviceItems.${service.nameKey}`);
-                        const serviceDescription = service.description || t(`serviceItems.${service.descKey}`);
+                        const serviceName = getServiceDisplayName(service, t);
+                        const serviceDescription = getServiceDescription(service, t);
+                        const serviceCategory = getServiceCategoryLabel(service, t);
                         const isSelected = form.service === service.id;
 
                         return (
@@ -241,7 +243,7 @@ const BookingPage = () => {
                             <div className="mb-3 flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <span className="mb-2 inline-flex rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                                  {service.categoryLabel ?? service.category}
+                                  {serviceCategory}
                                 </span>
                                 <h3 className="line-clamp-2 min-h-[3rem] font-display text-base font-semibold leading-snug text-foreground">
                                   {serviceName}
@@ -260,7 +262,7 @@ const BookingPage = () => {
                               <span className="font-bold text-primary">{getServicePriceLabel(service)}</span>
                               <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Clock className="h-3.5 w-3.5 text-primary" />
-                                {service.duration} phút
+                                {service.duration} {t('services.min')}
                               </span>
                             </div>
                           </button>
