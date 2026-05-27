@@ -7,6 +7,9 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
+const googleMapsUrl = 'https://maps.app.goo.gl/MagSxtSMpLVifY7s8';
+const googleMapsEmbedUrl = 'https://www.google.com/maps?q=L%C3%AC%20He%20Hair%20Designer%2C%20%C4%90%C6%B0%E1%BB%9Dng%20Ph%C3%B3%20%C4%90%E1%BB%A9c%20Ch%C3%ADnh%2C%20V%C4%83n%20Nhu%E1%BA%BF%2C%20M%E1%BB%B9%20H%C3%A0o%2C%20H%C6%B0ng%20Y%C3%AAn%2C%20Vietnam&output=embed';
+
 const ContactPage = () => {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const { t } = useTranslation();
@@ -49,15 +52,20 @@ const ContactPage = () => {
 
             <div className="rounded-xl overflow-hidden border border-border h-64">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.2!2d-73.98!3d40.75!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDQ1JzAwLjAiTiA3M8KwNTgnNDguMCJX!5e0!3m2!1sen!2sus!4v1"
+                src={googleMapsEmbedUrl}
                 width="100%"
                 height="100%"
                 style={{ border: 0, filter: 'grayscale(1) invert(0.9) contrast(1.2)' }}
                 allowFullScreen
                 loading="lazy"
-                title="Location"
+                title="Lì He Men's Hair Designer location"
               />
             </div>
+            <Button asChild variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10">
+              <a href={googleMapsUrl} target="_blank" rel="noreferrer">
+                Google Maps
+              </a>
+            </Button>
           </div>
 
           <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-6 md:p-8 space-y-4 h-fit">

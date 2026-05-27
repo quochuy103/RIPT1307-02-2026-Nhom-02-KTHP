@@ -5,24 +5,28 @@ import { dashboardStats, revenueData, mockBookings } from '@/data/adminMockData'
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useTranslation } from 'react-i18next';
 
-const AdminDashboard = () => (
-  <div className="space-y-6">
-    <div>
-      <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-      <p className="text-sm text-muted-foreground">Welcome back! Here's your overview.</p>
-    </div>
+const AdminDashboard = () => {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">{t('admin.dashboard')}</h1>
+        <p className="text-sm text-muted-foreground">{t('admin.welcome')}</p>
+      </div>
 
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatsCard title="Total Bookings" value={dashboardStats.totalBookings.toLocaleString()} icon={CalendarDays} growth={dashboardStats.bookingGrowth} />
-      <StatsCard title="Total Revenue" value={dashboardStats.totalRevenue.toLocaleString()} icon={DollarSign} growth={dashboardStats.revenueGrowth} prefix="$" />
-      <StatsCard title="Total Users" value={dashboardStats.totalUsers.toLocaleString()} icon={Users} growth={dashboardStats.userGrowth} />
-      <StatsCard title="Total Orders" value={dashboardStats.totalOrders.toLocaleString()} icon={ShoppingCart} growth={dashboardStats.orderGrowth} />
+      <StatsCard title={t('admin.stats.totalBookings')} value={dashboardStats.totalBookings.toLocaleString()} icon={CalendarDays} growth={dashboardStats.bookingGrowth} />
+      <StatsCard title={t('admin.stats.totalRevenue')} value={dashboardStats.totalRevenue.toLocaleString()} icon={DollarSign} growth={dashboardStats.revenueGrowth} prefix="$" />
+      <StatsCard title={t('admin.stats.totalUsers')} value={dashboardStats.totalUsers.toLocaleString()} icon={Users} growth={dashboardStats.userGrowth} />
+      <StatsCard title={t('admin.stats.totalOrders')} value={dashboardStats.totalOrders.toLocaleString()} icon={ShoppingCart} growth={dashboardStats.orderGrowth} />
     </div>
 
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card className="border-border bg-card">
-        <CardHeader><CardTitle className="text-base">Revenue Over Time</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t('admin.stats.revenueOverTime')}</CardTitle></CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={revenueData}>
@@ -37,7 +41,7 @@ const AdminDashboard = () => (
       </Card>
 
       <Card className="border-border bg-card">
-        <CardHeader><CardTitle className="text-base">Booking Trends</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t('admin.stats.bookingTrends')}</CardTitle></CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={revenueData}>
@@ -53,12 +57,12 @@ const AdminDashboard = () => (
     </div>
 
     <Card className="border-border bg-card">
-      <CardHeader><CardTitle className="text-base">Recent Bookings</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-base">{t('admin.stats.recentBookings')}</CardTitle></CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
-              <TableHead>Client</TableHead><TableHead>Service</TableHead><TableHead>Barber</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead>
+              <TableHead>{t('admin.fields.client')}</TableHead><TableHead>{t('admin.fields.service')}</TableHead><TableHead>{t('admin.fields.barber')}</TableHead><TableHead>{t('admin.fields.date')}</TableHead><TableHead>{t('admin.fields.status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -70,7 +74,7 @@ const AdminDashboard = () => (
                 <TableCell>{b.date}</TableCell>
                 <TableCell>
                   <Badge variant={b.status === 'confirmed' ? 'default' : b.status === 'done' ? 'secondary' : b.status === 'cancelled' ? 'destructive' : 'outline'}>
-                    {b.status}
+                    {t(`admin.status.${b.status}`)}
                   </Badge>
                 </TableCell>
               </TableRow>
@@ -79,7 +83,8 @@ const AdminDashboard = () => (
         </Table>
       </CardContent>
     </Card>
-  </div>
-);
+    </div>
+  );
+};
 
 export default AdminDashboard;

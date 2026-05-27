@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AUTH_UNAUTHORIZED_EVENT } from '@/lib/auth-events';
+import { API_BASE_URL } from '@/lib/runtime-config';
 
 interface User {
   id: number;
@@ -63,7 +64,6 @@ interface LogoutOptions {
 
 const TOKEN_STORAGE_KEY = 'cutie_cuts_token';
 const USER_STORAGE_KEY = 'cutie_cuts_user';
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8081';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

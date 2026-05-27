@@ -6,8 +6,10 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.OrderItem;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.Product;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.ShopOrder;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.UserAddress;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ProductRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserAddressRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.NotificationService;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
@@ -19,16 +21,22 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
@@ -46,16 +54,19 @@ public class OrderController {
     private final ProductRepository productRepository;
     private final CurrentUserService currentUserService;
     private final NotificationService notificationService;
+    private final UserAddressRepository userAddressRepository;
 
     public OrderController(
             ShopOrderRepository orderRepository,
             ProductRepository productRepository,
             CurrentUserService currentUserService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            UserAddressRepository userAddressRepository) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.currentUserService = currentUserService;
         this.notificationService = notificationService;
+        this.userAddressRepository = userAddressRepository;
     }
 
     @GetMapping
@@ -75,16 +86,33 @@ public class OrderController {
         return orderRepository.findAll().stream().map(this::toResponse).toList();
     }
 
+    private static final Set<String> VALID_ORDER_STATUSES =
+            Set.of("pending", "confirmed", "processing", "shipped", "delivered", "cancelled");
+
     @GetMapping("/page")
     public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable,
-            Authentication authentication) {
+            Authentication authentication,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) Double minTotal,
+            @RequestParam(required = false) Double maxTotal) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
         if (!isAdmin(authentication)) {
             throw new ResponseStatusException(FORBIDDEN, "Only admins can view all orders");
         }
-        return orderRepository.findAll(pageable).map(this::toResponse);
+        if (status != null && !status.isBlank() && !VALID_ORDER_STATUSES.contains(status.toLowerCase())) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Invalid status. Allowed: " + String.join(", ", VALID_ORDER_STATUSES));
+        }
+        String statusLower = status != null && !status.isBlank() ? status.toLowerCase() : null;
+        LocalDateTime from = dateFrom != null ? dateFrom.atStartOfDay() : LocalDateTime.of(2000, 1, 1, 0, 0);
+        LocalDateTime to = dateTo != null ? dateTo.atTime(LocalTime.MAX) : LocalDateTime.of(2099, 12, 31, 23, 59);
+        return orderRepository.findAllFiltered(statusLower, userId, from, to, minTotal, maxTotal, pageable)
+                .map(this::toResponse);
     }
 
     @GetMapping("/my")
@@ -99,6 +127,22 @@ public class OrderController {
         }
         User user = currentUserService.getByEmail(authentication.getName());
         return orderRepository.findByUser(user).stream().map(this::toResponse).toList();
+    }
+
+    @GetMapping("/my/page")
+    @Operation(summary = "Get current user's orders (paginated)", description = "Returns the authenticated user's orders sorted by creation date descending, with pagination.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Authentication required")
+    })
+    public Page<Map<String, Object>> myOrdersPaged(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
+        }
+        User user = currentUserService.getByEmail(authentication.getName());
+        return orderRepository.findByUser(user, pageable).map(this::toResponse);
     }
 
     @PostMapping
@@ -120,10 +164,11 @@ public class OrderController {
         }
 
         User user = currentUserService.getByEmail(authentication.getName());
+        String resolvedAddress = resolveOrderAddress(user, request);
 
         ShopOrder order = new ShopOrder();
         order.setUser(user);
-        order.setAddress(request.getAddress());
+        order.setAddress(resolvedAddress);
 
         List<OrderItem> items = new ArrayList<>();
         double total = 0;
@@ -266,6 +311,53 @@ public class OrderController {
         return toResponse(saved);
     }
 
+    private String resolveOrderAddress(User user, CreateOrderRequest request) {
+        if (request.getAddressId() != null) {
+            UserAddress userAddress = userAddressRepository
+                    .findByIdAndUserIdAndDeletedFalse(request.getAddressId(), user.getId())
+                    .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Address not found"));
+            return formatAddressSnapshot(userAddress);
+        }
+
+        if (request.getAddress() == null || request.getAddress().isBlank()) {
+            throw new ResponseStatusException(BAD_REQUEST, "Address is required");
+        }
+
+        return request.getAddress().trim();
+    }
+
+    private String formatAddressSnapshot(UserAddress a) {
+        StringBuilder sb = new StringBuilder();
+
+        boolean hasRecipient = a.getRecipientName() != null && !a.getRecipientName().isBlank();
+        boolean hasPhone = a.getPhone() != null && !a.getPhone().isBlank();
+
+        if (hasRecipient) {
+            sb.append(a.getRecipientName().trim());
+            if (hasPhone) {
+                sb.append(" - ").append(a.getPhone().trim());
+            }
+            sb.append(" - ");
+        } else if (hasPhone) {
+            sb.append(a.getPhone().trim()).append(" - ");
+        }
+
+        sb.append(a.getAddressLine().trim());
+
+        String ward = a.getWard();
+        String district = a.getDistrict();
+        if (ward != null && !ward.isBlank()) sb.append(", ").append(ward.trim());
+        if (district != null && !district.isBlank()) sb.append(", ").append(district.trim());
+        sb.append(", ").append(a.getCity().trim());
+
+        String note = a.getNote();
+        if (note != null && !note.isBlank()) {
+            sb.append(". Note: ").append(note.trim());
+        }
+
+        return sb.toString();
+    }
+
     private boolean isAdmin(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
@@ -289,7 +381,7 @@ public class OrderController {
         map.put("totalPrice", order.getTotalPrice());
         map.put("address", order.getAddress());
         map.put("status", DomainStatusRules.normalizeOrderStatusForResponse(order.getStatus()));
-        map.put("createdAt", String.valueOf(order.getCreatedAt()).substring(0, 10));
+        map.put("createdAt", order.getCreatedAt() == null ? null : order.getCreatedAt().toLocalDate().toString());
         return map;
     }
 }

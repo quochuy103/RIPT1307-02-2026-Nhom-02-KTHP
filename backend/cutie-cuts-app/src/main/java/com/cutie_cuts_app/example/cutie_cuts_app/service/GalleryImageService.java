@@ -6,6 +6,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.dto.gallery.GalleryImageRespons
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.GalleryImage;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.GalleryImageRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -13,13 +14,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @Service
 public class GalleryImageService {
+    private static final Set<String> ALLOWED_CATEGORIES = Set.of("fade", "classic", "modern", "color");
 
     private final GalleryImageRepository galleryImageRepository;
     private final S3StorageService s3StorageService;
@@ -49,6 +53,13 @@ public class GalleryImageService {
         return images.stream()
                 .map(GalleryImageResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<GalleryImageResponse> findAllFiltered(String category, LocalDateTime uploadedFrom,
+                                                       LocalDateTime uploadedTo, Pageable pageable) {
+        return galleryImageRepository.findAllFiltered(category, uploadedFrom, uploadedTo, pageable)
+                .map(GalleryImageResponse::from);
     }
 
     @Transactional(readOnly = true)
@@ -88,7 +99,7 @@ public class GalleryImageService {
         GalleryImage image = new GalleryImage();
         image.setUrl(url);
         image.setAlt(request.getAlt() != null ? request.getAlt() : "");
-        image.setCategory(request.getCategory() != null ? request.getCategory() : "general");
+        image.setCategory(normalizeCategory(request.getCategory()));
 
         GalleryImage saved = galleryImageRepository.save(image);
         return GalleryImageResponse.from(saved);
@@ -104,7 +115,7 @@ public class GalleryImageService {
             image.setAlt(request.getAlt());
         }
         if (request.getCategory() != null) {
-            image.setCategory(request.getCategory());
+            image.setCategory(normalizeCategory(request.getCategory()));
         }
 
         GalleryImage saved = galleryImageRepository.save(image);
@@ -126,5 +137,13 @@ public class GalleryImageService {
         public ImageNotFoundException(Long id) {
             super(HttpStatus.NOT_FOUND, "Gallery image not found: id=" + id);
         }
+    }
+
+    private String normalizeCategory(String category) {
+        String normalized = category == null ? "fade" : category.trim().toLowerCase();
+        if (!ALLOWED_CATEGORIES.contains(normalized)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Gallery category must be one of: fade, classic, modern, color");
+        }
+        return normalized;
     }
 }

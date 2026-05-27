@@ -3,6 +3,8 @@ import BarberCard from '@/components/BarberCard';
 import { Scissors, Award, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -13,6 +15,7 @@ const fadeUp = {
 
 const AboutPage = () => {
   const { t } = useTranslation();
+  const [barberList, setBarberList] = useState(barbers);
 
   const sections = [
     { icon: Scissors, titleKey: 'about.storyTitle', textKey: 'about.storyText' },
@@ -20,11 +23,26 @@ const AboutPage = () => {
     { icon: Heart, titleKey: 'about.valuesTitle', textKey: 'about.valuesText' },
   ];
 
+  useEffect(() => {
+    const loadBarbers = async () => {
+      try {
+        setBarberList(await api.barbers.getAll());
+      } catch {
+        setBarberList(barbers);
+      }
+    };
+
+    void loadBarbers();
+  }, []);
+
   return (
     <div className="pt-24 pb-20">
       <div className="container mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-          <h1 className="font-display text-4xl md:text-5xl font-bold mb-3">{t('about.title')} <span className="text-gradient-gold">{t('about.highlight')}</span></h1>
+          <h1 className="mb-3 font-display text-4xl font-bold leading-tight md:text-5xl">
+            <span className="block">{t('about.title')}</span>
+            <span className="block text-gradient-gold">{t('about.highlight')}</span>
+          </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">{t('about.subtitle')}</p>
         </motion.div>
 
@@ -43,8 +61,8 @@ const AboutPage = () => {
         <motion.div {...fadeUp} className="text-center mb-12">
           <h2 className="font-display text-3xl font-bold mb-3">{t('about.teamTitle')} <span className="text-gradient-gold">{t('about.teamHighlight')}</span></h2>
         </motion.div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-3xl mx-auto">
-          {barbers.map((b, i) => (
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5">
+          {barberList.map((b, i) => (
             <motion.div key={b.id} {...fadeUp} transition={{ delay: i * 0.1 }}>
               <BarberCard barber={b} />
             </motion.div>
