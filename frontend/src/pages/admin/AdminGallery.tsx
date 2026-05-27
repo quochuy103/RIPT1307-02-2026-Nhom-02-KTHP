@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import FormModal from '@/components/admin/FormModal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
 import ImageUploader from '@/components/ImageUploader';
 import { confirmUpload, type UploadMetadata } from '@/services/uploadService';
@@ -15,13 +16,14 @@ interface GalleryForm {
   contentType: string;
   fileSize: number;
   alt: string;
+  category: string;
   previewUrl: string;
 }
 
 const AdminGallery = () => {
   const [images, setImages] = useState(mockGallery);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState<GalleryForm>({ objectKey: '', contentType: '', fileSize: 0, alt: '', previewUrl: '' });
+  const [form, setForm] = useState<GalleryForm>({ objectKey: '', contentType: '', fileSize: 0, alt: '', category: 'fade', previewUrl: '' });
 
   useEffect(() => {
     const load = async () => {
@@ -37,12 +39,12 @@ const AdminGallery = () => {
   const handleUpload = async () => {
     if (!form.objectKey) { toast.error('Please upload an image first'); return; }
     try {
-      const metadata: UploadMetadata = { alt: form.alt, category: 'general' };
+      const metadata: UploadMetadata = { alt: form.alt, category: form.category };
       await confirmUpload('GALLERY', form.objectKey, form.contentType, form.fileSize, metadata);
       setImages(await api.admin.getGallery());
       toast.success('Image added');
       setModalOpen(false);
-      setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', previewUrl: '' });
+      setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', category: 'fade', previewUrl: '' });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Upload failed');
     }
@@ -65,7 +67,7 @@ const AdminGallery = () => {
           <h1 className="text-2xl font-bold text-foreground">Gallery Management</h1>
           <p className="text-sm text-muted-foreground">{images.length} images</p>
         </div>
-        <Button onClick={() => { setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', previewUrl: '' }); setModalOpen(true); }}>
+        <Button onClick={() => { setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', category: 'fade', previewUrl: '' }); setModalOpen(true); }}>
           <Plus className="mr-1 h-4 w-4" /> Add Image
         </Button>
       </div>
@@ -86,19 +88,33 @@ const AdminGallery = () => {
         ))}
       </div>
 
-      <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Image" onSubmit={handleUpload}>
+      <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Image" onSubmit={handleUpload} submitLabel="Publish Image">
         <div className="space-y-3">
           <div>
             <Label>Image</Label>
             <ImageUploader
               context="GALLERY"
               onUploaded={(publicUrl, objectKey, contentType, fileSize) =>
-                setForm({ ...form, objectKey, contentType, fileSize, previewUrl: publicUrl })
+                setForm((current) => ({ ...current, objectKey, contentType, fileSize, previewUrl: publicUrl }))
               }
               onError={(msg) => toast.error(msg)}
             />
           </div>
           <div><Label>Alt Text</Label><Input value={form.alt} onChange={(e) => setForm({ ...form, alt: e.target.value })} placeholder="Description" /></div>
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select value={form.category} onValueChange={(category) => setForm((current) => ({ ...current, category }))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fade">Fade</SelectItem>
+                <SelectItem value="classic">Classic</SelectItem>
+                <SelectItem value="modern">Modern</SelectItem>
+                <SelectItem value="color">Color</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </FormModal>
     </div>
