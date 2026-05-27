@@ -117,6 +117,7 @@ public class PaymentService {
         }
         if (qrResponse.getData().getQrDataURL() == null) {
             logger.error("VietQR API returned data but qrDataURL is null for order: {}", orderId);
+        }
 
         // If VietQR API fails (network error, invalid config, etc.), the QR image will be null.
         // Creating a PENDING payment without a QR code leaves users stuck: they can see the
