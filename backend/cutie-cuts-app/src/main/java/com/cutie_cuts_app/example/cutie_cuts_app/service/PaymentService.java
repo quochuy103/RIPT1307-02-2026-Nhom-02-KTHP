@@ -10,6 +10,8 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -138,6 +140,27 @@ public class PaymentService {
         List<Payment> payments = paymentRepository.findByUserId(currentUser.getId());
         payments.forEach(this::expireIfNeeded);
         return payments.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PaymentResponse> getUserPaymentsFiltered(String status, Long orderId,
+                                                          LocalDateTime dateFrom, LocalDateTime dateTo,
+                                                          Double minAmount, Double maxAmount,
+                                                          Pageable pageable) {
+        User currentUser = currentUserService.getCurrentUser();
+        return paymentRepository.findAllFiltered(status, orderId, dateFrom, dateTo,
+                minAmount, maxAmount, currentUser.getId(), pageable)
+                .map(this::mapToResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PaymentResponse> getAllPaymentsFiltered(String status, Long orderId, Long userId,
+                                                         LocalDateTime dateFrom, LocalDateTime dateTo,
+                                                         Double minAmount, Double maxAmount,
+                                                         Pageable pageable) {
+        return paymentRepository.findAllFiltered(status, orderId, dateFrom, dateTo,
+                minAmount, maxAmount, userId, pageable)
+                .map(this::mapToResponse);
     }
 
     @Transactional

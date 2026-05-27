@@ -5,13 +5,17 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -32,9 +36,24 @@ public class UsersController {
         return userRepository.findAll().stream().map(this::toResponse).toList();
     }
 
+    private static final Set<String> VALID_ROLES = Set.of("user", "admin");
+
     @GetMapping("/page")
-    public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable) {
-        return userRepository.findAll(pageable).map(this::toResponse);
+    public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdTo) {
+        if (role != null && !role.isBlank() && !VALID_ROLES.contains(role.toLowerCase())) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Invalid role. Allowed: " + String.join(", ", VALID_ROLES));
+        }
+        String roleLower = role != null && !role.isBlank() ? role.toLowerCase() : null;
+        String searchPattern = search != null && !search.isBlank()
+                ? "%" + search.toLowerCase() + "%" : null;
+        LocalDateTime from = createdFrom != null ? createdFrom.atStartOfDay() : LocalDateTime.of(2000, 1, 1, 0, 0);
+        LocalDateTime to = createdTo != null ? createdTo.atTime(LocalTime.MAX) : LocalDateTime.of(2099, 12, 31, 23, 59);
+        return userRepository.findAllFiltered(roleLower, searchPattern, from, to, pageable).map(this::toResponse);
     }
 
     @PatchMapping("/{id}")

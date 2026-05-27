@@ -34,6 +34,15 @@ public class SalonServiceService {
     }
 
     @Transactional(readOnly = true)
+    public Page<SalonServiceResponse> findAllFiltered(String search, String category,
+                                                       Integer minPrice, Integer maxPrice,
+                                                       Integer minDuration, Integer maxDuration,
+                                                       Pageable pageable) {
+        return repository.findAllFiltered(search, category, minPrice, maxPrice,
+                minDuration, maxDuration, pageable).map(SalonServiceResponse::from);
+    }
+
+    @Transactional(readOnly = true)
     public SalonServiceResponse findById(Long id) {
         SalonService service = repository.findById(id)
                 .orElseThrow(() -> new SalonServiceNotFoundException(id));

@@ -10,9 +10,12 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @RestController
 @RequestMapping("/api/barbers")
@@ -32,8 +35,29 @@ public class BarberController {
 
     @GetMapping("/paginated")
     public ResponseEntity<Page<BarberResponse>> getAllPaginated(
-            @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(barberService.findAll(pageable));
+            @PageableDefault(size = 20) Pageable pageable,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String specialty,
+            @RequestParam(required = false) Integer minExperience,
+            @RequestParam(required = false) Integer maxExperience) {
+
+        if (minExperience != null && minExperience < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "minExperience must be >= 0");
+        }
+        if (maxExperience != null && maxExperience < 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "maxExperience must be >= 0");
+        }
+        if (minExperience != null && maxExperience != null && minExperience > maxExperience) {
+            throw new ResponseStatusException(BAD_REQUEST, "minExperience must be <= maxExperience");
+        }
+
+        String searchPattern = search != null && !search.isBlank()
+                ? "%" + search.toLowerCase() + "%" : null;
+        String specialtyPattern = specialty != null && !specialty.isBlank()
+                ? "%" + specialty.toLowerCase() + "%" : null;
+
+        return ResponseEntity.ok(barberService.findAllFiltered(
+                searchPattern, specialtyPattern, minExperience, maxExperience, pageable));
     }
 
     @GetMapping("/{id}")
