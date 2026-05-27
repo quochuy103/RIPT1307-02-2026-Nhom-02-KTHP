@@ -10,9 +10,8 @@ import type {
   AdminUser,
 } from '@/data/adminMockData';
 import { dispatchUnauthorizedEvent } from '@/lib/auth-events';
+import { API_BASE_URL } from '@/lib/runtime-config';
 import type { OrderStatus, OrderStatusUpdate } from '@/types/order';
-
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8081';
 
 const getToken = () => localStorage.getItem('cutie_cuts_token');
 
