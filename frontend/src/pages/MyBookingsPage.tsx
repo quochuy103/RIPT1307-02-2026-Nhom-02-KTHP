@@ -6,7 +6,12 @@ import { ApiError, api, type Booking } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { BOOKING_NOTICE_MINUTES, canCancelBooking } from '@/lib/booking-policy';
+import {
+  BOOKING_NOTICE_MINUTES,
+  MAX_CANCELLATIONS_PER_DATE,
+  canCancelBooking,
+  hasReachedCancellationLimitForDate,
+} from '@/lib/booking-policy';
 
 const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   confirmed: 'default',
@@ -20,6 +25,10 @@ const cancellableStatuses = new Set(['pending', 'confirmed']);
 const getBookingError = (error: unknown, fallback: string) => {
   if (error instanceof ApiError && error.status === 401) {
     return 'Please sign in again to manage your bookings.';
+  }
+
+  if (error instanceof ApiError && error.status === 400 && error.message.includes('at most 3 bookings for the selected appointment date')) {
+    return `You can only cancel ${MAX_CANCELLATIONS_PER_DATE} bookings for the same appointment date.`;
   }
 
   if (error instanceof Error) {
@@ -100,7 +109,8 @@ const MyBookingsPage = () => {
           <div className="space-y-4">
             {bookings.map((booking) => {
               const canCancelByStatus = cancellableStatuses.has(booking.status);
-              const canCancel = canCancelBooking(booking);
+              const hasReachedCancellationLimit = hasReachedCancellationLimitForDate(bookings, booking.date);
+              const canCancel = canCancelBooking(booking) && !hasReachedCancellationLimit;
               return (
                 <Card key={booking.id} className="overflow-hidden">
                   <CardContent className="p-5">
@@ -146,10 +156,12 @@ const MyBookingsPage = () => {
                         )}
                         {canCancelByStatus && !canCancel && (
                           <p className="max-w-56 text-xs text-muted-foreground md:text-right">
-                            {t('myBookings.cancelWindowNotice', {
-                              minutes: BOOKING_NOTICE_MINUTES,
-                              defaultValue: 'Bookings can only be cancelled at least {{minutes}} minutes before the appointment.',
-                            })}
+                            {hasReachedCancellationLimit
+                              ? `You already cancelled ${MAX_CANCELLATIONS_PER_DATE} bookings on ${booking.date}.`
+                              : t('myBookings.cancelWindowNotice', {
+                                  minutes: BOOKING_NOTICE_MINUTES,
+                                  defaultValue: 'Bookings can only be cancelled at least {{minutes}} minutes before the appointment.',
+                                })}
                           </p>
                         )}
                       </div>

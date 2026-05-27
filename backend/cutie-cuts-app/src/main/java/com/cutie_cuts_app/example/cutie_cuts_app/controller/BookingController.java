@@ -96,7 +96,7 @@ public class BookingController {
     @PostMapping("/{id}/cancel")
     @Operation(
             summary = "Cancel a booking",
-            description = "Customers can cancel their own pending or confirmed bookings at most 3 times per day and only if the appointment is at least 30 minutes away. Admins can cancel without these two limits.")
+            description = "Customers can cancel their own pending or confirmed bookings at most 3 times for the appointment date and only if the appointment is at least 30 minutes away. Cancelling does not restore the 3-booking quota for that appointment date. Admins can cancel without these two limits.")
     public Map<String, Object> cancel(@PathVariable Long id, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");

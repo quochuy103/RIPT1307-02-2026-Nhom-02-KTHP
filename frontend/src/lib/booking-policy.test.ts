@@ -1,4 +1,13 @@
-import { canCancelBooking, getAvailableTimeSlots, isPastBookingDate, toApiTime } from '@/lib/booking-policy';
+import {
+  canCancelBooking,
+  countBookingsForDate,
+  countCancelledBookingsForDate,
+  getAvailableTimeSlots,
+  hasReachedBookingLimitForDate,
+  hasReachedCancellationLimitForDate,
+  isPastBookingDate,
+  toApiTime,
+} from '@/lib/booking-policy';
 
 describe('booking-policy', () => {
   it('keeps today selectable while blocking previous days', () => {
@@ -27,5 +36,20 @@ describe('booking-policy', () => {
   it('normalizes UI time labels to backend time format', () => {
     expect(toApiTime('9:00 AM')).toBe('09:00:00');
     expect(toApiTime('13:30')).toBe('13:30:00');
+  });
+
+  it('counts booking creation and cancellation limits by appointment date', () => {
+    const bookings = [
+      { date: '2026-05-27', status: 'pending' },
+      { date: '2026-05-27', status: 'confirmed' },
+      { date: '2026-05-27', status: 'cancelled' },
+      { date: '2026-05-27', status: 'done' },
+      { date: '2026-05-28', status: 'cancelled' },
+    ];
+
+    expect(countBookingsForDate(bookings, '2026-05-27')).toBe(4);
+    expect(countCancelledBookingsForDate(bookings, '2026-05-27')).toBe(1);
+    expect(hasReachedBookingLimitForDate(bookings, '2026-05-27')).toBe(true);
+    expect(hasReachedCancellationLimitForDate(bookings, '2026-05-28')).toBe(false);
   });
 });

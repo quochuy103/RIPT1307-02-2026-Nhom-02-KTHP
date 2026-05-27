@@ -35,6 +35,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class BookingService {
 
     private static final int MAX_DAILY_CANCELLATIONS = 3;
+    private static final int MAX_BOOKINGS_PER_APPOINTMENT_DATE = 3;
     private static final long MIN_BOOKING_LEAD_TIME_MINUTES = 30;
     private static final long MIN_CANCEL_NOTICE_MINUTES = 30;
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -101,6 +102,7 @@ public class BookingService {
         if (bookingDateTime.isBefore(minimumBookingDateTime)) {
             throw new ResponseStatusException(BAD_REQUEST, "Bookings must be made at least 30 minutes in advance");
         }
+        enforceBookingLimitForAppointmentDate(user, request.getDate());
 
 
         Booking booking = new Booking();
@@ -165,7 +167,7 @@ public class BookingService {
         DomainStatusRules.ensureBookingCanBeCancelled(currentStatus);
         if (!isAdmin) {
             enforceCancellationWindow(booking);
-            enforceDailyCancellationLimit(user);
+            enforceCancellationLimitForAppointmentDate(user, booking.getDate());
         }
 
         booking.setStatus("cancelled");
@@ -190,17 +192,19 @@ public class BookingService {
         }
     }
 
-    private void enforceDailyCancellationLimit(User user) {
-        LocalDateTime now = LocalDateTime.now(clock);
-        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
-        LocalDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
-        long cancelledCount = bookingRepository.countByUserAndStatusAndCancelledAtBetween(
-                user,
-                "cancelled",
-                startOfDay,
-                endOfDay);
+    private void enforceBookingLimitForAppointmentDate(User user, java.time.LocalDate appointmentDate) {
+        long bookingCount = bookingRepository.countByUserAndDate(user, appointmentDate);
+        if (bookingCount >= MAX_BOOKINGS_PER_APPOINTMENT_DATE) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "You can create at most 3 bookings on the selected appointment date");
+        }
+    }
+
+    private void enforceCancellationLimitForAppointmentDate(User user, java.time.LocalDate appointmentDate) {
+        long cancelledCount = bookingRepository.countByUserAndDateWithStatus(user, appointmentDate, "cancelled");
         if (cancelledCount >= MAX_DAILY_CANCELLATIONS) {
-            throw new ResponseStatusException(BAD_REQUEST, "You can cancel at most 3 bookings per day");
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "You can cancel at most 3 bookings for the selected appointment date");
         }
     }
 

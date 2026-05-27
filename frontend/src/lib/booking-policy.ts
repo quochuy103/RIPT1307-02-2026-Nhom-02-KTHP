@@ -1,6 +1,8 @@
 import { addMinutes, isBefore, isSameDay, parseISO, startOfDay } from 'date-fns';
 
 export const BOOKING_NOTICE_MINUTES = 30;
+export const MAX_BOOKINGS_PER_DATE = 3;
+export const MAX_CANCELLATIONS_PER_DATE = 3;
 
 const parseTimeParts = (value: string) => {
   const normalized = value.trim();
@@ -75,3 +77,37 @@ export const canCancelBooking = (
 
   return isBookingTimeSelectable(bookingDate, booking.time, now);
 };
+
+const normalizeDateKey = (value: string | Date) => {
+  if (value instanceof Date) {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  }
+  return value;
+};
+
+export const countBookingsForDate = (
+  bookings: Array<{ date: string; status: string }>,
+  appointmentDate: string | Date,
+) => {
+  const dateKey = normalizeDateKey(appointmentDate);
+  return bookings.filter((booking) => booking.date === dateKey).length;
+};
+
+export const countCancelledBookingsForDate = (
+  bookings: Array<{ date: string; status: string }>,
+  appointmentDate: string | Date,
+) => {
+  const dateKey = normalizeDateKey(appointmentDate);
+  return bookings.filter((booking) =>
+    booking.date === dateKey && booking.status.trim().toLowerCase() === 'cancelled').length;
+};
+
+export const hasReachedBookingLimitForDate = (
+  bookings: Array<{ date: string; status: string }>,
+  appointmentDate: string | Date,
+) => countBookingsForDate(bookings, appointmentDate) >= MAX_BOOKINGS_PER_DATE;
+
+export const hasReachedCancellationLimitForDate = (
+  bookings: Array<{ date: string; status: string }>,
+  appointmentDate: string | Date,
+) => countCancelledBookingsForDate(bookings, appointmentDate) >= MAX_CANCELLATIONS_PER_DATE;
