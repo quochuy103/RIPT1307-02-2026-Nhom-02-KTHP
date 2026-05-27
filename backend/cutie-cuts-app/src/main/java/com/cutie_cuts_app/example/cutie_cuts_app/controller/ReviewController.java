@@ -21,12 +21,15 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,12 +73,36 @@ public class ReviewController {
 
     @GetMapping
     public List<Map<String, Object>> getAll() {
-        return reviewRepository.findByDeletedFalse().stream().map(this::toResponse).toList();
+        return reviewRepository.findVisible().stream().map(this::toResponse).toList();
     }
 
     @GetMapping("/page")
-    public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable) {
-        return reviewRepository.findAll(pageable).map(this::toResponse);
+    public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable,
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) Long serviceId,
+            @RequestParam(required = false) Long barberId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long orderId,
+            @RequestParam(required = false) Integer minRating,
+            @RequestParam(required = false) Integer maxRating,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdTo) {
+
+        if (minRating != null && (minRating < 1 || minRating > 5)) {
+            throw new ResponseStatusException(BAD_REQUEST, "minRating must be between 1 and 5");
+        }
+        if (maxRating != null && (maxRating < 1 || maxRating > 5)) {
+            throw new ResponseStatusException(BAD_REQUEST, "maxRating must be between 1 and 5");
+        }
+        if (minRating != null && maxRating != null && minRating > maxRating) {
+            throw new ResponseStatusException(BAD_REQUEST, "minRating must be <= maxRating");
+        }
+
+        LocalDateTime from = createdFrom != null ? createdFrom.atStartOfDay() : LocalDateTime.of(2000, 1, 1, 0, 0);
+        LocalDateTime to = createdTo != null ? createdTo.atTime(LocalTime.MAX) : LocalDateTime.of(2099, 12, 31, 23, 59);
+
+        return reviewRepository.findAllFiltered(productId, serviceId, barberId, userId, orderId,
+                minRating, maxRating, from, to, pageable).map(this::toResponse);
     }
 
     @GetMapping("/products/{productId}")
@@ -255,18 +282,25 @@ public class ReviewController {
     private Map<String, Object> toResponse(Review review) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", review.getId());
-        map.put("userId", review.getUser().getId());
-        map.put("userName", review.getUser().getName());
+        User user = review.getUser();
+        Booking booking = review.getBooking();
+        SalonService service = review.getService();
+        Barber barber = review.getBarber();
+        ShopOrder order = review.getOrder();
+        Product product = review.getProduct();
+
+        map.put("userId", user != null ? user.getId() : null);
+        map.put("userName", user != null ? user.getName() : "Anonymous");
         map.put("rating", review.getRating());
         map.put("comment", review.getComment());
         map.put("date", formatDate(review.getCreatedAt()));
-        map.put("bookingId", review.getBooking() != null ? review.getBooking().getId() : null);
-        map.put("serviceId", review.getService() != null ? review.getService().getId() : null);
-        map.put("barberId", review.getBarber() != null ? review.getBarber().getId() : null);
-        map.put("orderId", review.getOrder() != null ? review.getOrder().getId() : null);
-        map.put("productId", review.getProduct() != null ? review.getProduct().getId() : null);
-        map.put("productName", review.getProduct() != null ? review.getProduct().getName() : null);
-        map.put("reviewType", review.getProduct() != null ? "product" : "service");
+        map.put("bookingId", booking != null ? booking.getId() : null);
+        map.put("serviceId", service != null ? service.getId() : null);
+        map.put("barberId", barber != null ? barber.getId() : null);
+        map.put("orderId", order != null ? order.getId() : null);
+        map.put("productId", product != null ? product.getId() : null);
+        map.put("productName", product != null ? product.getName() : null);
+        map.put("reviewType", product != null ? "product" : "service");
         return map;
     }
 }

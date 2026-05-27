@@ -56,7 +56,9 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link to="/" className="flex items-center gap-2">
             <Scissors className="h-6 w-6 text-primary" />
-            <span className="font-display text-xl font-bold text-gradient-gold">BLADE & CO</span>
+            <span className="max-w-[210px] truncate font-display text-base font-bold text-gradient-gold sm:max-w-none sm:text-xl">
+              Lì He Men's Hair Designer
+            </span>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
@@ -103,7 +105,7 @@ const Navbar = () => {
                   <DropdownMenuSeparator />
                   {user?.role === 'admin' && (
                     <DropdownMenuItem asChild>
-                      <Link to="/admin">Admin Dashboard</Link>
+                      <Link to="/admin">{t('admin.dashboard')}</Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>

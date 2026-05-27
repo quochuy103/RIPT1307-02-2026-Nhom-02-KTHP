@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, X } from 'lucide-react';
 import { uploadImage, uploadToStorage, type UploadContext, type PresignResult } from '@/services/uploadService';
+import { useTranslation } from 'react-i18next';
 
 interface ImageUploaderProps {
   context: UploadContext;
@@ -11,6 +12,7 @@ interface ImageUploaderProps {
 }
 
 export default function ImageUploader({ context, currentUrl, onUploaded, onError }: ImageUploaderProps) {
+  const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | undefined>(currentUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,7 +36,7 @@ export default function ImageUploader({ context, currentUrl, onUploaded, onError
       setPreview(result.publicUrl);
       onUploaded(result.publicUrl, result.objectKey, result.contentType, result.fileSize);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Upload failed';
+      const msg = err instanceof Error ? err.message : t('common.uploadFailed');
       onError?.(msg);
     } finally {
       setUploading(false);
@@ -75,7 +77,7 @@ export default function ImageUploader({ context, currentUrl, onUploaded, onError
           ) : (
             <Upload className="mr-1 h-4 w-4" />
           )}
-          {uploading ? 'Uploading...' : preview ? 'Change Image' : 'Upload Image'}
+          {uploading ? t('common.uploading') : preview ? t('common.changeImage') : t('common.uploadImage')}
         </Button>
         <input
           ref={fileInputRef}

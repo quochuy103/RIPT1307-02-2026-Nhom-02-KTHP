@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export interface Column<T> {
   key: string;
@@ -19,7 +20,8 @@ interface Props<T> {
   actions?: (item: T) => React.ReactNode;
 }
 
-function DataTable<T extends { id: string }>({ data, columns, pageSize = 8, searchPlaceholder = 'Search...', actions }: Props<T>) {
+function DataTable<T extends { id: string }>({ data, columns, pageSize = 8, searchPlaceholder, actions }: Props<T>) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
@@ -43,7 +45,7 @@ function DataTable<T extends { id: string }>({ data, columns, pageSize = 8, sear
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder={searchPlaceholder}
+          placeholder={searchPlaceholder ?? t('admin.table.search')}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           className="pl-9"
@@ -57,14 +59,14 @@ function DataTable<T extends { id: string }>({ data, columns, pageSize = 8, sear
               {columns.map((col) => (
                 <TableHead key={col.key}>{col.label}</TableHead>
               ))}
-              {actions && <TableHead className="text-right">Actions</TableHead>}
+              {actions && <TableHead className="text-right">{t('admin.table.actions')}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {paged.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="text-center py-8 text-muted-foreground">
-                  No data found
+                  {t('admin.table.noData')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -86,7 +88,11 @@ function DataTable<T extends { id: string }>({ data, columns, pageSize = 8, sear
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of {filtered.length}
+            {t('admin.table.showing', {
+              from: (page - 1) * pageSize + 1,
+              to: Math.min(page * pageSize, filtered.length),
+              total: filtered.length,
+            })}
           </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>

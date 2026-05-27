@@ -39,6 +39,9 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "credentials_updated_at")
+    private LocalDateTime credentialsUpdatedAt;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserAuth> authMethods;
 
@@ -61,6 +64,8 @@ public class User {
     public void setDeleted(Boolean deleted) { this.deleted = deleted; }
     public LocalDateTime getDeletedAt() { return deletedAt; }
     public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+    public LocalDateTime getCredentialsUpdatedAt() { return credentialsUpdatedAt; }
+    public void setCredentialsUpdatedAt(LocalDateTime credentialsUpdatedAt) { this.credentialsUpdatedAt = credentialsUpdatedAt; }
     public List<UserAuth> getAuthMethods() { return authMethods; }
     public void setAuthMethods(List<UserAuth> authMethods) { this.authMethods = authMethods; }
 

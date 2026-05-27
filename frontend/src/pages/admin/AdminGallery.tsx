@@ -6,22 +6,26 @@ import { toast } from 'sonner';
 import FormModal from '@/components/admin/FormModal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
 import ImageUploader from '@/components/ImageUploader';
 import { confirmUpload, type UploadMetadata } from '@/services/uploadService';
+import { useTranslation } from 'react-i18next';
 
 interface GalleryForm {
   objectKey: string;
   contentType: string;
   fileSize: number;
   alt: string;
+  category: string;
   previewUrl: string;
 }
 
 const AdminGallery = () => {
+  const { t } = useTranslation();
   const [images, setImages] = useState(mockGallery);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState<GalleryForm>({ objectKey: '', contentType: '', fileSize: 0, alt: '', previewUrl: '' });
+  const [form, setForm] = useState<GalleryForm>({ objectKey: '', contentType: '', fileSize: 0, alt: '', category: 'fade', previewUrl: '' });
 
   useEffect(() => {
     const load = async () => {
@@ -35,16 +39,16 @@ const AdminGallery = () => {
   }, []);
 
   const handleUpload = async () => {
-    if (!form.objectKey) { toast.error('Please upload an image first'); return; }
+    if (!form.objectKey) { toast.error(t('admin.common.uploadImageFirst')); return; }
     try {
-      const metadata: UploadMetadata = { alt: form.alt, category: 'general' };
+      const metadata: UploadMetadata = { alt: form.alt, category: form.category };
       await confirmUpload('GALLERY', form.objectKey, form.contentType, form.fileSize, metadata);
       setImages(await api.admin.getGallery());
-      toast.success('Image added');
+      toast.success(t('admin.galleryPage.added'));
       setModalOpen(false);
-      setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', previewUrl: '' });
+      setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', category: 'fade', previewUrl: '' });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Upload failed');
+      toast.error(error instanceof Error ? error.message : t('admin.common.saveFailed'));
     }
   };
 
@@ -52,9 +56,9 @@ const AdminGallery = () => {
     try {
       await api.admin.deleteGalleryImage(id);
       setImages((prev) => prev.filter((img) => img.id !== id));
-      toast.success('Image deleted');
+      toast.success(t('admin.galleryPage.deleted'));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Delete failed');
+      toast.error(error instanceof Error ? error.message : t('admin.common.deleteFailed'));
     }
   };
 
@@ -62,11 +66,11 @@ const AdminGallery = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Gallery Management</h1>
-          <p className="text-sm text-muted-foreground">{images.length} images</p>
+          <h1 className="text-2xl font-bold text-foreground">{t('admin.galleryPage.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('admin.galleryPage.count', { count: images.length })}</p>
         </div>
-        <Button onClick={() => { setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', previewUrl: '' }); setModalOpen(true); }}>
-          <Plus className="mr-1 h-4 w-4" /> Add Image
+        <Button onClick={() => { setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', category: 'fade', previewUrl: '' }); setModalOpen(true); }}>
+          <Plus className="mr-1 h-4 w-4" /> {t('admin.galleryPage.add')}
         </Button>
       </div>
 
@@ -86,19 +90,33 @@ const AdminGallery = () => {
         ))}
       </div>
 
-      <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Image" onSubmit={handleUpload}>
+      <FormModal open={modalOpen} onClose={() => setModalOpen(false)} title={t('admin.galleryPage.add')} onSubmit={handleUpload} submitLabel={t('admin.galleryPage.publish')}>
         <div className="space-y-3">
           <div>
-            <Label>Image</Label>
+            <Label>{t('admin.fields.image')}</Label>
             <ImageUploader
               context="GALLERY"
               onUploaded={(publicUrl, objectKey, contentType, fileSize) =>
-                setForm({ ...form, objectKey, contentType, fileSize, previewUrl: publicUrl })
+                setForm((current) => ({ ...current, objectKey, contentType, fileSize, previewUrl: publicUrl }))
               }
               onError={(msg) => toast.error(msg)}
             />
           </div>
-          <div><Label>Alt Text</Label><Input value={form.alt} onChange={(e) => setForm({ ...form, alt: e.target.value })} placeholder="Description" /></div>
+          <div><Label>{t('admin.fields.altText')}</Label><Input value={form.alt} onChange={(e) => setForm({ ...form, alt: e.target.value })} placeholder={t('admin.galleryPage.description')} /></div>
+          <div className="space-y-2">
+            <Label>{t('admin.fields.category')}</Label>
+            <Select value={form.category} onValueChange={(category) => setForm((current) => ({ ...current, category }))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fade">{t('admin.galleryPage.categories.fade')}</SelectItem>
+                <SelectItem value="classic">{t('admin.galleryPage.categories.classic')}</SelectItem>
+                <SelectItem value="modern">{t('admin.galleryPage.categories.modern')}</SelectItem>
+                <SelectItem value="color">{t('admin.galleryPage.categories.color')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </FormModal>
     </div>

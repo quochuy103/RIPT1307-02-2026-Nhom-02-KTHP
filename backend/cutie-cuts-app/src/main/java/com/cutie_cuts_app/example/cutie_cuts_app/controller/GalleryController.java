@@ -3,32 +3,31 @@ package com.cutie_cuts_app.example.cutie_cuts_app.controller;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.GalleryImageConfirmRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.gallery.GalleryImageRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.gallery.GalleryImageResponse;
-import com.cutie_cuts_app.example.cutie_cuts_app.entity.GalleryImage;
-import com.cutie_cuts_app.example.cutie_cuts_app.repository.GalleryImageRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.GalleryImageService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import static org.springframework.http.HttpStatus.OK;
 
 @RestController
 @RequestMapping("/api/gallery")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
+@CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*", "http://[::1]:*"})
 public class GalleryController {
 
     private final GalleryImageService galleryImageService;
-    private final GalleryImageRepository galleryImageRepository;
 
-    public GalleryController(GalleryImageService galleryImageService,
-                              GalleryImageRepository galleryImageRepository) {
+    public GalleryController(GalleryImageService galleryImageService) {
         this.galleryImageService = galleryImageService;
-        this.galleryImageRepository = galleryImageRepository;
     }
 
     @GetMapping
@@ -42,9 +41,19 @@ public class GalleryController {
 
     @GetMapping("/page")
     public ResponseEntity<Page<GalleryImageResponse>> getAllPaginated(
-            @PageableDefault(size = 20) Pageable pageable) {
-        Page<GalleryImage> images = galleryImageRepository.findAll(pageable);
-        return ResponseEntity.ok(images.map(GalleryImageResponse::from));
+            @PageableDefault(size = 20) Pageable pageable,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate uploadedFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate uploadedTo) {
+
+        String categoryLower = category != null && !category.isBlank()
+                ? category.toLowerCase() : null;
+        LocalDateTime from = uploadedFrom != null
+                ? uploadedFrom.atStartOfDay() : LocalDateTime.of(2000, 1, 1, 0, 0);
+        LocalDateTime to = uploadedTo != null
+                ? uploadedTo.atTime(LocalTime.MAX) : LocalDateTime.of(2099, 12, 31, 23, 59);
+
+        return ResponseEntity.ok(galleryImageService.findAllFiltered(categoryLower, from, to, pageable));
     }
 
     @GetMapping("/{id}")

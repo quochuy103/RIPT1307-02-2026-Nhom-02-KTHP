@@ -1,5 +1,6 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.security;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtUtil {
@@ -21,20 +23,37 @@ public class JwtUtil {
     }
 
     public String generateToken(String username) {
+        Date issuedAt = new Date();
         return Jwts.builder()
                 .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000))
+                .setId(UUID.randomUUID().toString())
+                .setIssuedAt(issuedAt)
+                .setExpiration(new Date(issuedAt.getTime() + 86400000))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public String extractUsername(String token) {
+        return extractClaims(token).getSubject();
+    }
+
+    public Date extractIssuedAt(String token) {
+        return extractClaims(token).getIssuedAt();
+    }
+
+    public Date extractExpiration(String token) {
+        return extractClaims(token).getExpiration();
+    }
+
+    public String extractTokenId(String token) {
+        return extractClaims(token).getId();
+    }
+
+    private Claims extractClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
     }
 }

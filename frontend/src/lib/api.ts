@@ -10,19 +10,22 @@ import type {
   AdminUser,
 } from '@/data/adminMockData';
 import { dispatchUnauthorizedEvent } from '@/lib/auth-events';
+import { API_BASE_HAS_API_PREFIX, API_BASE_URL, API_DEBUG } from '@/lib/runtime-config';
 import type { OrderStatus, OrderStatusUpdate } from '@/types/order';
+import { getServiceI18nMeta } from '@/lib/service-i18n';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8081';
 
 const getToken = () => localStorage.getItem('cutie_cuts_token');
 
 export class ApiError extends Error {
   status: number;
+  data?: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, data?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -41,7 +44,7 @@ export interface Booking {
   duration?: number;
 }
 
-type ServiceRow = { id: number; name: string; description: string; price: number; duration: number; category: string };
+type ServiceRow = { id: number; name: string; description: string; price: number; displayPrice?: string; duration: number; category: string };
 type BarberRow = { id: number; name: string; role: string; image: string; experience: number; specialties: string; rating: number };
 type ProductRow = { id: number; name: string; price: number; image: string; rating: number; category: string; description: string };
 export interface Order {
@@ -54,7 +57,7 @@ export interface Order {
   totalPrice: number;
   address: string;
   status: OrderStatus;
-  createdAt: string;
+  createdAt?: string | null;
 }
 
 /** Shape of a VietQR payment as returned by the backend */
@@ -109,9 +112,16 @@ type OrderRow = {
   createdAt: string;
 };
 
-type AvatarUploadResponse = {
-  url: string;
+type PageResponse<T> = {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  number: number;
+  page?: number;
+  size?: number;
 };
+
+
 
 type BookingRow = {
   id: number;
@@ -128,6 +138,97 @@ type BookingRow = {
   duration?: number;
 };
 
+type ReviewableProductRow = {
+  orderId: number;
+  productId: number;
+  productName: string;
+  productImage?: string | null;
+  quantity: number;
+  price: number;
+  orderStatus: string;
+  orderedAt: string;
+};
+
+export type CreateReviewPayload =
+  | { bookingId: number; serviceId?: number; barberId?: number; rating: number; comment: string }
+  | { orderId: number; productId: number; rating: number; comment: string };
+
+export type ReviewableProduct = {
+  orderId: string;
+  productId: string;
+  productName: string;
+  productImage?: string | null;
+  quantity: number;
+  price: number;
+  orderStatus: string;
+  orderedAt: string;
+};
+
+const normalizePath = (path: string) => {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (API_BASE_HAS_API_PREFIX && normalizedPath.startsWith('/api/')) {
+    return normalizedPath.slice(4);
+  }
+  return normalizedPath;
+};
+
+const getRequestBodyForLog = (init?: RequestInit) => {
+  if (!init?.body || typeof init.body !== 'string') return init?.body;
+  try {
+    return JSON.parse(init.body);
+  } catch {
+    return init.body;
+  }
+};
+
+const logRequest = (url: string, path: string, init: RequestInit | undefined, headers: Headers) => {
+  if (!API_DEBUG) return;
+  const method = init?.method ?? 'GET';
+  const authHeader = headers.get('Authorization');
+  console.debug('[API request]', {
+    method,
+    url,
+    path,
+    headers: {
+      Authorization: authHeader ? 'Bearer <redacted>' : undefined,
+      'Content-Type': headers.get('Content-Type') ?? undefined,
+    },
+    body: getRequestBodyForLog(init),
+  });
+};
+
+const logErrorResponse = (url: string, status: number, data: unknown) => {
+  if (!API_DEBUG) return;
+  const body = data as { message?: unknown; error?: unknown; detail?: unknown; stack?: unknown } | null;
+  console.error('[API error]', {
+    url,
+    status,
+    data,
+    message: body?.message,
+    error: body?.error,
+    detail: body?.detail,
+    stack: body?.stack,
+  });
+};
+
+const extractErrorMessage = (body: unknown, status: number) => {
+  if (body && typeof body === 'object') {
+    const data = body as { message?: unknown; error?: unknown; detail?: unknown; errors?: unknown };
+    if (typeof data.message === 'string') {
+      if (data.errors && typeof data.errors === 'object') {
+        const details = Object.entries(data.errors as Record<string, unknown>)
+          .map(([field, message]) => `${field}: ${String(message)}`)
+          .join(', ');
+        return details ? `${data.message}: ${details}` : data.message;
+      }
+      return data.message;
+    }
+    if (typeof data.detail === 'string') return data.detail;
+    if (typeof data.error === 'string') return data.error;
+  }
+  return `Request failed (${status})`;
+};
+
 async function request<T>(path: string, init?: RequestInit, auth = false): Promise<T> {
   const headers = new Headers(init?.headers ?? {});
   headers.set('Content-Type', 'application/json');
@@ -139,23 +240,29 @@ async function request<T>(path: string, init?: RequestInit, auth = false): Promi
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+  const normalizedPath = normalizePath(path);
+  const url = `${API_BASE_URL}${normalizedPath}`;
+  logRequest(url, normalizedPath, init, headers);
+
+  const response = await fetch(url, { ...init, headers });
 
   if (auth && response.status === 401) {
     dispatchUnauthorizedEvent();
   }
 
   if (!response.ok) {
-    let message = `Request failed (${response.status})`;
+    let body: unknown;
     try {
-      const body = await response.json() as { message?: string; error?: string; detail?: string };
-      if (body.message) message = body.message;
-      else if (body.detail) message = body.detail;
-      else if (body.error) message = body.error;
+      body = await response.json();
     } catch {
-      // ignore
+      try {
+        body = await response.text();
+      } catch {
+        body = undefined;
+      }
     }
-    throw new ApiError(message, response.status);
+    logErrorResponse(url, response.status, body);
+    throw new ApiError(extractErrorMessage(body, response.status), response.status, body);
   }
 
   if (response.status === 204) {
@@ -176,41 +283,7 @@ async function requestWithNotFoundFallback<T>(path: string, fallbackPath: string
   }
 }
 
-async function requestForm<T>(path: string, formData: FormData, auth = false): Promise<T> {
-  const headers = new Headers();
 
-  if (auth) {
-    const token = getToken();
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-  }
-
-  const response = await fetch(`${API_BASE_URL}${path}`, { method: 'POST', headers, body: formData });
-
-  if (auth && response.status === 401) {
-    dispatchUnauthorizedEvent();
-  }
-
-  if (!response.ok) {
-    let message = `Request failed (${response.status})`;
-    try {
-      const body = await response.json() as { message?: string; error?: string; detail?: string };
-      if (body.message) message = body.message;
-      else if (body.detail) message = body.detail;
-      else if (body.error) message = body.error;
-    } catch {
-      // ignore
-    }
-    throw new ApiError(message, response.status);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return await response.json() as T;
-}
 
 const initials = (name: string) => {
   const parts = name.trim().split(/\s+/);
@@ -218,16 +291,23 @@ const initials = (name: string) => {
   return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 };
 
-const mapService = (row: ServiceRow): Service => ({
-  id: String(row.id),
-  nameKey: '',
-  descKey: '',
-  name: row.name,
-  description: row.description,
-  price: row.price,
-  duration: row.duration,
-  category: row.category as Service['category'],
-});
+const mapService = (row: ServiceRow): Service => {
+  const meta = getServiceI18nMeta(row.name);
+
+  return {
+    id: String(row.id),
+    slug: meta?.slug,
+    nameKey: meta?.nameKey ?? '',
+    descKey: meta?.descKey ?? '',
+    name: row.name,
+    description: row.description,
+    price: row.price,
+    displayPrice: row.displayPrice,
+    priceLabel: row.displayPrice,
+    duration: row.duration,
+    category: row.category as Service['category'],
+  };
+};
 
 const mapBarber = (row: BarberRow): Barber => ({
   id: String(row.id),
@@ -273,7 +353,7 @@ const mapOrder = (row: OrderRow): Order => ({
   totalPrice: row.totalPrice,
   address: row.address,
   status: row.status,
-  createdAt: row.createdAt,
+  createdAt: row.createdAt ?? '',
 });
 
 export const api = {
@@ -282,11 +362,6 @@ export const api = {
     updateProfile: async (payload: UpdateUserProfilePayload): Promise<UserProfile> => (
       request<UserProfile>('/api/user/me', { method: 'PATCH', body: JSON.stringify(payload) }, true)
     ),
-    uploadAvatar: async (file: File): Promise<AvatarUploadResponse> => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return requestForm<AvatarUploadResponse>('/api/users/me/avatar', formData, true);
-    },
   },
 
   services: {
@@ -323,6 +398,20 @@ export const api = {
         avatar: initials(row.userName),
       }));
     },
+    getReviewableProducts: async (): Promise<ReviewableProduct[]> => {
+      const rows = await request<ReviewableProductRow[]>('/api/reviews/me/reviewable-products', undefined, true);
+      return rows.map((row) => ({
+        ...row,
+        orderId: String(row.orderId),
+        productId: String(row.productId),
+      }));
+    },
+    create: async (payload: CreateReviewPayload) => {
+      if (!Number.isInteger(payload.rating) || payload.rating < 1 || payload.rating > 5) {
+        throw new ApiError('Rating must be between 1 and 5', 400, payload);
+      }
+      return request('/api/reviews', { method: 'POST', body: JSON.stringify(payload) }, true);
+    },
   },
 
   gallery: {
@@ -339,15 +428,28 @@ export const api = {
 
   bookings: {
     getMine: async (): Promise<Booking[]> => {
-      const rows = await requestWithNotFoundFallback<BookingRow[]>('/bookings/my', '/api/bookings/my', undefined, true);
+      const page = await requestWithNotFoundFallback<PageResponse<BookingRow> | BookingRow[]>(
+        '/api/user/me/bookings?page=0&size=100&sort=createdAt,desc',
+        '/bookings/my',
+        undefined,
+        true,
+      );
+      const rows = Array.isArray(page) ? page : page.content;
       return rows.map(mapBooking);
     },
     create: async (payload: { serviceId: number; barberId: number; date: string; time: string }): Promise<Booking> => {
+      if (!Number.isFinite(payload.serviceId) || !Number.isFinite(payload.barberId) || !payload.date || !payload.time) {
+        console.error('[API validation]', { endpoint: 'create booking', payload });
+        throw new ApiError('Invalid booking payload. Required: serviceId, barberId, date, time', 400, payload);
+      }
       const row = await requestWithNotFoundFallback<BookingRow>('/bookings', '/api/bookings', { method: 'POST', body: JSON.stringify(payload) }, true);
       return mapBooking(row);
     },
     cancel: async (id: string): Promise<Booking> => {
-      const row = await requestWithNotFoundFallback<BookingRow>(`/bookings/${id}/status`, `/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) }, true);
+      if (!id || id === 'undefined' || id === 'null') {
+        throw new ApiError('Invalid booking id for cancellation', 400, { id });
+      }
+      const row = await requestWithNotFoundFallback<BookingRow>(`/bookings/${id}/cancel`, `/api/bookings/${id}/cancel`, { method: 'POST' }, true);
       return mapBooking(row);
     },
   },
@@ -357,6 +459,15 @@ export const api = {
       const rows = await request<OrderRow[]>('/api/orders/my', undefined, true);
       return rows.map(mapOrder);
     },
+    getMyOrdersPaged: async (page: number, size = 10): Promise<{ content: Order[]; totalPages: number; totalElements: number; number: number }> => {
+      const raw = await request<PageResponse<OrderRow>>(`/api/user/me/orders?page=${page}&size=${size}&sort=createdAt,desc`, undefined, true);
+      return {
+        content: raw.content.map(mapOrder),
+        totalPages: raw.totalPages,
+        totalElements: raw.totalElements,
+        number: raw.number,
+      };
+    },
     create: async (payload: { address: string; items: Array<{ productId: number; quantity: number }> }): Promise<Order> => {
       const row = await request<OrderRow>('/api/orders', { method: 'POST', body: JSON.stringify(payload) }, true);
       return mapOrder(row);
@@ -364,24 +475,10 @@ export const api = {
   },
 
   payments: {
-    /**
-     * Create a VietQR payment for an existing order.
-     * Backend path: POST /api/payments  body: { orderId: number }
-     */
     create: async (orderId: number): Promise<PaymentInfo> =>
       request<PaymentInfo>('/api/payments', { method: 'POST', body: JSON.stringify({ orderId }) }, true),
-
-    /**
-     * Poll payment status by paymentCode.
-     * Backend path: GET /api/payments/{paymentCode}
-     */
     getByCode: async (paymentCode: string): Promise<PaymentInfo> =>
       request<PaymentInfo>(`/api/payments/${paymentCode}`, undefined, true),
-
-    /**
-     * List all payments for the current user.
-     * Backend path: GET /api/payments/my-payments  (note: NOT /my)
-     */
     getMyPayments: async (): Promise<PaymentInfo[]> =>
       request<PaymentInfo[]>('/api/payments/my-payments', undefined, true),
   },
@@ -436,10 +533,10 @@ export const api = {
     deleteReview: async (id: string) => request(`/api/reviews/${id}`, { method: 'DELETE' }),
 
     getGallery: async (): Promise<AdminGalleryImage[]> => {
-      const rows = await request<Array<{ id: number; url: string; alt: string; uploadedAt: string }>>('/api/gallery');
+      const rows = await request<Array<{ id: number; url: string; alt: string; uploadedAt: string }>>('/api/gallery', undefined, true);
       return rows.map((r) => ({ ...r, id: String(r.id), uploadedAt: r.uploadedAt?.slice(0, 10) ?? '' }));
     },
-    deleteGalleryImage: async (id: string) => request(`/api/gallery/${id}`, { method: 'DELETE' }),
+    deleteGalleryImage: async (id: string) => request(`/api/gallery/${id}`, { method: 'DELETE' }, true),
 
     getUsers: async (): Promise<AdminUser[]> => {
       const rows = await request<Array<{ id: number; name: string; email: string; phone: string; role: 'user' | 'admin'; createdAt: string; deleted: boolean; deletedAt: string }>>('/api/users', undefined, true);

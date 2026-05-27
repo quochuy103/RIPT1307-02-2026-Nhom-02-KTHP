@@ -12,7 +12,7 @@ const Footer = () => {
           <div>
             <Link to="/" className="flex items-center gap-2 mb-4">
               <Scissors className="h-6 w-6 text-primary" />
-              <span className="font-display text-xl font-bold text-gradient-gold">BLADE & CO</span>
+              <span className="font-display text-xl font-bold text-gradient-gold">Lì He Men's Hair Designer</span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed">{t('footer.description')}</p>
             <div className="flex gap-4 mt-6">
