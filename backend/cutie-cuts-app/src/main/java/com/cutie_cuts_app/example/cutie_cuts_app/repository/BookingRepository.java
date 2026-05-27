@@ -10,7 +10,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +20,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Page<Booking> findByUserAndStatusIgnoreCase(User user, String status, Pageable pageable);
     long countByUser(User user);
     long countByUserAndStatusIgnoreCase(User user, String status);
+    long countByUserAndDate(User user, LocalDate date);
     Optional<Booking> findFirstByUserOrderByCreatedAtDesc(User user);
     Optional<Booking> findByBarberAndDateAndTime(Barber barber, LocalDate date, LocalTime time);
     boolean existsByBarberAndDateAndTimeAndStatusNot(Barber barber, LocalDate date, LocalTime time, String status);
-    long countByUserAndStatusAndCancelledAtBetween(User user, String status, LocalDateTime start, LocalDateTime end);
+
+    @Query("""
+            select count(b)
+            from Booking b
+            where b.user = :user and b.date = :date and lower(b.status) = lower(:status)
+            """)
+    long countByUserAndDateWithStatus(
+            @Param("user") User user,
+            @Param("date") LocalDate date,
+            @Param("status") String status);
 
     @Query("""
             select coalesce(sum(b.price), 0)
