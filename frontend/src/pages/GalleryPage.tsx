@@ -9,15 +9,19 @@ const categories = ['all', 'fade', 'classic', 'modern', 'color'] as const;
 const GalleryPage = () => {
   const [category, setCategory] = useState<string>('all');
   const [images, setImages] = useState(galleryImages);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { t } = useTranslation();
   const filtered = category === 'all' ? images : images.filter(i => i.category === category);
 
   useEffect(() => {
     const load = async () => {
       try {
+        setLoadError(null);
         setImages(await api.gallery.getAll());
-      } catch {
-        // keep fallback
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unable to load gallery';
+        setLoadError(message);
+        console.error('[Gallery] Failed to load gallery images', error);
       }
     };
     void load();
@@ -44,6 +48,12 @@ const GalleryPage = () => {
             </button>
           ))}
         </div>
+
+        {loadError && (
+          <div className="mx-auto mb-6 max-w-xl rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-center text-sm text-destructive">
+            {loadError}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map((img, i) => (
