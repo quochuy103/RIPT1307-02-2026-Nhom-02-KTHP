@@ -38,37 +38,37 @@ const AdminOrders = () => {
     mutationFn: ({ id, status }: { id: string; status: OrderStatusUpdate }) => api.admin.updateOrderStatus(id, status),
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: ordersQueryKey });
-      toast.success(`Order status updated to ${t(`myOrders.status.${variables.status}`)}`);
+      toast.success(t('admin.ordersPage.updated', { status: statusLabel(variables.status) }));
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : 'Update failed'),
+    onError: (error) => toast.error(error instanceof Error ? error.message : t('admin.common.updateFailed')),
   });
 
   const filtered = statusFilter === 'all' ? orders : orders.filter((o) => o.status === statusFilter);
 
   const updateStatus = (id: string, status: OrderStatusUpdate) => updateStatusMutation.mutate({ id, status });
 
-  const statusLabel = (status: OrderStatus) => t(`myOrders.status.${status}`);
+  const statusLabel = (status: OrderStatus) => t(`admin.status.${status}`);
 
   const columns: Column<AdminOrder>[] = [
-    { key: 'customerName', label: 'Customer', render: (o) => <span className="font-medium">{o.customerName}</span> },
-    { key: 'products', label: 'Products', render: (o) => o.products.map((p) => p.name).join(', '), searchable: false },
-    { key: 'totalPrice', label: 'Total', render: (o) => `$${o.totalPrice.toFixed(2)}` },
-    { key: 'address', label: 'Address' },
-    { key: 'status', label: 'Status', render: (o) => <Badge variant={statusColors[o.status]}>{statusLabel(o.status)}</Badge> },
-    { key: 'createdAt', label: 'Date' },
+    { key: 'customerName', label: t('admin.fields.customer'), render: (o) => <span className="font-medium">{o.customerName}</span> },
+    { key: 'products', label: t('admin.fields.products'), render: (o) => o.products.map((p) => p.name).join(', '), searchable: false },
+    { key: 'totalPrice', label: t('admin.fields.total'), render: (o) => `${o.totalPrice.toLocaleString('vi-VN')}đ` },
+    { key: 'address', label: t('admin.fields.address') },
+    { key: 'status', label: t('admin.fields.status'), render: (o) => <Badge variant={statusColors[o.status]}>{statusLabel(o.status)}</Badge> },
+    { key: 'createdAt', label: t('admin.fields.date') },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Order Management</h1>
-          <p className="text-sm text-muted-foreground">{orders.length} total orders</p>
+          <h1 className="text-2xl font-bold text-foreground">{t('admin.ordersPage.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('admin.ordersPage.count', { count: orders.length })}</p>
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="all">{t('admin.common.allStatus')}</SelectItem>
             {orderStatuses.map((status) => (
               <SelectItem key={status} value={status}>{statusLabel(status)}</SelectItem>
             ))}
@@ -78,34 +78,34 @@ const AdminOrders = () => {
 
       {isError && (
         <Alert variant="destructive">
-          <AlertTitle>Could not load orders</AlertTitle>
-          <AlertDescription>{error instanceof Error ? error.message : 'Please check your admin access and API route.'}</AlertDescription>
+          <AlertTitle>{t('admin.ordersPage.loadError')}</AlertTitle>
+          <AlertDescription>{error instanceof Error ? error.message : t('admin.common.loadFallback')}</AlertDescription>
         </Alert>
       )}
 
-      <DataTable data={isLoading ? [] : filtered} columns={columns} searchPlaceholder={isLoading ? 'Loading orders...' : 'Search orders...'} actions={(o) => (
+      <DataTable data={isLoading ? [] : filtered} columns={columns} searchPlaceholder={isLoading ? t('admin.ordersPage.loading') : t('admin.ordersPage.search')} actions={(o) => (
         <div className="flex items-center justify-end gap-1">
           <Button size="sm" variant="ghost" onClick={() => setViewOrder(o)}><Eye className="h-4 w-4" /></Button>
-          {o.status === 'pending' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'shipping')} disabled={updateStatusMutation.isPending}>Ship</Button>}
-          {o.status === 'paid' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'shipping')} disabled={updateStatusMutation.isPending}>Ship</Button>}
-          {o.status === 'shipping' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'shipped')} disabled={updateStatusMutation.isPending}>Mark Shipped</Button>}
+          {o.status === 'pending' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'shipping')} disabled={updateStatusMutation.isPending}>{t('admin.ordersPage.ship')}</Button>}
+          {o.status === 'paid' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'shipping')} disabled={updateStatusMutation.isPending}>{t('admin.ordersPage.ship')}</Button>}
+          {o.status === 'shipping' && <Button size="sm" variant="outline" onClick={() => updateStatus(o.id, 'shipped')} disabled={updateStatusMutation.isPending}>{t('admin.ordersPage.markShipped')}</Button>}
         </div>
       )} />
 
-      <FormModal open={!!viewOrder} onClose={() => setViewOrder(null)} title="Order Details" onSubmit={() => setViewOrder(null)} submitLabel="Close">
+      <FormModal open={!!viewOrder} onClose={() => setViewOrder(null)} title={t('admin.ordersPage.details')} onSubmit={() => setViewOrder(null)} submitLabel={t('admin.modal.close')}>
         {viewOrder && (
           <div className="space-y-3 text-sm">
-            <p><span className="text-muted-foreground">Customer:</span> {viewOrder.customerName}</p>
-            <p><span className="text-muted-foreground">Address:</span> {viewOrder.address}</p>
-            <p><span className="text-muted-foreground">Date:</span> {viewOrder.createdAt}</p>
-            <p><span className="text-muted-foreground">Status:</span> <Badge variant={statusColors[viewOrder.status]}>{statusLabel(viewOrder.status)}</Badge></p>
+            <p><span className="text-muted-foreground">{t('admin.fields.customer')}:</span> {viewOrder.customerName}</p>
+            <p><span className="text-muted-foreground">{t('admin.fields.address')}:</span> {viewOrder.address}</p>
+            <p><span className="text-muted-foreground">{t('admin.fields.date')}:</span> {viewOrder.createdAt}</p>
+            <p><span className="text-muted-foreground">{t('admin.fields.status')}:</span> <Badge variant={statusColors[viewOrder.status]}>{statusLabel(viewOrder.status)}</Badge></p>
             <div>
-              <p className="text-muted-foreground mb-1">Products:</p>
+              <p className="text-muted-foreground mb-1">{t('admin.fields.products')}:</p>
               {viewOrder.products.map((p, i) => (
-                <p key={i} className="ml-2">{p.name} × {p.qty} — ${(p.price * p.qty).toFixed(2)}</p>
+                <p key={i} className="ml-2">{p.name} × {p.qty} - {(p.price * p.qty).toLocaleString('vi-VN')}đ</p>
               ))}
             </div>
-            <p className="font-bold">Total: ${viewOrder.totalPrice.toFixed(2)}</p>
+            <p className="font-bold">{t('admin.fields.total')}: {viewOrder.totalPrice.toLocaleString('vi-VN')}đ</p>
           </div>
         )}
       </FormModal>
