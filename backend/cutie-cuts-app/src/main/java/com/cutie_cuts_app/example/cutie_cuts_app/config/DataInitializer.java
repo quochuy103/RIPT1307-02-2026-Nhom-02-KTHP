@@ -7,7 +7,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Configuration
 public class DataInitializer {
@@ -22,30 +27,7 @@ public class DataInitializer {
             UserAuthRepository userAuthRepository,
             PasswordEncoder passwordEncoder) {
         return args -> {
-            if (salonServiceRepository.count() == 0) {
-                SalonService s1 = new SalonService();
-                s1.setName("Skin Fade");
-                s1.setDescription("Clean skin fade with sharp lines");
-                s1.setPrice(35);
-                s1.setDuration(45);
-                s1.setCategory("haircut");
-
-                SalonService s2 = new SalonService();
-                s2.setName("Beard Trim");
-                s2.setDescription("Professional beard shaping");
-                s2.setPrice(20);
-                s2.setDuration(20);
-                s2.setCategory("grooming");
-
-                SalonService s3 = new SalonService();
-                s3.setName("Hair Coloring");
-                s3.setDescription("Full hair coloring service");
-                s3.setPrice(60);
-                s3.setDuration(90);
-                s3.setCategory("coloring");
-
-                salonServiceRepository.saveAll(List.of(s1, s2, s3));
-            }
+            syncSalonServices(salonServiceRepository);
 
             if (barberRepository.count() == 0) {
                 Barber b1 = new Barber();
@@ -133,5 +115,71 @@ public class DataInitializer {
                 userAuthRepository.save(auth);
             }
         };
+    }
+
+    private void syncSalonServices(SalonServiceRepository salonServiceRepository) {
+        Set<String> legacySampleNames = Set.of("Skin Fade", "Beard Trim", "Hair Coloring");
+        List<SalonService> existingServices = salonServiceRepository.findAll();
+
+        existingServices.stream()
+                .filter(service -> legacySampleNames.contains(service.getName()))
+                .forEach(service -> {
+                    service.setDeleted(true);
+                    service.setDeletedAt(LocalDateTime.now());
+                });
+
+        Map<String, SalonService> existingByName = existingServices.stream()
+                .filter(service -> !legacySampleNames.contains(service.getName()))
+                .collect(Collectors.toMap(SalonService::getName, Function.identity(), (first, ignored) -> first));
+
+        List<SalonService> syncedServices = liHeServices().stream()
+                .map(seed -> {
+                    SalonService service = existingByName.getOrDefault(seed.getName(), new SalonService());
+                    service.setName(seed.getName());
+                    service.setPrice(seed.getPrice());
+                    service.setDisplayPrice(seed.getDisplayPrice());
+                    service.setDescription(seed.getDescription());
+                    service.setDuration(seed.getDuration());
+                    service.setCategory(seed.getCategory());
+                    service.setDeleted(false);
+                    service.setDeletedAt(null);
+                    return service;
+                })
+                .collect(Collectors.toList());
+
+        salonServiceRepository.saveAll(existingServices);
+        salonServiceRepository.saveAll(syncedServices);
+    }
+
+    private List<SalonService> liHeServices() {
+        return List.of(
+                service("Cắt Tóc Học Sinh", 60000, "60.000đ", "Dịch vụ cắt tóc chuyên nghiệp, tạo kiểu thời trang dành riêng cho các bạn học sinh.", 30, "haircut"),
+                service("Cắt Tóc Sinh Viên & Người Lớn", 70000, "70.000đ", "Tư vấn và cắt tạo kiểu tóc phù hợp nhất với khuôn mặt dành cho sinh viên và người đi làm.", 30, "haircut"),
+                service("Cắt Kéo Chuyên Sâu", 85000, "80.000đ - 90.000đ", "Kỹ thuật cắt phom tóc hoàn toàn bằng kéo, giúp tóc giữ nếp tự nhiên, mềm mại và bền dáng.", 40, "haircut"),
+                service("Gội Sau Khi Cắt", 10000, "10.000đ", "Xả gội và sấy sạch tóc con bám dính sau khi cắt, giúp bạn thoải mái tiếp tục công việc.", 5, "haircut"),
+                service("Combo Wow Handsome", 119000, "119.000đ", "Gói combo chuẩn nam thần bao gồm các bước: Cắt tóc tạo kiểu, gội đầu sạch sâu và massage thư giãn đầu mặt cơ bản.", 45, "haircut"),
+                service("Uốn Thường", 300000, "300.000đ", "Uốn lạnh tạo độ phồng phom tóc, định hình nếp tóc cơ bản giúp dễ dàng vuốt sấy tại nhà.", 60, "styling"),
+                service("Uốn Ruffled", 400000, "400.000đ", "Kỹ thuật uốn kết cấu rối châu Âu cá tính, phong cách hiện đại độc đáo và cực kỳ năng động.", 90, "styling"),
+                service("Ép Side Tóc", 200000, "150.000đ - 300.000đ", "Ép định hình phần tóc mai và sau gáy ôm sát da đầu, xử lý triệt để tình trạng tóc bung chĩa.", 45, "styling"),
+                service("Nhuộm Thường", 300000, "300.000đ", "Nhuộm phủ đều các tông màu thời trang cơ bản, sử dụng thuốc nhuộm chất lượng cao bền màu và giữ bóng.", 60, "coloring"),
+                service("Tẩy Tóc (1 lần)", 200000, "200.000đ", "Nâng nền tóc bằng thuốc tẩy cao cấp giảm xơ rối, chuẩn bị cho các tông màu nhuộm sáng, màu khói hoặc pastel.", 45, "coloring"),
+                service("Gội Đầu Siêu Thư Giãn", 60000, "60.000đ", "Gói gội xả kết hợp massage mặt cơ bản, bấm huyệt đầu giải tỏa căng thẳng và sấy tạo kiểu tóc.", 30, "care"),
+                service("Gội Đầu Dưỡng Sinh", 150000, "150.000đ", "Liệu trình chuyên sâu 60 phút: Gội đầu hai nước sạch sâu, rửa mặt, massage mặt chuyên sâu, massage cổ vai gáy giảm đau mỏi, bấm huyệt trị liệu và sấy tóc.", 60, "care"),
+                service("Tẩy Tế Bào Chết Da Mặt", 30000, "30.000đ", "Làm sạch sâu bụi bẩn, loại bỏ bã nhờn tích tụ trên da mặt kết hợp massage thư giãn nhẹ nhàng.", 15, "care"),
+                service("Đắp Mặt Nạ Dưỡng Da", 30000, "30.000đ", "Cung cấp độ ẩm dồi dào và dưỡng chất làm dịu, sáng da, đi kèm các bước massage thư giãn các cơ cơ mặt.", 15, "care"),
+                service("Tẩy Tế Bào Chết Da Đầu", 30000, "30.000đ", "Làm sạch vảy gàu dư thừa, thông thoáng nang tóc, ngăn ngừa nấm ngứa da đầu kèm massage kích thích mọc tóc.", 15, "care"),
+                service("Combo Đẹp Tryyy (Lại còn dài)", 199000, "199.000đ", "Gói chăm sóc phục hồi toàn diện cao cấp: Cắt tóc, rửa mặt sạch sâu, tẩy da chết mặt, massage mặt chuyên sâu, massage giảm mỏi cổ vai gáy và ấn huyệt đầu.", 75, "care")
+        );
+    }
+
+    private SalonService service(String name, Integer price, String displayPrice, String description, Integer duration, String category) {
+        SalonService service = new SalonService();
+        service.setName(name);
+        service.setPrice(price);
+        service.setDisplayPrice(displayPrice);
+        service.setDescription(description);
+        service.setDuration(duration);
+        service.setCategory(category);
+        return service;
     }
 }

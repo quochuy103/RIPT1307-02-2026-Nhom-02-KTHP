@@ -9,7 +9,14 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
-    List<Review> findByDeletedFalse();
+    @Query("""
+            select r
+            from Review r
+            where r.deleted = false or r.deleted is null
+            order by r.createdAt desc
+            """)
+    List<Review> findVisible();
+
     List<Review> findByServiceIdAndDeletedFalse(Long serviceId);
     List<Review> findByBarberIdAndDeletedFalse(Long barberId);
     List<Review> findByProductIdAndDeletedFalse(Long productId);
