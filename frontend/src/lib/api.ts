@@ -46,7 +46,7 @@ export interface Booking {
   duration?: number;
 }
 
-type ServiceRow = { id: number; name: string; description: string; price: number; duration: number; category: string };
+type ServiceRow = { id: number; name: string; description: string; price: number; displayPrice?: string; duration: number; category: string };
 type BarberRow = { id: number; name: string; role: string; image: string; experience: number; specialties: string; rating: number };
 type ProductRow = { id: number; name: string; price: number; image: string; rating: number; category: string; description: string };
 export interface Order {
@@ -293,6 +293,14 @@ const initials = (name: string) => {
   return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
 };
 
+const serviceCategoryLabels: Record<string, string> = {
+  haircut: 'Cắt tóc',
+  styling: 'Tạo kiểu',
+  coloring: 'Nhuộm',
+  care: 'Chăm sóc',
+  grooming: 'Chăm sóc',
+};
+
 const mapService = (row: ServiceRow): Service => ({
   id: String(row.id),
   nameKey: '',
@@ -300,8 +308,12 @@ const mapService = (row: ServiceRow): Service => ({
   name: row.name,
   description: row.description,
   price: row.price,
+  displayPrice: row.displayPrice,
+  priceLabel: row.displayPrice,
   duration: row.duration,
   category: row.category as Service['category'],
+  categoryLabel: serviceCategoryLabels[row.category] ?? row.category,
+  actionLabel: 'Đặt',
 });
 
 const mapBarber = (row: BarberRow): Barber => ({

@@ -92,6 +92,9 @@ alter table if exists services
 alter table if exists services
     add column if not exists deleted_at timestamp;
 
+alter table if exists services
+    add column if not exists display_price varchar(50);
+
 
 -- Payment tables
 create table if not exists payments
