@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
 import { ApiError, api, type Booking } from '@/lib/api';
+import { getServiceCategoryLabel, getServiceDescription, getServiceDisplayName } from '@/lib/service-i18n';
 import {
   BOOKING_NOTICE_MINUTES,
   MAX_BOOKINGS_PER_DATE,

@@ -11,6 +11,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.ReviewRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.RevokedTokenRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserAddressRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserAuthRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,9 @@ class CutieCutsAppApplicationTests {
 
 	@MockBean
 	private ShopOrderRepository shopOrderRepository;
+
+	@MockBean
+	private UserAddressRepository userAddressRepository;
 
 	@MockBean
 	private UserAuthRepository userAuthRepository;
