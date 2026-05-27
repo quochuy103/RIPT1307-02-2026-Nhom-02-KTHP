@@ -16,4 +16,8 @@ const getConfiguredApiBaseUrl = () => {
   return '';
 };
 
+const getBooleanEnv = (value: string | undefined) => value?.trim().toLowerCase() === 'true';
+
 export const API_BASE_URL = getConfiguredApiBaseUrl();
+export const API_BASE_HAS_API_PREFIX = API_BASE_URL.endsWith('/api');
+export const API_DEBUG = getBooleanEnv(import.meta.env.VITE_API_DEBUG as string | undefined);
