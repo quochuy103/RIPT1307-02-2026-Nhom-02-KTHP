@@ -70,7 +70,7 @@ public class ReviewController {
 
     @GetMapping
     public List<Map<String, Object>> getAll() {
-        return reviewRepository.findByDeletedFalse().stream().map(this::toResponse).toList();
+        return reviewRepository.findVisible().stream().map(this::toResponse).toList();
     }
 
     @GetMapping("/page")
@@ -255,18 +255,25 @@ public class ReviewController {
     private Map<String, Object> toResponse(Review review) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", review.getId());
-        map.put("userId", review.getUser().getId());
-        map.put("userName", review.getUser().getName());
+        User user = review.getUser();
+        Booking booking = review.getBooking();
+        SalonService service = review.getService();
+        Barber barber = review.getBarber();
+        ShopOrder order = review.getOrder();
+        Product product = review.getProduct();
+
+        map.put("userId", user != null ? user.getId() : null);
+        map.put("userName", user != null ? user.getName() : "Anonymous");
         map.put("rating", review.getRating());
         map.put("comment", review.getComment());
         map.put("date", formatDate(review.getCreatedAt()));
-        map.put("bookingId", review.getBooking() != null ? review.getBooking().getId() : null);
-        map.put("serviceId", review.getService() != null ? review.getService().getId() : null);
-        map.put("barberId", review.getBarber() != null ? review.getBarber().getId() : null);
-        map.put("orderId", review.getOrder() != null ? review.getOrder().getId() : null);
-        map.put("productId", review.getProduct() != null ? review.getProduct().getId() : null);
-        map.put("productName", review.getProduct() != null ? review.getProduct().getName() : null);
-        map.put("reviewType", review.getProduct() != null ? "product" : "service");
+        map.put("bookingId", booking != null ? booking.getId() : null);
+        map.put("serviceId", service != null ? service.getId() : null);
+        map.put("barberId", barber != null ? barber.getId() : null);
+        map.put("orderId", order != null ? order.getId() : null);
+        map.put("productId", product != null ? product.getId() : null);
+        map.put("productName", product != null ? product.getName() : null);
+        map.put("reviewType", product != null ? "product" : "service");
         return map;
     }
 }
