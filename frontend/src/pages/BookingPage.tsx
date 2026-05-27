@@ -63,10 +63,12 @@ const BookingPage = () => {
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
   const [existingBookings, setExistingBookings] = useState<Booking[]>([]);
   const availableTimeSlots = getAvailableTimeSlots(date, timeSlots);
   const selectedDateKey = date ? format(date, 'yyyy-MM-dd') : null;
   const hasReachedBookingLimit = selectedDateKey ? hasReachedBookingLimitForDate(existingBookings, selectedDateKey) : false;
+  const selectedService = serviceList.find((service) => service.id === form.service);
 
 
   useEffect(() => {
