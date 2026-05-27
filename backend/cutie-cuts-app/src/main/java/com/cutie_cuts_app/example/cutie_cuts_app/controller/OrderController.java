@@ -23,15 +23,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
@@ -81,16 +86,33 @@ public class OrderController {
         return orderRepository.findAll().stream().map(this::toResponse).toList();
     }
 
+    private static final Set<String> VALID_ORDER_STATUSES =
+            Set.of("pending", "confirmed", "processing", "shipped", "delivered", "cancelled");
+
     @GetMapping("/page")
     public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable,
-            Authentication authentication) {
+            Authentication authentication,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) Double minTotal,
+            @RequestParam(required = false) Double maxTotal) {
         if (authentication == null) {
             throw new ResponseStatusException(UNAUTHORIZED, "Unauthorized");
         }
         if (!isAdmin(authentication)) {
             throw new ResponseStatusException(FORBIDDEN, "Only admins can view all orders");
         }
-        return orderRepository.findAll(pageable).map(this::toResponse);
+        if (status != null && !status.isBlank() && !VALID_ORDER_STATUSES.contains(status.toLowerCase())) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "Invalid status. Allowed: " + String.join(", ", VALID_ORDER_STATUSES));
+        }
+        String statusLower = status != null && !status.isBlank() ? status.toLowerCase() : null;
+        LocalDateTime from = dateFrom != null ? dateFrom.atStartOfDay() : LocalDateTime.of(2000, 1, 1, 0, 0);
+        LocalDateTime to = dateTo != null ? dateTo.atTime(LocalTime.MAX) : LocalDateTime.of(2099, 12, 31, 23, 59);
+        return orderRepository.findAllFiltered(statusLower, userId, from, to, minTotal, maxTotal, pageable)
+                .map(this::toResponse);
     }
 
     @GetMapping("/my")

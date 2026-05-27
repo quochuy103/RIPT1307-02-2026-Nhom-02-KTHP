@@ -1,6 +1,4 @@
-const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8081')
-  .replace(/\/+$/, '');
-const API_BASE_HAS_API_PREFIX = /\/api$/i.test(API_BASE_URL);
+import { API_BASE_HAS_API_PREFIX, API_BASE_URL } from '@/lib/runtime-config';
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];

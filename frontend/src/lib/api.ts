@@ -10,13 +10,10 @@ import type {
   AdminUser,
 } from '@/data/adminMockData';
 import { dispatchUnauthorizedEvent } from '@/lib/auth-events';
+import { API_BASE_HAS_API_PREFIX, API_BASE_URL, API_DEBUG } from '@/lib/runtime-config';
 import type { OrderStatus, OrderStatusUpdate } from '@/types/order';
 import { getServiceI18nMeta } from '@/lib/service-i18n';
 
-const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8081')
-  .replace(/\/+$/, '');
-const API_BASE_HAS_API_PREFIX = /\/api$/i.test(API_BASE_URL);
-const API_DEBUG = (import.meta.env.VITE_API_DEBUG as string | undefined) !== 'false';
 
 const getToken = () => localStorage.getItem('cutie_cuts_token');
 
