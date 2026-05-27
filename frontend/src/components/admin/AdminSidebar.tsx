@@ -35,7 +35,7 @@ const AdminSidebar = ({ collapsed, onToggle }: Props) => {
     >
       <div className={cn('flex items-center border-b border-border px-4 h-16', collapsed ? 'justify-center' : 'gap-3')}>
         <Scissors className="h-6 w-6 text-primary shrink-0" />
-        {!collapsed && <span className="font-display text-lg font-bold text-foreground">Blade & Co</span>}
+        {!collapsed && <span className="truncate font-display text-sm font-bold text-foreground">Lì He Men's Hair Designer</span>}
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 space-y-1 px-2">

@@ -284,8 +284,9 @@ const ServicesPage = () => {
     <div className="pt-24 pb-20">
       <div className="container mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto mb-10 max-w-2xl text-center">
-          <h1 className="font-display text-4xl font-bold md:text-5xl">
-            Bảng Dịch Vụ <span className="text-gradient-gold">Cutie Cuts</span>
+          <h1 className="font-display text-4xl font-bold leading-tight md:text-5xl">
+            <span className="block">Bảng Dịch Vụ</span>
+            <span className="block text-gradient-gold">Lì He Men's Hair Designer</span>
           </h1>
           <p className="mt-3 text-muted-foreground">
             Chọn dịch vụ phù hợp với nhu cầu cắt tóc, tạo kiểu, nhuộm hoặc chăm sóc thư giãn.

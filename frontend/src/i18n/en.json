@@ -41,7 +41,7 @@
     "viewGallery": "View Gallery",
     "ctaTitle": "Ready for a",
     "ctaHighlight": "Fresh Look?",
-    "ctaSubtitle": "Book your appointment today and experience the Blade & Co difference.",
+    "ctaSubtitle": "Book your appointment today and experience the Lì He Men's Hair Designer difference.",
     "ctaButton": "Book Your Appointment"
   },
   "services": {
@@ -240,10 +240,10 @@
   },
   "about": {
     "title": "About",
-    "highlight": "Blade & Co",
+    "highlight": "Lì He Men's Hair Designer",
     "subtitle": "Where tradition meets modern grooming excellence",
     "storyTitle": "Our Story",
-    "storyText": "Founded in 2010, Blade & Co started as a single-chair barbershop with a vision to bring premium grooming to everyone. Today, we're the city's most trusted destination for style and grooming.",
+    "storyText": "Lì He Men's Hair Designer delivers polished men's haircuts, styling, and grooming services with a modern, tailored experience for every client.",
     "missionTitle": "Our Mission",
     "missionText": "We believe every client deserves a tailored experience. Our barbers combine years of training with genuine passion to deliver cuts that reflect your personality.",
     "valuesTitle": "Our Values",
@@ -275,7 +275,7 @@
     "welcomeBack": "Welcome Back",
     "createAccount": "Create Account",
     "signInSubtitle": "Sign in to your account",
-    "signUpSubtitle": "Join the Blade & Co family",
+    "signUpSubtitle": "Join the Lì He Men's Hair Designer family",
     "fullName": "Full Name",
     "email": "Email",
     "password": "Password",
@@ -373,7 +373,7 @@
     "contact": "Contact",
     "address": "123 Main Street, Downtown",
     "phone": "(555) 123-4567",
-    "copyright": "© {{year}} Blade & Co. All rights reserved."
+    "copyright": "© {{year}} Lì He Men's Hair Designer. All rights reserved."
   },
   "common": {
     "yearsExperience": "years experience",

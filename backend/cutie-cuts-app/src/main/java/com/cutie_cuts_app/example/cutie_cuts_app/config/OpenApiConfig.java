@@ -17,7 +17,7 @@ public class OpenApiConfig {
 
         return new OpenAPI()
                 .info(new Info()
-                        .title("Cutie Cuts API")
+                        .title("Lì He Men's Hair Designer API")
                         .version("1.0")
                         .description("Barber shop booking & e-commerce API. Authenticate via /auth/login to get a JWT token, then click 'Authorize' and enter: Bearer <your-token>"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))

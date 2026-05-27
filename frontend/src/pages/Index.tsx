@@ -52,7 +52,7 @@ const Index = () => {
       {/* Hero */}
       <section className="relative min-h-screen flex items-center">
         <div className="absolute inset-0">
-          <img src={heroImage} alt="Blade & Co Barber Shop" className="w-full h-full object-cover" width={1920} height={1080} />
+          <img src={heroImage} alt="Lì He Men's Hair Designer" className="w-full h-full object-cover" width={1920} height={1080} />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/40" />
         </div>
         <div className="container mx-auto px-4 relative z-10">

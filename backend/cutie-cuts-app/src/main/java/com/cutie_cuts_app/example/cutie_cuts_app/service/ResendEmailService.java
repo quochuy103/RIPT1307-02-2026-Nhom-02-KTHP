@@ -38,8 +38,8 @@ public class ResendEmailService implements EmailService {
     public void sendPasswordResetOtp(String toEmail, String otp) {
         String html = """
                 <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-                  <h2 style="color: #1a1a1a;">Cutie Cuts — Đặt lại mật khẩu</h2>
-                  <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản Cutie Cuts của mình.</p>
+                  <h2 style="color: #1a1a1a;">Lì He Men's Hair Designer — Đặt lại mật khẩu</h2>
+                  <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản Lì He Men's Hair Designer của mình.</p>
                   <p>Mã xác thực của bạn là:</p>
                   <div style="text-align: center; padding: 20px; background-color: #f3f3f3;
                     border-radius: 8px; font-size: 32px; font-weight: 700; letter-spacing: 8px; margin: 16px 0;">
@@ -56,7 +56,7 @@ public class ResendEmailService implements EmailService {
             CreateEmailOptions params = CreateEmailOptions.builder()
                     .from(mailFrom)
                     .to(toEmail)
-                    .subject("Mã đặt lại mật khẩu Cutie Cuts")
+                    .subject("Mã đặt lại mật khẩu Lì He Men's Hair Designer")
                     .html(html)
                     .build();
 
@@ -72,8 +72,8 @@ public class ResendEmailService implements EmailService {
     public void sendRegistrationOtp(String toEmail, String otp) {
         String html = """
                 <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-                  <h2 style="color: #1a1a1a;">Cutie Cuts — Xác thực tài khoản</h2>
-                  <p>Cảm ơn bạn đã đăng ký tài khoản tại Cutie Cuts.</p>
+                  <h2 style="color: #1a1a1a;">Lì He Men's Hair Designer — Xác thực tài khoản</h2>
+                  <p>Cảm ơn bạn đã đăng ký tài khoản tại Lì He Men's Hair Designer.</p>
                   <p>Mã xác thực của bạn là:</p>
                   <div style="text-align: center; padding: 20px; background-color: #f3f3f3;
                     border-radius: 8px; font-size: 32px; font-weight: 700; letter-spacing: 8px; margin: 16px 0;">
@@ -90,7 +90,7 @@ public class ResendEmailService implements EmailService {
             CreateEmailOptions params = CreateEmailOptions.builder()
                     .from(mailFrom)
                     .to(toEmail)
-                    .subject("Mã xác thực tài khoản Cutie Cuts")
+                    .subject("Mã xác thực tài khoản Lì He Men's Hair Designer")
                     .html(html)
                     .build();
 
