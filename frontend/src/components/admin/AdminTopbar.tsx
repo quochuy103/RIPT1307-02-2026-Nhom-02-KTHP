@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   onToggleSidebar: () => void;
@@ -14,6 +15,7 @@ interface Props {
 const AdminTopbar = ({ onToggleSidebar }: Props) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const handleLogout = () => {
     logout({ redirectTo: '/', showToast: true });
@@ -30,7 +32,17 @@ const AdminTopbar = ({ onToggleSidebar }: Props) => {
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
+          <span className="sr-only">{t('admin.topbar.notifications')}</span>
           <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">3</span>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-xs font-bold"
+          onClick={() => void i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi')}
+        >
+          {i18n.language === 'vi' ? 'EN' : 'VI'}
         </Button>
 
         <DropdownMenu>
@@ -41,14 +53,14 @@ const AdminTopbar = ({ onToggleSidebar }: Props) => {
                   {user?.name?.charAt(0).toUpperCase() || 'A'}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden text-sm font-medium sm:block">{user?.name || 'Admin'}</span>
+              <span className="hidden text-sm font-medium sm:block">{user?.name || t('admin.common.admin')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => navigate('/admin/settings')}>Profile Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/admin/settings')}>{t('admin.topbar.profileSettings')}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-              <LogOut className="mr-2 h-4 w-4" /> Logout
+              <LogOut className="mr-2 h-4 w-4" /> {t('admin.topbar.logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

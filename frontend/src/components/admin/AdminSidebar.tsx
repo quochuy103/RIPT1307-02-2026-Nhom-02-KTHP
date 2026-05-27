@@ -4,18 +4,19 @@ import {
   Package, ShoppingCart, Image, Star, Settings, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
-  { label: 'Users', icon: Users, path: '/admin/users' },
-  { label: 'Bookings', icon: CalendarDays, path: '/admin/bookings' },
-  { label: 'Services', icon: Scissors, path: '/admin/services' },
-  { label: 'Barbers', icon: UserCheck, path: '/admin/barbers' },
-  { label: 'Products', icon: Package, path: '/admin/products' },
-  { label: 'Orders', icon: ShoppingCart, path: '/admin/orders' },
-  { label: 'Gallery', icon: Image, path: '/admin/gallery' },
-  { label: 'Reviews', icon: Star, path: '/admin/reviews' },
-  { label: 'Settings', icon: Settings, path: '/admin/settings' },
+  { labelKey: 'admin.navigation.dashboard', icon: LayoutDashboard, path: '/admin' },
+  { labelKey: 'admin.navigation.users', icon: Users, path: '/admin/users' },
+  { labelKey: 'admin.navigation.bookings', icon: CalendarDays, path: '/admin/bookings' },
+  { labelKey: 'admin.navigation.services', icon: Scissors, path: '/admin/services' },
+  { labelKey: 'admin.navigation.barbers', icon: UserCheck, path: '/admin/barbers' },
+  { labelKey: 'admin.navigation.products', icon: Package, path: '/admin/products' },
+  { labelKey: 'admin.navigation.orders', icon: ShoppingCart, path: '/admin/orders' },
+  { labelKey: 'admin.navigation.gallery', icon: Image, path: '/admin/gallery' },
+  { labelKey: 'admin.navigation.reviews', icon: Star, path: '/admin/reviews' },
+  { labelKey: 'admin.navigation.settings', icon: Settings, path: '/admin/settings' },
 ];
 
 interface Props {
@@ -25,6 +26,7 @@ interface Props {
 
 const AdminSidebar = ({ collapsed, onToggle }: Props) => {
   const location = useLocation();
+  const { t } = useTranslation();
 
   return (
     <aside
@@ -35,7 +37,7 @@ const AdminSidebar = ({ collapsed, onToggle }: Props) => {
     >
       <div className={cn('flex items-center border-b border-border px-4 h-16', collapsed ? 'justify-center' : 'gap-3')}>
         <Scissors className="h-6 w-6 text-primary shrink-0" />
-        {!collapsed && <span className="truncate font-display text-sm font-bold text-foreground">Lì He Men's Hair Designer</span>}
+        {!collapsed && <span className="truncate font-display text-sm font-bold text-foreground">{t('admin.brand')}</span>}
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 space-y-1 px-2">
@@ -52,10 +54,10 @@ const AdminSidebar = ({ collapsed, onToggle }: Props) => {
                   : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
                 collapsed && 'justify-center px-2'
               )}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? t(item.labelKey) : undefined}
             >
               <item.icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && <span>{t(item.labelKey)}</span>}
             </Link>
           );
         })}
