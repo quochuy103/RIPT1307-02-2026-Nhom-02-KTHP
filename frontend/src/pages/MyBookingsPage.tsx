@@ -6,6 +6,7 @@ import { ApiError, api, type Booking } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { BOOKING_NOTICE_MINUTES, canCancelBooking } from '@/lib/booking-policy';
 
 const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   confirmed: 'default',
@@ -98,7 +99,8 @@ const MyBookingsPage = () => {
         ) : (
           <div className="space-y-4">
             {bookings.map((booking) => {
-              const canCancel = cancellableStatuses.has(booking.status);
+              const canCancelByStatus = cancellableStatuses.has(booking.status);
+              const canCancel = canCancelBooking(booking);
               return (
                 <Card key={booking.id} className="overflow-hidden">
                   <CardContent className="p-5">
@@ -130,17 +132,27 @@ const MyBookingsPage = () => {
                         </div>
                       </div>
 
-                      {canCancel && (
-                        <Button
-                          variant="outline"
-                          className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                          disabled={cancellingId === booking.id}
-                          onClick={() => void cancelBooking(booking)}
-                        >
-                          <XCircle className="mr-2 h-4 w-4" />
-                          {cancellingId === booking.id ? t('common.saving') : t('myBookings.cancel')}
-                        </Button>
-                      )}
+                      <div className="flex flex-col items-stretch gap-2 md:items-end">
+                        {canCancel && (
+                          <Button
+                            variant="outline"
+                            className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            disabled={cancellingId === booking.id}
+                            onClick={() => void cancelBooking(booking)}
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            {cancellingId === booking.id ? t('common.saving') : t('myBookings.cancel')}
+                          </Button>
+                        )}
+                        {canCancelByStatus && !canCancel && (
+                          <p className="max-w-56 text-xs text-muted-foreground md:text-right">
+                            {t('myBookings.cancelWindowNotice', {
+                              minutes: BOOKING_NOTICE_MINUTES,
+                              defaultValue: 'Bookings can only be cancelled at least {{minutes}} minutes before the appointment.',
+                            })}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
