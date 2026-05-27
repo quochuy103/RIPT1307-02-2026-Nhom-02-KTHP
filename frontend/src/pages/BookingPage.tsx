@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, CheckCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CalendarIcon, Check, CheckCircle, Clock, Plus, Scissors } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -63,6 +64,9 @@ const BookingPage = () => {
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
+
+  const selectedService = serviceList.find((service) => service.id === form.service);
 
   useEffect(() => {
     const load = async () => {
@@ -94,6 +98,16 @@ const BookingPage = () => {
     if (!time) e.time = t('booking.errors.timeRequired');
     setErrors(e);
     return Object.keys(e).length === 0;
+  };
+
+  const handleSelectService = (serviceId: string) => {
+    setForm((previous) => ({ ...previous, service: serviceId }));
+    setErrors((previous) => {
+      const next = { ...previous };
+      delete next.service;
+      return next;
+    });
+    setIsServiceDialogOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,7 +152,7 @@ const BookingPage = () => {
 
   return (
     <div className="pt-24 pb-20">
-      <div className="container mx-auto px-4 max-w-2xl">
+      <div className="container mx-auto max-w-3xl px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <h1 className="font-display text-4xl font-bold mb-3">{t('booking.title')} <span className="text-gradient-gold">{t('booking.highlight')}</span></h1>
           <p className="text-muted-foreground">{t('booking.subtitle')}</p>
@@ -164,15 +178,98 @@ const BookingPage = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="text-sm font-medium mb-1.5 block">{t('booking.service')}</label>
-              <Select value={form.service} onValueChange={v => setForm(p => ({ ...p, service: v }))} disabled={isLoadingOptions}>
-                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder={isLoadingOptions ? t('common.loading') : t('booking.selectService')} /></SelectTrigger>
-                <SelectContent>
-                  {serviceList.map(s => <SelectItem key={s.id} value={s.id}>{s.name || t(`serviceItems.${s.nameKey}`)} - {getServicePriceLabel(s)}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Dialog open={isServiceDialogOpen} onOpenChange={setIsServiceDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isLoadingOptions}
+                    className={cn(
+                      'h-10 w-full justify-between gap-3 bg-secondary px-3 py-2 text-left font-normal',
+                      !selectedService && 'text-muted-foreground',
+                      errors.service && 'border-destructive'
+                    )}
+                  >
+                    <span className="min-w-0 flex-1 truncate">
+                      {selectedService ? (
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                            {selectedService.name || t(`serviceItems.${selectedService.nameKey}`)}
+                          </span>
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            {getServicePriceLabel(selectedService)}
+                          </span>
+                        </span>
+                      ) : (
+                        <span>{isLoadingOptions ? t('common.loading') : 'Chọn dịch vụ'}</span>
+                      )}
+                    </span>
+                    <Plus className="h-4 w-4 shrink-0 text-primary" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-5xl overflow-hidden p-0">
+                  <DialogHeader className="border-b border-border px-5 py-4 pr-12 text-left">
+                    <DialogTitle className="flex items-center gap-2 font-display text-2xl">
+                      <Scissors className="h-5 w-5 text-primary" />
+                      Chọn dịch vụ
+                    </DialogTitle>
+                    <DialogDescription>
+                      Chọn một dịch vụ phù hợp để tiếp tục đặt lịch.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="max-h-[70vh] overflow-y-auto px-5 pb-5">
+                    <div className="grid grid-cols-1 gap-3 py-5 sm:grid-cols-2 lg:grid-cols-3">
+                      {serviceList.map((service) => {
+                        const serviceName = service.name || t(`serviceItems.${service.nameKey}`);
+                        const serviceDescription = service.description || t(`serviceItems.${service.descKey}`);
+                        const isSelected = form.service === service.id;
+
+                        return (
+                          <button
+                            key={service.id}
+                            type="button"
+                            onClick={() => handleSelectService(service.id)}
+                            className={cn(
+                              'flex h-full min-h-[190px] flex-col rounded-lg border bg-card p-4 text-left transition-all hover:border-primary/50 hover:bg-primary/5',
+                              isSelected ? 'border-primary ring-2 ring-primary/25' : 'border-border'
+                            )}
+                          >
+                            <div className="mb-3 flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <span className="mb-2 inline-flex rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                                  {service.categoryLabel ?? service.category}
+                                </span>
+                                <h3 className="line-clamp-2 min-h-[3rem] font-display text-base font-semibold leading-snug text-foreground">
+                                  {serviceName}
+                                </h3>
+                              </div>
+                              {isSelected && (
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                                  <Check className="h-3.5 w-3.5" />
+                                </span>
+                              )}
+                            </div>
+                            <p className="line-clamp-3 flex-1 text-sm leading-6 text-muted-foreground">
+                              {serviceDescription}
+                            </p>
+                            <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-3">
+                              <span className="font-bold text-primary">{getServicePriceLabel(service)}</span>
+                              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Clock className="h-3.5 w-3.5 text-primary" />
+                                {service.duration} phút
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
               {errors.service && <p className="text-destructive text-xs mt-1">{errors.service}</p>}
             </div>
             <div>
