@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
  *   after a successful login.
  */
 const ProtectedRoute = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -18,6 +18,10 @@ const ProtectedRoute = () => {
 
   if (!isAuthenticated) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
   }
 
   return <Outlet />;

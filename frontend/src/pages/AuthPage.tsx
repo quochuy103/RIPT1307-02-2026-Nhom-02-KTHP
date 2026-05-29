@@ -74,15 +74,19 @@ const AuthPage = () => {
 
   // Redirect to the page that triggered the login, or home/admin depending on role.
   const getRedirectPath = () => {
-    const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
-    if (from && from !== '/auth') return from;
     try {
       const raw = localStorage.getItem('cutie_cuts_user');
       const storedUser = raw ? (JSON.parse(raw) as { role?: string }) : null;
-      return storedUser?.role === 'admin' ? '/admin' : '/';
+      if (storedUser?.role === 'admin') {
+        return '/admin';
+      }
     } catch {
-      return '/';
+      // Ignore JSON parse errors
     }
+
+    const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
+    if (from && from !== '/auth') return from;
+    return '/';
   };
 
   const handleMainSubmit = async (e: React.FormEvent) => {
