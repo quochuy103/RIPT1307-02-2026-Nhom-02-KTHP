@@ -7,21 +7,26 @@ import com.cutie_cuts_app.example.cutie_cuts_app.dto.user.UserOrderHistoryRespon
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.user.UserProfileResponse;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.Booking;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.OrderItem;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.Review;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.ShopOrder;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.repository.ReviewRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserAuthRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -38,18 +43,21 @@ public class UserProfileService {
     private final UserAuthRepository userAuthRepository;
     private final ShopOrderRepository shopOrderRepository;
     private final BookingRepository bookingRepository;
+    private final ReviewRepository reviewRepository;
 
     public UserProfileService(
             CurrentUserService currentUserService,
             UserRepository userRepository,
             UserAuthRepository userAuthRepository,
             ShopOrderRepository shopOrderRepository,
-            BookingRepository bookingRepository) {
+            BookingRepository bookingRepository,
+            ReviewRepository reviewRepository) {
         this.currentUserService = currentUserService;
         this.userRepository = userRepository;
         this.userAuthRepository = userAuthRepository;
         this.shopOrderRepository = shopOrderRepository;
         this.bookingRepository = bookingRepository;
+        this.reviewRepository = reviewRepository;
     }
 
     @Transactional(readOnly = true)
@@ -128,7 +136,11 @@ public class UserProfileService {
         Page<Booking> page = normalizedStatus == null
                 ? bookingRepository.findByUser(user, pageable)
                 : bookingRepository.findByUserAndStatusIgnoreCase(user, normalizedStatus, pageable);
-        return page.map(this::toBookingHistoryResponse);
+        Map<Long, Review> reviewsByBookingId = getReviewsByBookingId(page.getContent());
+        List<UserBookingHistoryResponse> content = page.getContent().stream()
+                .map(booking -> toBookingHistoryResponse(booking, reviewsByBookingId.get(booking.getId())))
+                .toList();
+        return new PageImpl<>(content, pageable, page.getTotalElements());
     }
 
     private UserProfileResponse toProfileResponse(User user) {
@@ -187,16 +199,41 @@ public class UserProfileService {
                 defaultDouble(item.getPrice()));
     }
 
-    private UserBookingHistoryResponse toBookingHistoryResponse(Booking booking) {
+    private UserBookingHistoryResponse toBookingHistoryResponse(Booking booking, Review review) {
+        boolean reviewSubmitted = review != null;
+        boolean reviewEligible = "done".equalsIgnoreCase(booking.getStatus()) && !reviewSubmitted;
         return new UserBookingHistoryResponse(
                 booking.getId(),
                 booking.getStatus(),
+                booking.getService().getId(),
                 booking.getService().getName(),
+                booking.getBarber().getId(),
                 booking.getBarber().getName(),
                 defaultDouble(booking.getPrice()),
                 booking.getDate(),
                 booking.getTime(),
-                booking.getCreatedAt());
+                booking.getCreatedAt(),
+                reviewEligible,
+                reviewSubmitted,
+                review != null ? review.getId() : null,
+                review != null ? review.getRating() : null);
+    }
+
+    private Map<Long, Review> getReviewsByBookingId(List<Booking> bookings) {
+        List<Long> bookingIds = bookings.stream()
+                .map(Booking::getId)
+                .toList();
+        if (bookingIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, Review> reviewsByBookingId = new HashMap<>();
+        for (Review review : reviewRepository.findVisibleByBookingIds(bookingIds)) {
+            if (review.getBooking() != null) {
+                reviewsByBookingId.put(review.getBooking().getId(), review);
+            }
+        }
+        return reviewsByBookingId;
     }
 
     private String resolveEmail(User user) {

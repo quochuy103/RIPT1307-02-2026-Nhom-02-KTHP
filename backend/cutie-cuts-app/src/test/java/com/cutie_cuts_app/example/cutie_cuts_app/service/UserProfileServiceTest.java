@@ -10,6 +10,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.ShopOrder;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.UserAuth;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.repository.ReviewRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserAuthRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserRepository;
@@ -51,6 +52,9 @@ class UserProfileServiceTest {
     @Mock
     private BookingRepository bookingRepository;
 
+    @Mock
+    private ReviewRepository reviewRepository;
+
     private UserProfileService userProfileService;
 
     @BeforeEach
@@ -60,7 +64,8 @@ class UserProfileServiceTest {
                 userRepository,
                 userAuthRepository,
                 shopOrderRepository,
-                bookingRepository);
+                bookingRepository,
+                reviewRepository);
     }
 
     @Test

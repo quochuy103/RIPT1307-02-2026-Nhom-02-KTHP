@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, Scissors, UserRound, XCircle } from 'lucide-react';
+import { CalendarClock, Scissors, Star, UserRound, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { ApiError, api, type Booking } from '@/lib/api';
+import BookingReviewModal, { type BookingReviewTarget } from '@/components/BookingReviewModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -44,6 +45,8 @@ const MyBookingsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [selectedBookingForReview, setSelectedBookingForReview] = useState<BookingReviewTarget | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   const loadBookings = useCallback(async () => {
     try {
@@ -74,6 +77,17 @@ const MyBookingsPage = () => {
     } finally {
       setCancellingId(null);
     }
+  };
+
+  const openReviewModal = (booking: Booking) => {
+    setSelectedBookingForReview({
+      bookingId: Number(booking.id),
+      serviceName: booking.serviceName,
+      barberName: booking.barberName,
+      date: booking.date,
+      time: booking.time,
+    });
+    setIsReviewModalOpen(true);
   };
 
   return (
@@ -111,6 +125,7 @@ const MyBookingsPage = () => {
               const canCancelByStatus = cancellableStatuses.has(booking.status);
               const hasReachedCancellationLimit = hasReachedCancellationLimitForDate(bookings, booking.date);
               const canCancel = canCancelBooking(booking) && !hasReachedCancellationLimit;
+              const canReview = booking.reviewEligible && !booking.reviewSubmitted;
               return (
                 <Card key={booking.id} className="overflow-hidden">
                   <CardContent className="p-5">
@@ -119,6 +134,11 @@ const MyBookingsPage = () => {
                         <div className="flex flex-wrap items-center gap-3">
                           <h2 className="font-display text-xl font-semibold">{booking.serviceName}</h2>
                           <Badge variant={statusColors[booking.status] ?? 'outline'}>{t(`myBookings.status.${booking.status}`, { defaultValue: booking.status })}</Badge>
+                          {booking.reviewSubmitted && (
+                            <Badge variant="secondary">
+                              {booking.overallRating ? `${booking.overallRating}/5` : t('myBookings.reviewed', { defaultValue: 'Đã đánh giá' })}
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
@@ -164,6 +184,15 @@ const MyBookingsPage = () => {
                                 })}
                           </p>
                         )}
+                        {canReview && (
+                          <Button
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            onClick={() => openReviewModal(booking)}
+                          >
+                            <Star className="mr-2 h-4 w-4" />
+                            {t('myBookings.reviewAction', { defaultValue: 'Đánh giá' })}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -173,6 +202,18 @@ const MyBookingsPage = () => {
           </div>
         )}
       </div>
+
+      <BookingReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          setIsReviewModalOpen(false);
+          setSelectedBookingForReview(null);
+        }}
+        onSubmitSuccess={() => {
+          void loadBookings();
+        }}
+        target={selectedBookingForReview}
+      />
     </div>
   );
 };

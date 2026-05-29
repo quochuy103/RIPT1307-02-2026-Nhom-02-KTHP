@@ -9,7 +9,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query("""
@@ -52,6 +54,15 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     boolean existsByOrderIdAndProductId(Long orderId, Long productId);
     List<Review> findByUser(User user);
     List<Review> findByUserAndDeletedFalse(User user);
+    Optional<Review> findByBookingId(Long bookingId);
+
+    @Query("""
+            select r
+            from Review r
+            where r.booking.id in :bookingIds
+              and (r.deleted = false or r.deleted is null)
+            """)
+    List<Review> findVisibleByBookingIds(@Param("bookingIds") Collection<Long> bookingIds);
 
     @Query("""
             SELECT r FROM Review r WHERE

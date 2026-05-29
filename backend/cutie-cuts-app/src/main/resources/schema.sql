@@ -237,6 +237,21 @@ create unique index if not exists uk_review_order_product
     on reviews(order_id, product_id)
     where order_id is not null and product_id is not null;
 
+create table if not exists review_target_ratings (
+    id          bigserial primary key,
+    review_id   bigint not null references reviews(id) on delete cascade,
+    target_type varchar(50) not null,
+    target_id   bigint not null,
+    rating      integer not null,
+    comment     varchar(2000),
+    created_at  timestamp default current_timestamp
+);
+
+create index if not exists idx_review_target_review on review_target_ratings(review_id);
+create index if not exists idx_review_target_lookup on review_target_ratings(target_type, target_id);
+create unique index if not exists uk_review_target_unique
+    on review_target_ratings(review_id, target_type, target_id);
+
 -- Notifications
 create table if not exists notifications (
     id              bigserial primary key,

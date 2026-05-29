@@ -195,7 +195,7 @@ class BookingServiceTest {
     void updateStatusReturnsSavedBookingWhenNotificationFails() {
         User admin = createUser(99L, "Admin");
         User owner = createUser(10L, "Customer");
-        Booking booking = createBooking(1L, owner, "pending");
+        Booking booking = createBooking(1L, owner, "confirmed");
 
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(booking)).thenReturn(booking);
@@ -207,6 +207,21 @@ class BookingServiceTest {
         Booking updated = bookingService.updateStatus(1L, "done", admin, true);
 
         assertEquals("done", updated.getStatus());
+    }
+
+    @Test
+    void updateStatusRejectsInvalidTransitionFromPendingToDone() {
+        User admin = createUser(99L, "Admin");
+        User owner = createUser(10L, "Customer");
+        Booking booking = createBooking(1L, owner, "pending");
+
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> bookingService.updateStatus(1L, "done", admin, true));
+
+        assertEquals("Invalid booking status transition from pending to done", exception.getReason());
+        verify(bookingRepository, never()).save(any());
     }
 
     @Test
