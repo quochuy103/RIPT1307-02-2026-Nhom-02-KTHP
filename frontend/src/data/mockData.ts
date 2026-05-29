@@ -46,7 +46,24 @@ export interface Review {
   comment?: string;
   date: string;
   avatar: string;
+  userId?: string;
+  bookingId?: string;
+  serviceId?: string;
+  serviceName?: string | null;
+  barberId?: string;
+  barberName?: string | null;
+  orderId?: string;
+  productId?: string;
+  productName?: string | null;
+  reviewType?: 'product' | 'booking';
+  overallRating?: number;
+  overallComment?: string | null;
+  barberRating?: number | null;
+  barberComment?: string | null;
+  serviceRating?: number | null;
+  serviceComment?: string | null;
 }
+
 
 export interface GalleryImage {
   id: string;

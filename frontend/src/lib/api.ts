@@ -410,19 +410,79 @@ export const api = {
 
   reviews: {
     getAll: async (): Promise<Review[]> => {
-      const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>('/api/reviews');
+      const rows = await request<Array<{
+        id: number;
+        userName: string;
+        rating: number;
+        comment: string;
+        date: string;
+        userId?: number;
+        bookingId?: number;
+        serviceId?: number;
+        serviceName?: string;
+        barberId?: number;
+        barberName?: string;
+        orderId?: number;
+        productId?: number;
+        productName?: string;
+        reviewType?: 'product' | 'booking';
+        overallRating?: number;
+        overallComment?: string;
+        barberRating?: number;
+        barberComment?: string;
+        serviceRating?: number;
+        serviceComment?: string;
+      }>>('/api/reviews');
       return rows.map((row) => ({
         id: String(row.id),
-        name: row.userName,
+        name: row.userName || 'Anonymous',
         rating: row.rating,
         commentKey: '',
         comment: row.comment,
-        date: row.date,
-        avatar: initials(row.userName),
+        date: row.date || '',
+        avatar: initials(row.userName || 'Anonymous'),
+        userId: row.userId ? String(row.userId) : undefined,
+        bookingId: row.bookingId ? String(row.bookingId) : undefined,
+        serviceId: row.serviceId ? String(row.serviceId) : undefined,
+        serviceName: row.serviceName,
+        barberId: row.barberId ? String(row.barberId) : undefined,
+        barberName: row.barberName,
+        orderId: row.orderId ? String(row.orderId) : undefined,
+        productId: row.productId ? String(row.productId) : undefined,
+        productName: row.productName,
+        reviewType: row.reviewType,
+        overallRating: row.overallRating,
+        overallComment: row.overallComment,
+        barberRating: row.barberRating,
+        barberComment: row.barberComment,
+        serviceRating: row.serviceRating,
+        serviceComment: row.serviceComment,
       }));
     },
     getMyReviews: async (): Promise<Review[]> => {
-      const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>('/api/reviews/me', undefined, true);
+      const rows = await request<Array<{
+        id: number;
+        userName: string;
+        rating: number;
+        comment: string;
+        date: string;
+        userId?: number;
+        bookingId?: number;
+        serviceId?: number;
+        serviceName?: string;
+        barberId?: number;
+        barberName?: string;
+        orderId?: number;
+        productId?: number;
+        productName?: string;
+        reviewType?: 'product' | 'booking';
+        overallRating?: number;
+        overallComment?: string;
+        barberRating?: number;
+        barberComment?: string;
+        serviceRating?: number;
+        serviceComment?: string;
+      }>>('/api/reviews/me', undefined, true);
       return rows.map((row) => ({
         id: String(row.id),
         name: row.userName || 'Anonymous',
@@ -431,10 +491,48 @@ export const api = {
         comment: row.comment,
         date: row.date || '',
         avatar: initials(row.userName || 'Anonymous'),
+        userId: row.userId ? String(row.userId) : undefined,
+        bookingId: row.bookingId ? String(row.bookingId) : undefined,
+        serviceId: row.serviceId ? String(row.serviceId) : undefined,
+        serviceName: row.serviceName,
+        barberId: row.barberId ? String(row.barberId) : undefined,
+        barberName: row.barberName,
+        orderId: row.orderId ? String(row.orderId) : undefined,
+        productId: row.productId ? String(row.productId) : undefined,
+        productName: row.productName,
+        reviewType: row.reviewType,
+        overallRating: row.overallRating,
+        overallComment: row.overallComment,
+        barberRating: row.barberRating,
+        barberComment: row.barberComment,
+        serviceRating: row.serviceRating,
+        serviceComment: row.serviceComment,
       }));
     },
     getProductReviews: async (productId: string | number): Promise<Review[]> => {
-      const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>(`/api/reviews/products/${productId}`);
+      const rows = await request<Array<{
+        id: number;
+        userName: string;
+        rating: number;
+        comment: string;
+        date: string;
+        userId?: number;
+        bookingId?: number;
+        serviceId?: number;
+        serviceName?: string;
+        barberId?: number;
+        barberName?: string;
+        orderId?: number;
+        productId?: number;
+        productName?: string;
+        reviewType?: 'product' | 'booking';
+        overallRating?: number;
+        overallComment?: string;
+        barberRating?: number;
+        barberComment?: string;
+        serviceRating?: number;
+        serviceComment?: string;
+      }>>(`/api/reviews/products/${productId}`);
       return rows.map((row) => ({
         id: String(row.id),
         name: row.userName || 'Anonymous',
@@ -443,8 +541,25 @@ export const api = {
         comment: row.comment,
         date: row.date || '',
         avatar: initials(row.userName || 'Anonymous'),
+        userId: row.userId ? String(row.userId) : undefined,
+        bookingId: row.bookingId ? String(row.bookingId) : undefined,
+        serviceId: row.serviceId ? String(row.serviceId) : undefined,
+        serviceName: row.serviceName,
+        barberId: row.barberId ? String(row.barberId) : undefined,
+        barberName: row.barberName,
+        orderId: row.orderId ? String(row.orderId) : undefined,
+        productId: row.productId ? String(row.productId) : undefined,
+        productName: row.productName,
+        reviewType: row.reviewType,
+        overallRating: row.overallRating,
+        overallComment: row.overallComment,
+        barberRating: row.barberRating,
+        barberComment: row.barberComment,
+        serviceRating: row.serviceRating,
+        serviceComment: row.serviceComment,
       }));
     },
+
     getReviewableProducts: async (): Promise<ReviewableProduct[]> => {
       const rows = await request<ReviewableProductRow[]>('/api/reviews/me/reviewable-products', undefined, true);
       return rows.map((row) => ({
