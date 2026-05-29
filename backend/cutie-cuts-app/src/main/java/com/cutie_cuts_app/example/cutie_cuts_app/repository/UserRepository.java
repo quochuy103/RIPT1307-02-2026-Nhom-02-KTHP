@@ -26,4 +26,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                @Param("createdFrom") LocalDateTime createdFrom,
                                @Param("createdTo") LocalDateTime createdTo,
                                Pageable pageable);
+
+    long countByDeletedFalse();
+
+    long countByDeletedFalseAndCreatedAtBetween(LocalDateTime from, LocalDateTime to);
 }

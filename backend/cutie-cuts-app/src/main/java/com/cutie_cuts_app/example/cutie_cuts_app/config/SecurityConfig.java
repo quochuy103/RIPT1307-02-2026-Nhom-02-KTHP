@@ -66,6 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/uploads/**").authenticated()
                         .requestMatchers("/api/users/me/avatar/**").authenticated()
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/dashboard").hasRole("ADMIN")
                         .requestMatchers("/api/user/register").permitAll()
                         .requestMatchers("/api/user/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/bookings/my").authenticated()

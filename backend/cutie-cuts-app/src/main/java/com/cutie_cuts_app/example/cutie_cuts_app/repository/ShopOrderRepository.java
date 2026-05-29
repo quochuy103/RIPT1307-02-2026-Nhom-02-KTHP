@@ -56,4 +56,11 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long> {
                                     @Param("maxTotal") Double maxTotal,
                                     Pageable pageable);
 
+    long countByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
+
+    @Query("SELECT COALESCE(SUM(o.totalPrice), 0.0) FROM ShopOrder o WHERE LOWER(o.status) NOT IN ('pending', 'cancelled')")
+    Double sumTotalRevenue();
+
+    @Query("SELECT COALESCE(SUM(o.totalPrice), 0.0) FROM ShopOrder o WHERE LOWER(o.status) NOT IN ('pending', 'cancelled') AND o.createdAt >= :from AND o.createdAt < :to")
+    Double sumRevenueByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }
