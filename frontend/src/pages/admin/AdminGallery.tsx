@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { mockGallery } from '@/data/adminMockData';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,6 +10,8 @@ import { api } from '@/lib/api';
 import ImageUploader from '@/components/ImageUploader';
 import { confirmUpload, type UploadMetadata } from '@/services/uploadService';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface GalleryForm {
   objectKey: string;
@@ -23,27 +24,30 @@ interface GalleryForm {
 
 const AdminGallery = () => {
   const { t } = useTranslation();
-  const [images, setImages] = useState(mockGallery);
+  const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<GalleryForm>({ objectKey: '', contentType: '', fileSize: 0, alt: '', category: 'fade', previewUrl: '' });
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setImages(await api.admin.getGallery());
-      } catch {
-        // keep fallback
-      }
-    };
-    void load();
-  }, []);
+  const { data: images = [], isLoading, isError, error } = useQuery({
+    queryKey: ['admin', 'gallery', { categoryFilter }],
+    queryFn: async () => {
+      const result = await api.admin.getGalleryFiltered({
+        category: categoryFilter === 'all' ? undefined : categoryFilter,
+      });
+      return result.content;
+    },
+  });
 
   const handleUpload = async () => {
-    if (!form.objectKey) { toast.error(t('admin.common.uploadImageFirst')); return; }
+    if (!form.objectKey) {
+      toast.error(t('admin.common.uploadImageFirst'));
+      return;
+    }
     try {
       const metadata: UploadMetadata = { alt: form.alt, category: form.category };
       await confirmUpload('GALLERY', form.objectKey, form.contentType, form.fileSize, metadata);
-      setImages(await api.admin.getGallery());
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'gallery'] });
       toast.success(t('admin.galleryPage.added'));
       setModalOpen(false);
       setForm({ objectKey: '', contentType: '', fileSize: 0, alt: '', category: 'fade', previewUrl: '' });
@@ -55,11 +59,15 @@ const AdminGallery = () => {
   const deleteImage = async (id: string) => {
     try {
       await api.admin.deleteGalleryImage(id);
-      setImages((prev) => prev.filter((img) => img.id !== id));
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'gallery'] });
       toast.success(t('admin.galleryPage.deleted'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('admin.common.deleteFailed'));
     }
+  };
+
+  const resetFilters = () => {
+    setCategoryFilter('all');
   };
 
   return (
@@ -74,14 +82,42 @@ const AdminGallery = () => {
         </Button>
       </div>
 
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-2">
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('admin.galleryPage.allCategories', { defaultValue: 'Tất cả danh mục' })}</SelectItem>
+            <SelectItem value="fade">{t('admin.galleryPage.categories.fade')}</SelectItem>
+            <SelectItem value="classic">{t('admin.galleryPage.categories.classic')}</SelectItem>
+            <SelectItem value="modern">{t('admin.galleryPage.categories.modern')}</SelectItem>
+            <SelectItem value="color">{t('admin.galleryPage.categories.color')}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" onClick={resetFilters}>
+          {t('common.reset', { defaultValue: 'Reset' })}
+        </Button>
+      </div>
+
+      {isError && (
+        <Alert variant="destructive">
+          <AlertTitle>{t('admin.galleryPage.loadError', { defaultValue: 'Không thể tải bộ sưu tập' })}</AlertTitle>
+          <AlertDescription>{error instanceof Error ? error.message : t('admin.common.loadFallback')}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {images.map((img) => (
-          <div key={img.id} className="group relative overflow-hidden rounded-xl border border-border">
-            <img src={img.url} alt={img.alt} className="aspect-square w-full object-cover" />
+        {isLoading && Array.from({ length: 8 }).map((_, index) => (
+          <div key={index} className="aspect-square animate-pulse rounded-xl border border-border bg-card" />
+        ))}
+        {images.map((image) => (
+          <div key={image.id} className="group relative overflow-hidden rounded-xl border border-border">
+            <img src={image.url} alt={image.alt} className="aspect-square w-full object-cover" />
             <div className="absolute inset-0 flex items-end bg-gradient-to-t from-background/80 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
               <div className="flex w-full items-center justify-between p-3">
-                <span className="text-xs text-foreground truncate">{img.alt}</span>
-                <Button size="sm" variant="ghost" onClick={() => deleteImage(img.id)} className="text-destructive shrink-0">
+                <span className="truncate text-xs text-foreground">{image.alt}</span>
+                <Button size="sm" variant="ghost" onClick={() => deleteImage(image.id)} className="shrink-0 text-destructive">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

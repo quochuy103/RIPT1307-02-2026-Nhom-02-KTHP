@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const emptyService: Omit<AdminService, 'id'> = { name: '', price: 0, duration: 0, category: '', description: '' };
 const servicesQueryKey = ['admin', 'services'] as const;
@@ -21,10 +22,27 @@ const AdminServices = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdminService | null>(null);
   const [form, setForm] = useState(emptyService);
+  const [search, setSearch] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [minPriceFilter, setMinPriceFilter] = useState('');
+  const [minDurationFilter, setMinDurationFilter] = useState('');
+
+  const { data: serviceOptions = [] } = useQuery({
+    queryKey: ['admin', 'services', 'options'],
+    queryFn: api.admin.getServices,
+  });
 
   const { data: services = [], isLoading, isError, error } = useQuery({
-    queryKey: servicesQueryKey,
-    queryFn: api.admin.getServices,
+    queryKey: ['admin', 'services', { search, categoryFilter, minPriceFilter, minDurationFilter }],
+    queryFn: async () => {
+      const result = await api.admin.getServicesFiltered({
+        search: search === 'all' ? undefined : search,
+        category: categoryFilter === 'all' ? undefined : categoryFilter,
+        minPrice: minPriceFilter ? Number(minPriceFilter) : undefined,
+        minDuration: minDurationFilter ? Number(minDurationFilter) : undefined,
+      });
+      return result.content;
+    },
   });
 
   const invalidateServices = () => queryClient.invalidateQueries({ queryKey: servicesQueryKey });
@@ -59,21 +77,37 @@ const AdminServices = () => {
   });
 
   const openCreate = () => { setEditing(null); setForm(emptyService); setModalOpen(true); };
-  const openEdit = (s: AdminService) => { setEditing(s); setForm(s); setModalOpen(true); };
+  const openEdit = (service: AdminService) => { setEditing(service); setForm(service); setModalOpen(true); };
 
   const handleSubmit = () => {
-    if (!form.name) { toast.error(t('admin.common.nameRequired')); return; }
+    if (!form.name) {
+      toast.error(t('admin.common.nameRequired'));
+      return;
+    }
+
     if (editing) updateMutation.mutate({ id: editing.id, payload: form });
     else createMutation.mutate(form);
   };
 
   const deleteService = (id: string) => deleteMutation.mutate(id);
 
+  const resetFilters = () => {
+    setSearch('all');
+    setCategoryFilter('all');
+    setMinPriceFilter('');
+    setMinDurationFilter('');
+  };
+
+  const serviceNameOptions = Array.from(new Set(serviceOptions.map((service) => service.name).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b, 'vi'));
+  const serviceCategoryOptions = Array.from(new Set(serviceOptions.map((service) => service.category).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b, 'vi'));
+
   const columns: Column<AdminService>[] = [
-    { key: 'name', label: t('admin.fields.name'), render: (s) => <span className="font-medium">{s.name}</span> },
+    { key: 'name', label: t('admin.fields.name'), render: (service) => <span className="font-medium">{service.name}</span> },
     { key: 'category', label: t('admin.fields.category') },
-    { key: 'price', label: t('admin.fields.price'), render: (s) => `${s.price.toLocaleString('vi-VN')}đ` },
-    { key: 'duration', label: t('admin.fields.duration'), render: (s) => `${s.duration} ${t('services.min')}` },
+    { key: 'price', label: t('admin.fields.price'), render: (service) => `${service.price.toLocaleString('vi-VN')}đ` },
+    { key: 'duration', label: t('admin.fields.duration'), render: (service) => `${service.duration} ${t('services.min')}` },
   ];
 
   return (
@@ -86,6 +120,32 @@ const AdminServices = () => {
         <Button onClick={openCreate}><Plus className="mr-1 h-4 w-4" /> {t('admin.servicesPage.add')}</Button>
       </div>
 
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <Select value={search} onValueChange={setSearch}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('admin.servicesPage.search', { defaultValue: 'Tất cả dịch vụ' })}</SelectItem>
+            {serviceNameOptions.map((name) => (
+              <SelectItem key={name} value={name}>{name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('admin.common.allCategories', { defaultValue: 'Tất cả danh mục' })}</SelectItem>
+            {serviceCategoryOptions.map((category) => (
+              <SelectItem key={category} value={category}>{category}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input type="number" min="0" value={minPriceFilter} onChange={(e) => setMinPriceFilter(e.target.value)} placeholder={t('admin.fields.price', { defaultValue: 'Giá tối thiểu' })} />
+        <Input type="number" min="0" value={minDurationFilter} onChange={(e) => setMinDurationFilter(e.target.value)} placeholder={t('admin.fields.duration', { defaultValue: 'Thời lượng tối thiểu' })} />
+        <Button variant="outline" onClick={resetFilters}>
+          {t('common.reset', { defaultValue: 'Reset' })}
+        </Button>
+      </div>
+
       {isError && (
         <Alert variant="destructive">
           <AlertTitle>{t('admin.servicesPage.loadError')}</AlertTitle>
@@ -93,10 +153,10 @@ const AdminServices = () => {
         </Alert>
       )}
 
-      <DataTable data={isLoading ? [] : services} columns={columns} searchPlaceholder={isLoading ? t('admin.servicesPage.loading') : t('admin.servicesPage.search')} actions={(s) => (
+      <DataTable data={isLoading ? [] : services} columns={columns} showSearch={false} actions={(service) => (
         <div className="flex items-center justify-end gap-1">
-          <Button size="sm" variant="ghost" onClick={() => openEdit(s)}><Edit className="h-4 w-4" /></Button>
-          <Button size="sm" variant="ghost" onClick={() => deleteService(s.id)} className="text-destructive" disabled={deleteMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
+          <Button size="sm" variant="ghost" onClick={() => openEdit(service)}><Edit className="h-4 w-4" /></Button>
+          <Button size="sm" variant="ghost" onClick={() => deleteService(service.id)} className="text-destructive" disabled={deleteMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
         </div>
       )} />
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,9 +18,17 @@ interface Props<T> {
   pageSize?: number;
   searchPlaceholder?: string;
   actions?: (item: T) => React.ReactNode;
+  showSearch?: boolean;
 }
 
-function DataTable<T extends { id: string }>({ data, columns, pageSize = 8, searchPlaceholder, actions }: Props<T>) {
+function DataTable<T extends { id: string }>({
+  data,
+  columns,
+  pageSize = 8,
+  searchPlaceholder,
+  actions,
+  showSearch = true,
+}: Props<T>) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -40,17 +48,30 @@ function DataTable<T extends { id: string }>({ data, columns, pageSize = 8, sear
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
+  useEffect(() => {
+    if (totalPages === 0 && page !== 1) {
+      setPage(1);
+      return;
+    }
+
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   return (
     <div className="space-y-4">
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder={searchPlaceholder ?? t('admin.table.search')}
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          className="pl-9"
-        />
-      </div>
+      {showSearch && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder={searchPlaceholder ?? t('admin.table.search')}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="pl-9"
+          />
+        </div>
+      )}
 
       <div className="rounded-xl border border-border overflow-hidden">
         <Table>

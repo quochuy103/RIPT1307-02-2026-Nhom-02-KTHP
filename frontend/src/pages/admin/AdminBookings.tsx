@@ -11,6 +11,7 @@ import FormModal from '@/components/admin/FormModal';
 import { api } from '@/lib/api';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
+import { Input } from '@/components/ui/input';
 
 const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   confirmed: 'default', done: 'secondary', cancelled: 'destructive', pending: 'outline'
@@ -21,11 +22,34 @@ const AdminBookings = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('all');
+  const [upcomingFilter, setUpcomingFilter] = useState<'all' | 'true'>('all');
+  const [userIdFilter, setUserIdFilter] = useState('');
+  const [barberIdFilter, setBarberIdFilter] = useState('all');
+  const [serviceIdFilter, setServiceIdFilter] = useState('all');
   const [viewBooking, setViewBooking] = useState<AdminBooking | null>(null);
 
+  const { data: barbers = [] } = useQuery({
+    queryKey: ['admin', 'bookings', 'barber-options'],
+    queryFn: api.admin.getBarbers,
+  });
+
+  const { data: services = [] } = useQuery({
+    queryKey: ['admin', 'bookings', 'service-options'],
+    queryFn: api.admin.getServices,
+  });
+
   const { data: bookings = [], isLoading, isError, error } = useQuery({
-    queryKey: bookingsQueryKey,
-    queryFn: api.admin.getBookings,
+    queryKey: ['admin', 'bookings', { statusFilter, upcomingFilter, userIdFilter, barberIdFilter, serviceIdFilter }],
+    queryFn: async () => {
+      const result = await api.admin.getBookingsFiltered({
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        userId: userIdFilter || undefined,
+        barberId: barberIdFilter === 'all' ? undefined : barberIdFilter,
+        serviceId: serviceIdFilter === 'all' ? undefined : serviceIdFilter,
+        upcoming: upcomingFilter === 'true' ? true : undefined,
+      });
+      return result.content;
+    },
   });
 
   const updateStatusMutation = useMutation({
@@ -36,8 +60,6 @@ const AdminBookings = () => {
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : t('admin.common.updateFailed')),
   });
-
-  const filtered = statusFilter === 'all' ? bookings : bookings.filter((b) => b.status === statusFilter);
 
   const updateStatus = (id: string, status: AdminBooking['status']) => updateStatusMutation.mutate({ id, status });
 
@@ -51,15 +73,26 @@ const AdminBookings = () => {
     { key: 'status', label: t('admin.fields.status'), render: (b) => <Badge variant={statusColors[b.status]}>{t(`admin.status.${b.status}`)}</Badge> },
   ];
 
+  const resetFilters = () => {
+    setStatusFilter('all');
+    setUpcomingFilter('all');
+    setUserIdFilter('');
+    setBarberIdFilter('all');
+    setServiceIdFilter('all');
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t('admin.bookingsPage.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('admin.bookingsPage.count', { count: bookings.length })}</p>
         </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('admin.common.allStatus')}</SelectItem>
             <SelectItem value="pending">{t('admin.status.pending')}</SelectItem>
@@ -68,6 +101,35 @@ const AdminBookings = () => {
             <SelectItem value="cancelled">{t('admin.status.cancelled')}</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={upcomingFilter} onValueChange={(value) => setUpcomingFilter(value as 'all' | 'true')}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('admin.bookingsPage.allBookings', { defaultValue: 'Tất cả lịch hẹn' })}</SelectItem>
+            <SelectItem value="true">{t('admin.bookingsPage.upcomingOnly', { defaultValue: 'Sắp tới' })}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input value={userIdFilter} onChange={(e) => setUserIdFilter(e.target.value)} placeholder={t('admin.fields.client', { defaultValue: 'User ID' })} />
+        <Select value={barberIdFilter} onValueChange={setBarberIdFilter}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('admin.bookingsPage.allBarbers', { defaultValue: 'Tất cả barber' })}</SelectItem>
+            {barbers.map((barber) => (
+              <SelectItem key={barber.id} value={barber.id}>{barber.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={serviceIdFilter} onValueChange={setServiceIdFilter}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('admin.bookingsPage.allServices', { defaultValue: 'Tất cả dịch vụ' })}</SelectItem>
+            {services.map((service) => (
+              <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button variant="outline" onClick={resetFilters}>
+          {t('common.reset', { defaultValue: 'Reset' })}
+        </Button>
       </div>
 
       {isError && (
@@ -78,9 +140,9 @@ const AdminBookings = () => {
       )}
 
       <DataTable
-        data={isLoading ? [] : filtered}
+        data={isLoading ? [] : bookings}
         columns={columns}
-        searchPlaceholder={isLoading ? t('admin.bookingsPage.loading') : t('admin.bookingsPage.search')}
+        showSearch={false}
         actions={(b) => (
           <div className="flex items-center justify-end gap-1">
             <Button size="sm" variant="ghost" onClick={() => setViewBooking(b)}><Eye className="h-4 w-4" /></Button>

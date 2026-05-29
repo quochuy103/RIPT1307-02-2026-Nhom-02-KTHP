@@ -13,6 +13,7 @@ import {
   canCancelBooking,
   hasReachedCancellationLimitForDate,
 } from '@/lib/booking-policy';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   confirmed: 'default',
@@ -47,18 +48,19 @@ const MyBookingsPage = () => {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [selectedBookingForReview, setSelectedBookingForReview] = useState<BookingReviewTarget | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'done' | 'cancelled'>('all');
 
   const loadBookings = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      setBookings(await api.bookings.getMine());
+      setBookings(await api.bookings.getMine(statusFilter === 'all' ? undefined : statusFilter));
     } catch (err) {
       setError(getBookingError(err, t('myBookings.loadError')));
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [statusFilter, t]);
 
   useEffect(() => {
     void loadBookings();
@@ -98,6 +100,21 @@ const MyBookingsPage = () => {
             {t('myBookings.title')} <span className="text-gradient-gold">{t('myBookings.highlight')}</span>
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">{t('myBookings.subtitle')}</p>
+        </div>
+
+        <div className="mb-6 flex justify-end">
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+            <SelectTrigger className="w-full max-w-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('admin.common.allStatus')}</SelectItem>
+              <SelectItem value="pending">{t('myBookings.status.pending', { defaultValue: 'Pending' })}</SelectItem>
+              <SelectItem value="confirmed">{t('myBookings.status.confirmed', { defaultValue: 'Confirmed' })}</SelectItem>
+              <SelectItem value="done">{t('myBookings.status.done', { defaultValue: 'Done' })}</SelectItem>
+              <SelectItem value="cancelled">{t('myBookings.status.cancelled', { defaultValue: 'Cancelled' })}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {isLoading ? (
