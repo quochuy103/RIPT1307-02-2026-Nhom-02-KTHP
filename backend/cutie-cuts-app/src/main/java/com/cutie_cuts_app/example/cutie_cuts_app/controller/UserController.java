@@ -84,7 +84,7 @@ public class UserController {
     public Page<UserBookingHistoryResponse> getMyBookings(
             Authentication authentication,
             @RequestParam(required = false) String status,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10, sort = { "date", "time", "createdAt" }, direction = Sort.Direction.DESC) Pageable pageable) {
         return userProfileService.getMyBookings(authentication.getName(), status, pageable);
     }
 }

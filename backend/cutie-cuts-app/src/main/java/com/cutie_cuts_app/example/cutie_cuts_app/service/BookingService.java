@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -40,6 +41,11 @@ public class BookingService {
     private static final long MIN_CANCEL_NOTICE_MINUTES = 30;
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Logger log = LoggerFactory.getLogger(BookingService.class);
+    private static final Sort BOOKING_SCHEDULE_SORT = Sort.by(
+            Sort.Order.desc("date"),
+            Sort.Order.desc("time"),
+            Sort.Order.desc("createdAt"),
+            Sort.Order.desc("id"));
 
     // Per-slot lock registry for single-instance race-condition prevention.
     // Key = "{barberId}_{date}_{time}". Lock is removed via remove(key, lock)
@@ -79,7 +85,7 @@ public class BookingService {
     }
 
     public List<Booking> getBookings() {
-        return bookingRepository.findAll();
+        return bookingRepository.findAll(BOOKING_SCHEDULE_SORT);
     }
 
     public Page<Booking> getBookingsPaginated(Pageable pageable) {
@@ -101,7 +107,7 @@ public class BookingService {
     }
 
     public List<Booking> getBookingsByUser(User user) {
-        return bookingRepository.findByUser(user);
+        return bookingRepository.findByUser(user, BOOKING_SCHEDULE_SORT);
     }
 
     @Transactional
