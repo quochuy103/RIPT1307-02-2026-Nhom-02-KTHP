@@ -10,6 +10,7 @@ import type { OrderStatus } from '@/types/order';
 import { formatVND } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import ReviewModal, { type ReviewTarget } from '@/components/ReviewModal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const PAGE_SIZE = 10;
 
@@ -53,6 +54,7 @@ const MyOrdersPage = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>('all');
 
   const [activeTab, setActiveTab] = useState<'orders' | 'reviewable'>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -68,7 +70,11 @@ const MyOrdersPage = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const result = await api.orders.getMyOrdersPaged(page, PAGE_SIZE);
+      const result = await api.orders.getMyOrdersPaged(
+        page,
+        PAGE_SIZE,
+        statusFilter === 'all' ? undefined : statusFilter,
+      );
       setOrders(result.content);
       setTotalPages(result.totalPages);
       setTotalElements(result.totalElements);
@@ -78,7 +84,7 @@ const MyOrdersPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [statusFilter, t]);
 
   const loadReviewableProducts = useCallback(async () => {
     try {
@@ -181,6 +187,30 @@ const MyOrdersPage = () => {
             Chờ đánh giá
           </Button>
         </div>
+
+        {activeTab === 'orders' && (
+          <div className="mb-6 flex justify-end">
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value as 'all' | OrderStatus);
+              }}
+            >
+              <SelectTrigger className="w-full max-w-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('admin.common.allStatus')}</SelectItem>
+                <SelectItem value="pending">{t('myOrders.status.pending', { defaultValue: 'Pending' })}</SelectItem>
+                <SelectItem value="paid">{t('myOrders.status.paid', { defaultValue: 'Paid' })}</SelectItem>
+                <SelectItem value="shipping">{t('myOrders.status.shipping', { defaultValue: 'Shipping' })}</SelectItem>
+                <SelectItem value="shipped">{t('myOrders.status.shipped', { defaultValue: 'Shipped' })}</SelectItem>
+                <SelectItem value="delivered">{t('myOrders.status.delivered', { defaultValue: 'Delivered' })}</SelectItem>
+                <SelectItem value="cancelled">{t('myOrders.status.cancelled', { defaultValue: 'Cancelled' })}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {activeTab === 'orders' ? (
           isLoading ? (

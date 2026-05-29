@@ -31,10 +31,20 @@ const AdminBarbers = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdminBarber | null>(null);
   const [form, setForm] = useState<BarberFormState>(emptyForm);
+  const [search, setSearch] = useState('');
+  const [specialtyFilter, setSpecialtyFilter] = useState('');
+  const [minExperienceFilter, setMinExperienceFilter] = useState('');
 
   const { data: barbers = [], isLoading, isError, error } = useQuery({
-    queryKey: barbersQueryKey,
-    queryFn: api.admin.getBarbers,
+    queryKey: ['admin', 'barbers', { search, specialtyFilter, minExperienceFilter }],
+    queryFn: async () => {
+      const result = await api.admin.getBarbersFiltered({
+        search,
+        specialty: specialtyFilter || undefined,
+        minExperience: minExperienceFilter ? Number(minExperienceFilter) : undefined,
+      });
+      return result.content;
+    },
   });
 
   const invalidateBarbers = () => queryClient.invalidateQueries({ queryKey: barbersQueryKey });
@@ -69,7 +79,7 @@ const AdminBarbers = () => {
   });
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setModalOpen(true); };
-  const openEdit = (b: AdminBarber) => { setEditing(b); setForm({ ...b, objectKey: '', contentType: '', fileSize: 0 }); setModalOpen(true); };
+  const openEdit = (barber: AdminBarber) => { setEditing(barber); setForm({ ...barber, objectKey: '', contentType: '', fileSize: 0 }); setModalOpen(true); };
 
   const handleSubmit = () => {
     const payload = {
@@ -78,9 +88,18 @@ const AdminBarbers = () => {
       specialties: form.specialties.map((specialty) => specialty.trim()).filter(Boolean),
     };
 
-    if (!payload.name) { toast.error(t('admin.common.nameRequired')); return; }
-    if (!form.avatar) { toast.error(t('admin.barbersPage.avatarRequired')); return; }
-    if (payload.specialties.length === 0) { toast.error(t('admin.barbersPage.specialtiesRequired')); return; }
+    if (!payload.name) {
+      toast.error(t('admin.common.nameRequired'));
+      return;
+    }
+    if (!form.avatar) {
+      toast.error(t('admin.barbersPage.avatarRequired'));
+      return;
+    }
+    if (payload.specialties.length === 0) {
+      toast.error(t('admin.barbersPage.specialtiesRequired'));
+      return;
+    }
 
     if (editing) updateMutation.mutate({ id: editing.id, payload });
     else createMutation.mutate(payload);
@@ -88,13 +107,19 @@ const AdminBarbers = () => {
 
   const deleteBarber = (id: string) => deleteMutation.mutate(id);
 
+  const resetFilters = () => {
+    setSearch('');
+    setSpecialtyFilter('');
+    setMinExperienceFilter('');
+  };
+
   const columns: Column<AdminBarber>[] = [
-    { key: 'avatar', label: t('admin.fields.avatar'), searchable: false, render: (b) => (
-      <Avatar className="h-8 w-8"><AvatarImage src={b.avatar} /><AvatarFallback>{b.name.charAt(0)}</AvatarFallback></Avatar>
+    { key: 'avatar', label: t('admin.fields.avatar'), searchable: false, render: (barber) => (
+      <Avatar className="h-8 w-8"><AvatarImage src={barber.avatar} /><AvatarFallback>{barber.name.charAt(0)}</AvatarFallback></Avatar>
     )},
-    { key: 'name', label: t('admin.fields.name'), render: (b) => <span className="font-medium">{b.name}</span> },
-    { key: 'experience', label: t('admin.fields.experience'), render: (b) => `${b.experience} ${t('common.yearsExperience')}` },
-    { key: 'specialties', label: t('admin.fields.specialties'), render: (b) => b.specialties.join(', ') },
+    { key: 'name', label: t('admin.fields.name'), render: (barber) => <span className="font-medium">{barber.name}</span> },
+    { key: 'experience', label: t('admin.fields.experience'), render: (barber) => `${barber.experience} ${t('common.yearsExperience')}` },
+    { key: 'specialties', label: t('admin.fields.specialties'), render: (barber) => barber.specialties.join(', ') },
   ];
 
   return (
@@ -107,6 +132,15 @@ const AdminBarbers = () => {
         <Button onClick={openCreate}><Plus className="mr-1 h-4 w-4" /> {t('admin.barbersPage.add')}</Button>
       </div>
 
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('admin.barbersPage.search')} />
+        <Input value={specialtyFilter} onChange={(e) => setSpecialtyFilter(e.target.value)} placeholder={t('admin.fields.specialties')} />
+        <Input type="number" min="0" value={minExperienceFilter} onChange={(e) => setMinExperienceFilter(e.target.value)} placeholder={t('admin.fields.experience', { defaultValue: 'Kinh nghiệm tối thiểu' })} />
+        <Button variant="outline" onClick={resetFilters}>
+          {t('common.reset', { defaultValue: 'Reset' })}
+        </Button>
+      </div>
+
       {isError && (
         <Alert variant="destructive">
           <AlertTitle>{t('admin.barbersPage.loadError')}</AlertTitle>
@@ -114,10 +148,10 @@ const AdminBarbers = () => {
         </Alert>
       )}
 
-      <DataTable data={isLoading ? [] : barbers} columns={columns} searchPlaceholder={isLoading ? t('admin.barbersPage.loading') : t('admin.barbersPage.search')} actions={(b) => (
+      <DataTable data={isLoading ? [] : barbers} columns={columns} showSearch={false} actions={(barber) => (
         <div className="flex items-center justify-end gap-1">
-          <Button size="sm" variant="ghost" onClick={() => openEdit(b)}><Edit className="h-4 w-4" /></Button>
-          <Button size="sm" variant="ghost" onClick={() => deleteBarber(b.id)} className="text-destructive" disabled={deleteMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
+          <Button size="sm" variant="ghost" onClick={() => openEdit(barber)}><Edit className="h-4 w-4" /></Button>
+          <Button size="sm" variant="ghost" onClick={() => deleteBarber(barber.id)} className="text-destructive" disabled={deleteMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
         </div>
       )} />
 
@@ -147,7 +181,7 @@ const AdminBarbers = () => {
             <Input
               value={form.specialties.join(', ')}
               placeholder={t('admin.barbersPage.specialtiesPlaceholder')}
-              onChange={(e) => setForm({ ...form, specialties: e.target.value.split(',').map((s) => s.trim()) })}
+              onChange={(e) => setForm({ ...form, specialties: e.target.value.split(',').map((specialty) => specialty.trim()) })}
             />
           </div>
         </div>
