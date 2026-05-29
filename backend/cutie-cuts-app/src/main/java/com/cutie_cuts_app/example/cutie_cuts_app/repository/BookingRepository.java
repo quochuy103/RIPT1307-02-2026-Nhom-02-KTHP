@@ -5,6 +5,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.Booking;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUser(User user);
+    List<Booking> findByUser(User user, Sort sort);
     Page<Booking> findByUser(User user, Pageable pageable);
     Page<Booking> findByUserAndStatusIgnoreCase(User user, String status, Pageable pageable);
     long countByUser(User user);
