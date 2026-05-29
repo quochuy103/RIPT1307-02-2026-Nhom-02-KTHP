@@ -44,6 +44,8 @@ export interface Booking {
   duration?: number;
 }
 
+export type ProductReview = Review;
+
 type ServiceRow = { id: number; name: string; description: string; price: number; displayPrice?: string; duration: number; category: string };
 type BarberRow = { id: number; name: string; role: string; image: string; experience: number; specialties: string; rating: number };
 type ProductRow = { id: number; name: string; price: number; image: string; rating: number; category: string; description: string };
@@ -383,6 +385,10 @@ export const api = {
       const rows = await request<ProductRow[]>('/api/products');
       return rows.map(mapProduct);
     },
+    getById: async (id: string | number): Promise<Product> => {
+      const row = await request<ProductRow>(`/api/products/${id}`);
+      return mapProduct(row);
+    },
   },
 
   reviews: {
@@ -396,6 +402,30 @@ export const api = {
         comment: row.comment,
         date: row.date,
         avatar: initials(row.userName),
+      }));
+    },
+    getMyReviews: async (): Promise<Review[]> => {
+      const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>('/api/reviews/me', undefined, true);
+      return rows.map((row) => ({
+        id: String(row.id),
+        name: row.userName || 'Anonymous',
+        rating: row.rating,
+        commentKey: '',
+        comment: row.comment,
+        date: row.date || '',
+        avatar: initials(row.userName || 'Anonymous'),
+      }));
+    },
+    getProductReviews: async (productId: string | number): Promise<Review[]> => {
+      const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>(`/api/reviews/products/${productId}`);
+      return rows.map((row) => ({
+        id: String(row.id),
+        name: row.userName || 'Anonymous',
+        rating: row.rating,
+        commentKey: '',
+        comment: row.comment,
+        date: row.date || '',
+        avatar: initials(row.userName || 'Anonymous'),
       }));
     },
     getReviewableProducts: async (): Promise<ReviewableProduct[]> => {
