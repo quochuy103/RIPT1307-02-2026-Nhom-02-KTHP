@@ -13,17 +13,13 @@ public class ConsoleEmailService implements EmailService {
 
     @Override
     public void sendPasswordResetOtp(String toEmail, String otp) {
-        log.info("=== PASSWORD RESET OTP ===");
-        log.info("To: {}", toEmail);
-        log.info("OTP: {}", otp);
-        log.info("==========================");
+        log.info("Password reset OTP generated for {}", toEmail);
+        log.debug("Password reset OTP: {}", otp);
     }
 
     @Override
     public void sendRegistrationOtp(String toEmail, String otp) {
-        log.info("=== REGISTRATION OTP ===");
-        log.info("To: {}", toEmail);
-        log.info("OTP: {}", otp);
-        log.info("=========================");
+        log.info("Registration OTP generated for {}", toEmail);
+        log.debug("Registration OTP: {}", otp);
     }
 }
