@@ -10,22 +10,12 @@ import { cn } from '@/lib/utils';
 
 const MAX_COMMENT_LENGTH = 2000;
 
-type ServiceReviewTarget = {
-  type: 'service';
-  bookingId: number;
-  serviceId?: number;
-  barberId?: number;
-  title: string;
-};
-
-type ProductReviewTarget = {
+export type ReviewTarget = {
   type: 'product';
   orderId: number;
   productId: number;
   title: string;
 };
-
-export type ReviewTarget = ServiceReviewTarget | ProductReviewTarget;
 
 type ReviewModalProps = {
   isOpen: boolean;
@@ -52,9 +42,7 @@ const ReviewModal = ({ isOpen, onClose, onSubmitSuccess, target }: ReviewModalPr
   const activeRating = hoverRating || rating;
   const title = useMemo(() => {
     if (!target) return '';
-    return target.type === 'service'
-      ? t('reviewModal.serviceTitle', { defaultValue: 'Đánh giá dịch vụ' })
-      : t('reviewModal.productTitle', { defaultValue: 'Đánh giá sản phẩm' });
+    return t('reviewModal.productTitle', { defaultValue: 'Đánh giá sản phẩm' });
   }, [target, t]);
 
   useEffect(() => {
@@ -85,22 +73,12 @@ const ReviewModal = ({ isOpen, onClose, onSubmitSuccess, target }: ReviewModalPr
 
     try {
       setIsSubmitting(true);
-      await api.reviews.create(
-        target.type === 'service'
-          ? {
-              bookingId: target.bookingId,
-              serviceId: target.serviceId,
-              barberId: target.barberId,
-              rating,
-              comment: comment.trim(),
-            }
-          : {
-              orderId: target.orderId,
-              productId: target.productId,
-              rating,
-              comment: comment.trim(),
-            },
-      );
+      await api.reviews.create({
+        orderId: target.orderId,
+        productId: target.productId,
+        rating,
+        comment: comment.trim(),
+      });
       toast.success(t('reviewModal.submitSuccess', { defaultValue: 'Cảm ơn bạn đã gửi đánh giá.' }));
       onSubmitSuccess();
       onClose();

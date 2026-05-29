@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Scissors } from 'lucide-react';
+import { ArrowRight, Scissors, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { services, barbers, reviews, galleryImages } from '@/data/mockData';
 import { api } from '@/lib/api';
@@ -10,6 +10,7 @@ import heroImage from '@/assets/hero-barber.jpg';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 const fadeUp = {
   initial: { opacity: 0, y: 30 },
@@ -49,6 +50,12 @@ const Index = () => {
 
   const galleryPreviewImages = galleryList.length > 0 ? galleryList : galleryImages.map((image) => image.src);
   const galleryMarqueeImages = [...galleryPreviewImages, ...galleryPreviewImages];
+
+  const avgRating = reviewList.length > 0 
+    ? (reviewList.reduce((acc, curr) => acc + curr.rating, 0) / reviewList.length).toFixed(1)
+    : '4.9';
+  const totalReviewsCount = reviewList.length > 0 ? reviewList.length : 128;
+  const reviewMarqueeList = [...reviewList, ...reviewList];
 
   return (
     <div>
@@ -143,14 +150,50 @@ const Index = () => {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.reviewsTitle')} <span className="text-gradient-gold">{t('home.reviewsHighlight')}</span></h2>
-          </motion.div>
-          <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
-            {reviewList.map(r => (
-              <div key={r.id} className="snap-start shrink-0">
-                <ReviewCard review={r} />
+            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">
+              {t('home.reviewsTitle')} <span className="text-gradient-gold">{t('home.reviewsHighlight')}</span>
+            </h2>
+            <div className="flex flex-col items-center justify-center gap-2 mt-3">
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 5 }, (_, i) => {
+                  const ratingNum = parseFloat(avgRating);
+                  return (
+                    <Star
+                      key={i}
+                      className={cn(
+                        "h-5 w-5",
+                        i < Math.floor(ratingNum)
+                          ? "fill-primary text-primary"
+                          : i < ratingNum
+                          ? "fill-primary/50 text-primary"
+                          : "text-muted-foreground/30"
+                      )}
+                    />
+                  );
+                })}
               </div>
-            ))}
+              <p className="text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">{avgRating} / 5</span> dựa trên{" "}
+                <span className="font-semibold text-foreground">{totalReviewsCount}</span> đánh giá từ khách hàng
+              </p>
+              <div className="mt-4">
+                <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6">
+                  <Link to="/my-orders?tab=reviewable">{t('home.writeReviewButton')}</Link>
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+
+          <div className="relative -mx-4 overflow-hidden px-4">
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background to-transparent md:w-28" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background to-transparent md:w-28" />
+            <div className="flex w-max animate-gallery-marquee gap-4 hover:[animation-play-state:paused]">
+              {reviewMarqueeList.map((r, i) => (
+                <div key={`${r.id}-${i}`} className="snap-start shrink-0">
+                  <ReviewCard review={r} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
