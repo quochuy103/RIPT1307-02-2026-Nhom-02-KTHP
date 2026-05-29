@@ -4,6 +4,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -33,13 +34,17 @@ public class UsersController {
 
     @GetMapping
     public List<Map<String, Object>> getAll() {
-        return userRepository.findAll().stream().map(this::toResponse).toList();
+        Sort sort = Sort.by(
+                Sort.Order.desc("createdAt"),
+                Sort.Order.desc("id"));
+        return userRepository.findAll(sort).stream().map(this::toResponse).toList();
     }
 
     private static final Set<String> VALID_ROLES = Set.of("user", "admin");
 
     @GetMapping("/page")
-    public Page<Map<String, Object>> getAllPaginated(@PageableDefault(size = 20) Pageable pageable,
+    public Page<Map<String, Object>> getAllPaginated(
+            @PageableDefault(size = 20, sort = { "createdAt", "id" }, direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdFrom,

@@ -83,7 +83,10 @@ public class OrderController {
         if (!isAdmin(authentication)) {
             throw new ResponseStatusException(FORBIDDEN, "Only admins can view all orders");
         }
-        return orderRepository.findAll().stream().map(this::toResponse).toList();
+        Sort sort = Sort.by(
+                Sort.Order.desc("createdAt"),
+                Sort.Order.desc("id"));
+        return orderRepository.findAll(sort).stream().map(this::toResponse).toList();
     }
 
     private static final Set<String> VALID_ORDER_STATUSES =

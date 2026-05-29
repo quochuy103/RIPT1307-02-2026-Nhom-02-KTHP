@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -376,6 +377,28 @@ class OrderControllerTest {
     }
 
     // ── Helper methods ──────────────────────────────────────────────────────
+
+    @Test
+    void getAllUsesStableNewestFirstSortForAdmin() {
+        User newerOwner = createUser(10L, "Newer Customer");
+        User olderOwner = createUser(11L, "Older Customer");
+        ShopOrder newerOrder = createOrder(2L, newerOwner, "pending", 1);
+        ShopOrder olderOrder = createOrder(1L, olderOwner, "pending", 1);
+        Authentication authentication = adminAuthentication();
+
+        ReflectionTestUtils.setField(newerOrder, "createdAt", LocalDateTime.of(2026, 5, 16, 10, 0));
+        ReflectionTestUtils.setField(olderOrder, "createdAt", LocalDateTime.of(2026, 5, 15, 10, 0));
+
+        when(orderRepository.findAll(org.mockito.ArgumentMatchers.<Sort>any()))
+                .thenReturn(List.of(newerOrder, olderOrder));
+
+        List<Map<String, Object>> response = orderController.getAll(authentication);
+
+        verify(orderRepository).findAll(org.mockito.ArgumentMatchers.<Sort>argThat(sort ->
+                sort.equals(Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")))));
+        assertEquals(2L, response.get(0).get("id"));
+        assertEquals(1L, response.get(1).get("id"));
+    }
 
     private Authentication userAuthentication() {
         return new UsernamePasswordAuthenticationToken(
