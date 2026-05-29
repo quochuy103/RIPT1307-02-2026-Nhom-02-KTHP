@@ -24,6 +24,13 @@ services:
       S3_BUCKET_AVATARS: avatars
       S3_BUCKET_GALLERY: gallery
       S3_BUCKET_BARBERS: barbers
+      APP_MAIL_PROVIDER: ${APP_MAIL_PROVIDER:-}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      MAIL_FROM: ${MAIL_FROM:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
     ports:
       - "8081:8081"
 
