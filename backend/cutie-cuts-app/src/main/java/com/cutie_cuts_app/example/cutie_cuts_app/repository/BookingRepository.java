@@ -17,6 +17,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
+    interface MonthlyBookingSummary {
+        Integer getYear();
+        Integer getMonth();
+        Long getBookingCount();
+        Double getRevenue();
+    }
+
     List<Booking> findByUser(User user);
     List<Booking> findByUser(User user, Sort sort);
     Page<Booking> findByUser(User user, Pageable pageable);
@@ -73,4 +80,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("SELECT COALESCE(SUM(b.price), 0.0) FROM Booking b WHERE LOWER(b.status) = 'done' AND b.createdAt >= :from AND b.createdAt < :to")
     Double sumRevenueByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+            SELECT YEAR(b.createdAt) AS year,
+                   MONTH(b.createdAt) AS month,
+                   COUNT(b) AS bookingCount,
+                   COALESCE(SUM(CASE WHEN LOWER(b.status) = 'done' THEN b.price ELSE 0.0 END), 0.0) AS revenue
+            FROM Booking b
+            WHERE b.createdAt >= :from AND b.createdAt < :to
+            GROUP BY YEAR(b.createdAt), MONTH(b.createdAt)
+            """)
+    List<MonthlyBookingSummary> summarizeByMonthBetween(@Param("from") LocalDateTime from,
+                                                        @Param("to") LocalDateTime to);
 }

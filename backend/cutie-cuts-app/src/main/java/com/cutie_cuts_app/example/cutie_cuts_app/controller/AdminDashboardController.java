@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.*;
 
@@ -88,16 +89,45 @@ public class AdminDashboardController {
         stats.put("orderGrowth", orderGrowth);
 
         // 3. Revenue & Booking Trends Over the Last 6 Months
+        LocalDateTime sixMonthStart = now.minusMonths(5)
+                .withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+        LocalDateTime nextMonthStart = now.withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0)
+                .plusMonths(1);
+
+        Map<YearMonth, BookingRepository.MonthlyBookingSummary> bookingStatsByMonth = new HashMap<>();
+        for (BookingRepository.MonthlyBookingSummary summary : bookingRepository.summarizeByMonthBetween(sixMonthStart, nextMonthStart)) {
+            bookingStatsByMonth.put(YearMonth.of(summary.getYear(), summary.getMonth()), summary);
+        }
+
+        Map<YearMonth, Double> orderRevenueByMonth = new HashMap<>();
+        for (ShopOrderRepository.MonthlyOrderRevenueSummary summary : shopOrderRepository.summarizeRevenueByMonthBetween(sixMonthStart, nextMonthStart)) {
+            orderRevenueByMonth.put(YearMonth.of(summary.getYear(), summary.getMonth()),
+                    summary.getRevenue() != null ? summary.getRevenue() : 0.0);
+        }
+
         List<Map<String, Object>> revenueDataList = new ArrayList<>();
         for (int i = 5; i >= 0; i--) {
             LocalDateTime startOfMonth = now.minusMonths(i).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime endOfMonth = startOfMonth.plusMonths(1);
+            YearMonth yearMonth = YearMonth.from(startOfMonth);
+            BookingRepository.MonthlyBookingSummary bookingSummary = bookingStatsByMonth.get(yearMonth);
 
-            Double orderRev = shopOrderRepository.sumRevenueByCreatedAtBetween(startOfMonth, endOfMonth);
-            Double bookRev = bookingRepository.sumRevenueByCreatedAtBetween(startOfMonth, endOfMonth);
-            double monthRev = (orderRev != null ? orderRev : 0.0) + (bookRev != null ? bookRev : 0.0);
+            double orderRev = orderRevenueByMonth.getOrDefault(yearMonth, 0.0);
+            double bookRev = bookingSummary != null && bookingSummary.getRevenue() != null
+                    ? bookingSummary.getRevenue()
+                    : 0.0;
+            double monthRev = orderRev + bookRev;
 
-            long monthBookings = bookingRepository.countByCreatedAtBetween(startOfMonth, endOfMonth);
+            long monthBookings = bookingSummary != null && bookingSummary.getBookingCount() != null
+                    ? bookingSummary.getBookingCount()
+                    : 0L;
 
             String monthName = startOfMonth.getMonth().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
 

@@ -28,10 +28,10 @@ const badgeStyles: Record<string, string> = {
 
 const Index = () => {
   const { t } = useTranslation();
-  const [serviceList, setServiceList] = useState<any[]>([]);
-  const [barberList, setBarberList] = useState<any[]>([]);
-  const [reviewList, setReviewList] = useState<any[]>([]);
-  const [galleryList, setGalleryList] = useState<string[]>([]);
+  const [serviceList, setServiceList] = useState(services);
+  const [barberList, setBarberList] = useState(barbers);
+  const [reviewList, setReviewList] = useState(reviews);
+  const [galleryList, setGalleryList] = useState(galleryImages.map((image) => image.src));
   
   // Barber Modal State
   const [selectedBarber, setSelectedBarber] = useState<any | null>(null);
@@ -39,19 +39,24 @@ const Index = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const [loadedServices, loadedBarbers, loadedReviews, loadedGallery] = await Promise.all([
-          api.services.getAll(),
-          api.barbers.getAll(),
-          api.reviews.getAll(),
-          api.gallery.getAll(),
-        ]);
-        setServiceList(loadedServices);
-        setBarberList(loadedBarbers);
-        setReviewList(loadedReviews);
-        setGalleryList(loadedGallery.map((g) => g.src));
-      } catch {
-        // Fallback or keep empty
+      const [loadedServices, loadedBarbers, loadedReviews, loadedGallery] = await Promise.allSettled([
+        api.services.getAll(),
+        api.barbers.getAll(),
+        api.reviews.getAll(),
+        api.gallery.getAll(),
+      ]);
+
+      if (loadedServices.status === 'fulfilled') {
+        setServiceList(loadedServices.value);
+      }
+      if (loadedBarbers.status === 'fulfilled') {
+        setBarberList(loadedBarbers.value);
+      }
+      if (loadedReviews.status === 'fulfilled') {
+        setReviewList(loadedReviews.value);
+      }
+      if (loadedGallery.status === 'fulfilled') {
+        setGalleryList(loadedGallery.value.map((g) => g.src));
       }
     };
     void loadData();
