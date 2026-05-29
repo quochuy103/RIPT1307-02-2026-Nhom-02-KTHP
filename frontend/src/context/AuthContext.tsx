@@ -42,8 +42,24 @@ interface AuthResponse {
 
 interface ApiErrorResponse {
   message?: string;
+  errors?: Record<string, string>;
 }
 
+const getErrorMessage = async (response: Response) => {
+  try {
+    const data = (await response.json()) as ApiErrorResponse;
+    if (data.errors && typeof data.errors === 'object') {
+      const errorList = Object.entries(data.errors).map(([field, msg]) => {
+        // Map common field error names to friendly Vietnamese terms if desired, or just print message
+        return msg;
+      });
+      return errorList.join(', ') || data.message || 'Request failed';
+    }
+    return data.message || 'Request failed';
+  } catch {
+    return 'Request failed';
+  }
+};
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -51,6 +67,10 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  verifyEmail: (email: string, otp: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
   oauthLogin: (provider: string, token: string) => Promise<void>;
   logout: (options?: LogoutOptions) => void;
   syncUser: (user: User) => void;
@@ -82,14 +102,7 @@ const getStoredUser = () => {
   }
 };
 
-const getErrorMessage = async (response: Response) => {
-  try {
-    const data = (await response.json()) as ApiErrorResponse;
-    return data.message || 'Request failed';
-  } catch {
-    return 'Request failed';
-  }
-};
+
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => getStoredUser());
@@ -141,9 +154,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!response.ok) {
       throw new Error(await getErrorMessage(response));
     }
+  }, []);
 
-    persistAuth(await response.json() as AuthResponse);
-  }, [persistAuth]);
+  const verifyEmail = useCallback(async (email: string, otp: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response));
+    }
+  }, []);
+
+  const resendVerification = useCallback(async (email: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response));
+    }
+  }, []);
+
+  const forgotPassword = useCallback(async (email: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response));
+    }
+  }, []);
+
+  const resetPassword = useCallback(async (email: string, otp: string, newPassword: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp, newPassword }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response));
+    }
+  }, []);
 
   const oauthLogin = useCallback(async (provider: string, oauthToken: string) => {
     const response = await fetch(`${API_BASE_URL}/auth/oauth`, {
@@ -228,7 +287,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [logout]);
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, isLoading, login, register, oauthLogin, logout, syncUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isAuthenticated: !!user && !!token,
+        isLoading,
+        login,
+        register,
+        verifyEmail,
+        resendVerification,
+        forgotPassword,
+        resetPassword,
+        oauthLogin,
+        logout,
+        syncUser
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
