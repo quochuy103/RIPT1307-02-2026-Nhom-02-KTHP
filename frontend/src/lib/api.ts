@@ -253,10 +253,26 @@ type AdminUserRow = {
 
 type AdminReviewRow = {
   id: number;
+  userId?: number;
   userName: string;
   rating: number;
   comment: string;
   date: string;
+  bookingId?: number;
+  serviceId?: number;
+  serviceName?: string;
+  barberId?: number;
+  barberName?: string;
+  orderId?: number;
+  productId?: number;
+  productName?: string;
+  reviewType?: 'product' | 'booking';
+  overallRating?: number;
+  overallComment?: string;
+  barberRating?: number;
+  barberComment?: string;
+  serviceRating?: number;
+  serviceComment?: string;
 };
 
 type AdminGalleryRow = {
@@ -1097,8 +1113,17 @@ export const api = {
     },
 
     getReviews: async (): Promise<AdminReview[]> => {
-      const rows = await request<Array<{ id: number; userName: string; rating: number; comment: string; date: string }>>('/api/reviews');
-      return rows.map((r) => ({ ...r, id: String(r.id) }));
+      const rows = await request<AdminReviewRow[]>('/api/reviews');
+      return rows.map((row) => ({
+        ...row,
+        id: String(row.id),
+        userId: row.userId === undefined ? undefined : String(row.userId),
+        bookingId: row.bookingId === undefined ? undefined : String(row.bookingId),
+        serviceId: row.serviceId === undefined ? undefined : String(row.serviceId),
+        barberId: row.barberId === undefined ? undefined : String(row.barberId),
+        orderId: row.orderId === undefined ? undefined : String(row.orderId),
+        productId: row.productId === undefined ? undefined : String(row.productId),
+      }));
     },
     deleteReview: async (id: string) => request(`/api/reviews/${id}`, { method: 'DELETE' }),
     getReviewsFiltered: async ({
@@ -1109,7 +1134,16 @@ export const api = {
     }: ReviewFilters = {}): Promise<PaginatedResult<AdminReview>> => {
       const query = buildQueryString({ page, size, sort, ...filters });
       const rows = await request<PageResponse<AdminReviewRow>>(`/api/reviews/page${query}`, undefined, true);
-      return mapPaginatedResponse(rows, (r) => ({ ...r, id: String(r.id) }));
+      return mapPaginatedResponse(rows, (row) => ({
+        ...row,
+        id: String(row.id),
+        userId: row.userId === undefined ? undefined : String(row.userId),
+        bookingId: row.bookingId === undefined ? undefined : String(row.bookingId),
+        serviceId: row.serviceId === undefined ? undefined : String(row.serviceId),
+        barberId: row.barberId === undefined ? undefined : String(row.barberId),
+        orderId: row.orderId === undefined ? undefined : String(row.orderId),
+        productId: row.productId === undefined ? undefined : String(row.productId),
+      }));
     },
 
     getGallery: async (): Promise<AdminGalleryImage[]> => {
