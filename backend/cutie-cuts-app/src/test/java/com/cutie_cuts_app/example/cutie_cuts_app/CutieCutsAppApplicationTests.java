@@ -8,6 +8,7 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.PaymentRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.PaymentTransactionRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ProductRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ReviewRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.repository.ReviewTargetRatingRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.RevokedTokenRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
@@ -49,6 +50,9 @@ class CutieCutsAppApplicationTests {
 
 	@MockBean
 	private ReviewRepository reviewRepository;
+
+	@MockBean
+	private ReviewTargetRatingRepository reviewTargetRatingRepository;
 
 	@MockBean
 	private RevokedTokenRepository revokedTokenRepository;
