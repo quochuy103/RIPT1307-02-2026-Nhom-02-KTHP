@@ -48,10 +48,26 @@ export interface AdminOrder {
 
 export interface AdminReview {
   id: string;
+  userId?: string;
   userName: string;
   rating: number;
   comment: string;
   date: string;
+  reviewType?: 'product' | 'booking';
+  bookingId?: string;
+  serviceId?: string;
+  serviceName?: string;
+  barberId?: string;
+  barberName?: string;
+  orderId?: string;
+  productId?: string;
+  productName?: string;
+  overallRating?: number;
+  overallComment?: string;
+  barberRating?: number;
+  barberComment?: string;
+  serviceRating?: number;
+  serviceComment?: string;
 }
 
 export interface AdminGalleryImage {
@@ -118,11 +134,11 @@ export const mockOrders: AdminOrder[] = [
 ];
 
 export const mockReviews: AdminReview[] = [
-  { id: '1', userName: 'John Doe', rating: 5, comment: 'Amazing haircut! Best barber in town.', date: '2024-03-20' },
-  { id: '2', userName: 'Mike Johnson', rating: 4, comment: 'Great service, very professional.', date: '2024-03-22' },
-  { id: '3', userName: 'Sarah Williams', rating: 5, comment: 'Love the atmosphere and the result!', date: '2024-03-25' },
-  { id: '4', userName: 'Tom Brown', rating: 3, comment: 'Good but had to wait a bit long.', date: '2024-03-28' },
-  { id: '5', userName: 'Emily Davis', rating: 5, comment: 'Perfect coloring job, exactly what I wanted!', date: '2024-03-30' },
+  { id: '1', userId: '1', userName: 'John Doe', rating: 5, comment: 'Amazing haircut! Best barber in town.', date: '2024-03-20', reviewType: 'booking', bookingId: '4', serviceId: '1', serviceName: 'Skin Fade', barberId: '1', barberName: 'Marcus Cole', overallRating: 5, overallComment: 'Amazing haircut! Best barber in town.', barberRating: 5, barberComment: 'Marcus was sharp and precise.', serviceRating: 5, serviceComment: 'The haircut service was excellent.' },
+  { id: '2', userId: '3', userName: 'Mike Johnson', rating: 4, comment: 'Great service, very professional.', date: '2024-03-22', reviewType: 'product', orderId: '2', productId: '3', productName: 'Shampoo' },
+  { id: '3', userId: '4', userName: 'Sarah Williams', rating: 5, comment: 'Love the atmosphere and the result!', date: '2024-03-25', reviewType: 'booking', bookingId: '3', serviceId: '3', serviceName: 'Hair Coloring', barberId: '3', barberName: 'Sofia Chen', overallRating: 5, overallComment: 'Love the atmosphere and the result!', barberRating: 5, barberComment: 'Sofia listened carefully.', serviceRating: 5, serviceComment: 'Coloring came out exactly as expected.' },
+  { id: '4', userId: '5', userName: 'Tom Brown', rating: 3, comment: 'Good but had to wait a bit long.', date: '2024-03-28', reviewType: 'booking', bookingId: '7', serviceId: '5', serviceName: 'Classic Cut', barberId: '1', barberName: 'Marcus Cole', overallRating: 3, overallComment: 'Good but had to wait a bit long.', barberRating: 4, barberComment: 'Barber did well once started.', serviceRating: 3, serviceComment: 'Service quality was okay.' },
+  { id: '5', userId: '6', userName: 'Emily Davis', rating: 5, comment: 'Perfect coloring job, exactly what I wanted!', date: '2024-03-30', reviewType: 'product', orderId: '5', productId: '1', productName: 'Premium Pomade' },
 ];
 
 export const mockGallery: AdminGalleryImage[] = [
