@@ -90,6 +90,16 @@ const AdminBookings = () => {
                 <Button size="sm" variant="ghost" onClick={() => updateStatus(b.id, 'cancelled')} disabled={updateStatusMutation.isPending}><XCircle className="h-4 w-4 text-destructive" /></Button>
               </>
             )}
+            {b.status === 'confirmed' && (
+              <>
+                <Button size="sm" variant="ghost" onClick={() => updateStatus(b.id, 'done')} disabled={updateStatusMutation.isPending}>
+                  <CheckCircle className="h-4 w-4 text-primary" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => updateStatus(b.id, 'cancelled')} disabled={updateStatusMutation.isPending}>
+                  <XCircle className="h-4 w-4 text-destructive" />
+                </Button>
+              </>
+            )}
           </div>
         )}
       />

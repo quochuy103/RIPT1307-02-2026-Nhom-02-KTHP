@@ -156,6 +156,8 @@ public class BookingService {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Booking not found"));
         String normalizedStatus = DomainStatusRules.normalizeBookingStatusForUpdate(status);
+        String currentStatus = DomainStatusRules.normalizeCurrentStatus(booking.getStatus(), "booking");
+        DomainStatusRules.ensureBookingStatusTransitionAllowed(currentStatus, normalizedStatus);
 
         booking.setStatus(normalizedStatus);
         Booking saved = bookingRepository.save(booking);

@@ -1,15 +1,21 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.controller;
 
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.CreateReviewRequest;
+import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.ReviewSectionRequest;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.Barber;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.Booking;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.OrderItem;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.Product;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.Review;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.ReviewTargetRating;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.SalonService;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.ShopOrder;
 import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BarberRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ProductRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ReviewRepository;
+import com.cutie_cuts_app.example.cutie_cuts_app.repository.ReviewTargetRatingRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.ShopOrderRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
@@ -34,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -60,6 +67,9 @@ class ReviewControllerTest {
     private ShopOrderRepository orderRepository;
 
     @Mock
+    private ReviewTargetRatingRepository reviewTargetRatingRepository;
+
+    @Mock
     private CurrentUserService currentUserService;
 
     private ReviewController reviewController;
@@ -73,6 +83,7 @@ class ReviewControllerTest {
                 serviceRepository,
                 productRepository,
                 orderRepository,
+                reviewTargetRatingRepository,
                 currentUserService);
     }
 
@@ -160,6 +171,63 @@ class ReviewControllerTest {
     }
 
     @Test
+    void createBookingReviewAcceptsDoneBookingOnce() {
+        User user = createUser(10L, "Customer");
+        Booking booking = createBooking(5L, user, "done");
+        Authentication authentication = userAuthentication();
+
+        CreateReviewRequest request = new CreateReviewRequest();
+        request.setBookingId(booking.getId());
+        request.setOverall(section(5, "Great overall experience"));
+        request.setBarber(section(5, "Excellent barber"));
+        request.setService(section(4, "Clean cut"));
+
+        when(currentUserService.getByEmail(authentication.getName())).thenReturn(user);
+        when(bookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
+        when(reviewRepository.existsByBookingId(booking.getId())).thenReturn(false);
+        when(reviewRepository.save(any(Review.class))).thenAnswer(invocation -> {
+            Review saved = invocation.getArgument(0);
+            ReflectionTestUtils.setField(saved, "id", 70L);
+            ReflectionTestUtils.setField(saved, "createdAt", LocalDateTime.of(2026, 5, 18, 9, 0));
+            return saved;
+        });
+        when(reviewTargetRatingRepository.findByReviewId(70L)).thenReturn(List.of());
+        when(reviewTargetRatingRepository.findAverageRatingByTarget(any(), eq(booking.getBarber().getId()))).thenReturn(4.5);
+        when(barberRepository.save(any(Barber.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Map<String, Object> response = reviewController.create(request, authentication);
+
+        assertEquals(70L, response.get("id"));
+        assertEquals("booking", response.get("reviewType"));
+        assertEquals(booking.getId(), response.get("bookingId"));
+        assertEquals(booking.getBarber().getId(), response.get("barberId"));
+        assertEquals(booking.getService().getId(), response.get("serviceId"));
+        verify(reviewTargetRatingRepository, times(2)).save(any(ReviewTargetRating.class));
+    }
+
+    @Test
+    void createBookingReviewRejectsBookingThatIsNotDone() {
+        User user = createUser(10L, "Customer");
+        Booking booking = createBooking(5L, user, "confirmed");
+        Authentication authentication = userAuthentication();
+
+        CreateReviewRequest request = new CreateReviewRequest();
+        request.setBookingId(booking.getId());
+        request.setOverall(section(5, "Great overall experience"));
+        request.setBarber(section(5, "Excellent barber"));
+        request.setService(section(4, "Clean cut"));
+
+        when(currentUserService.getByEmail(authentication.getName())).thenReturn(user);
+        when(bookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> reviewController.create(request, authentication));
+
+        assertEquals(BAD_REQUEST, exception.getStatusCode());
+        verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
     void getMyReviewableProductsReturnsOnlyEligibleUnreviewedItems() {
         User user = createUser(10L, "Customer");
         Product pomade = createProduct(100L, "Pomade");
@@ -209,6 +277,47 @@ class ReviewControllerTest {
         product.setStock(5);
         product.setRating(4.5);
         return product;
+    }
+
+    private Booking createBooking(Long id, User user, String status) {
+        Booking booking = new Booking();
+        ReflectionTestUtils.setField(booking, "id", id);
+        booking.setUser(user);
+        booking.setStatus(status);
+        booking.setBarber(createBarber(20L, "Barber A"));
+        booking.setService(createService(30L, "Premium Cut"));
+        return booking;
+    }
+
+    private Barber createBarber(Long id, String name) {
+        Barber barber = new Barber();
+        ReflectionTestUtils.setField(barber, "id", id);
+        barber.setName(name);
+        barber.setRole("Barber");
+        barber.setImage("barber.png");
+        barber.setExperience(5);
+        barber.setSpecialties("Fade");
+        barber.setRating(4.8);
+        return barber;
+    }
+
+    private SalonService createService(Long id, String name) {
+        SalonService service = new SalonService();
+        service.setId(id);
+        service.setName(name);
+        service.setPrice(120);
+        service.setDuration(45);
+        service.setCategory("Hair");
+        service.setDescription("Service");
+        service.setImage("service.png");
+        return service;
+    }
+
+    private ReviewSectionRequest section(int rating, String comment) {
+        ReviewSectionRequest section = new ReviewSectionRequest();
+        section.setRating(rating);
+        section.setComment(comment);
+        return section;
     }
 
     private ShopOrder createOrder(Long id, User user, String status, Product product) {
