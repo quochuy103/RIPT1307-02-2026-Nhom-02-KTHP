@@ -19,6 +19,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long> {
+    interface MonthlyOrderRevenueSummary {
+        Integer getYear();
+        Integer getMonth();
+        Double getRevenue();
+    }
+
     List<ShopOrder> findByUser(User user);
 
 
@@ -63,4 +69,15 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long> {
 
     @Query("SELECT COALESCE(SUM(o.totalPrice), 0.0) FROM ShopOrder o WHERE LOWER(o.status) NOT IN ('pending', 'cancelled') AND o.createdAt >= :from AND o.createdAt < :to")
     Double sumRevenueByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+            SELECT YEAR(o.createdAt) AS year,
+                   MONTH(o.createdAt) AS month,
+                   COALESCE(SUM(CASE WHEN LOWER(o.status) NOT IN ('pending', 'cancelled') THEN o.totalPrice ELSE 0.0 END), 0.0) AS revenue
+            FROM ShopOrder o
+            WHERE o.createdAt >= :from AND o.createdAt < :to
+            GROUP BY YEAR(o.createdAt), MONTH(o.createdAt)
+            """)
+    List<MonthlyOrderRevenueSummary> summarizeRevenueByMonthBetween(@Param("from") LocalDateTime from,
+                                                                    @Param("to") LocalDateTime to);
 }
