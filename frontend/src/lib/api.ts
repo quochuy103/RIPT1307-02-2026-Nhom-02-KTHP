@@ -363,6 +363,21 @@ const mapBooking = (row: BookingRow): Booking => ({
   overallRating: row.overallRating,
 });
 
+const normalizeBookingTimeForSort = (time: string) => {
+  if (!time) return '00:00:00';
+  return time.length === 5 ? `${time}:00` : time;
+};
+
+const compareBookingsBySchedule = <T extends { date: string; time: string; id: string | number }>(a: T, b: T) => {
+  const dateCompare = b.date.localeCompare(a.date);
+  if (dateCompare !== 0) return dateCompare;
+
+  const timeCompare = normalizeBookingTimeForSort(b.time).localeCompare(normalizeBookingTimeForSort(a.time));
+  if (timeCompare !== 0) return timeCompare;
+
+  return Number(b.id) - Number(a.id);
+};
+
 const mapOrder = (row: OrderRow): Order => ({
   id: String(row.id),
   numericId: row.id,
@@ -599,13 +614,13 @@ export const api = {
   bookings: {
     getMine: async (): Promise<Booking[]> => {
       const page = await requestWithNotFoundFallback<PageResponse<BookingRow> | BookingRow[]>(
-        '/api/user/me/bookings?page=0&size=100&sort=createdAt,desc',
+        '/api/user/me/bookings?page=0&size=100&sort=date,desc&sort=time,desc&sort=createdAt,desc',
         '/bookings/my',
         undefined,
         true,
       );
       const rows = Array.isArray(page) ? page : page.content;
-      return rows.map(mapBooking);
+      return rows.map(mapBooking).sort(compareBookingsBySchedule);
     },
     create: async (payload: { serviceId: number; barberId: number; date: string; time: string }): Promise<Booking> => {
       if (!Number.isFinite(payload.serviceId) || !Number.isFinite(payload.barberId) || !payload.date || !payload.time) {
@@ -686,7 +701,9 @@ export const api = {
 
     getBookings: async (): Promise<AdminBooking[]> => {
       const rows = await requestWithNotFoundFallback<Array<{ id: number; userId: number; userName: string; serviceId: number; serviceName: string; barberId: number; barberName: string; date: string; time: string; status: AdminBooking['status']; price: number }>>('/bookings', '/api/bookings', undefined, true);
-      return rows.map((r) => ({ ...r, id: String(r.id), userId: String(r.userId), serviceId: String(r.serviceId), barberId: String(r.barberId) }));
+      return rows
+        .map((r) => ({ ...r, id: String(r.id), userId: String(r.userId), serviceId: String(r.serviceId), barberId: String(r.barberId) }))
+        .sort(compareBookingsBySchedule);
     },
     updateBookingStatus: async (id: string, status: AdminBooking['status']) => requestWithNotFoundFallback(`/bookings/${id}/status`, `/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
 

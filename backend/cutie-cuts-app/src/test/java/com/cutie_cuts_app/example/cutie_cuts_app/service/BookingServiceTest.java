@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,6 +56,11 @@ class BookingServiceTest {
 
     private BookingService bookingService;
     private Clock fixedClock;
+    private static final Sort BOOKING_SCHEDULE_SORT = Sort.by(
+            Sort.Order.desc("date"),
+            Sort.Order.desc("time"),
+            Sort.Order.desc("createdAt"),
+            Sort.Order.desc("id"));
 
     @BeforeEach
     void setUp() {
@@ -345,6 +352,31 @@ class BookingServiceTest {
 
         assertEquals("cancelled", cancelled.getStatus());
         verify(bookingRepository, never()).countByUserAndDateWithStatus(any(), any(), any());
+    }
+
+    @Test
+    void getBookingsUsesStableScheduleSort() {
+        Booking latest = createBooking(2L, createUser(10L, "Customer"), "confirmed");
+        Booking older = createBooking(1L, createUser(11L, "Another"), "pending");
+        when(bookingRepository.findAll(BOOKING_SCHEDULE_SORT)).thenReturn(List.of(latest, older));
+
+        List<Booking> bookings = bookingService.getBookings();
+
+        assertEquals(List.of(latest, older), bookings);
+        verify(bookingRepository).findAll(BOOKING_SCHEDULE_SORT);
+    }
+
+    @Test
+    void getBookingsByUserUsesStableScheduleSort() {
+        User user = createUser(10L, "Customer");
+        Booking latest = createBooking(2L, user, "confirmed");
+        Booking older = createBooking(1L, user, "pending");
+        when(bookingRepository.findByUser(user, BOOKING_SCHEDULE_SORT)).thenReturn(List.of(latest, older));
+
+        List<Booking> bookings = bookingService.getBookingsByUser(user);
+
+        assertEquals(List.of(latest, older), bookings);
+        verify(bookingRepository).findByUser(user, BOOKING_SCHEDULE_SORT);
     }
 
     private Booking createBooking(Long bookingId, User user, String status) {
