@@ -161,11 +161,11 @@ type ReviewableProductRow = {
 
 export type CreateReviewPayload =
   | {
-      bookingId: number;
-      overall: { rating: number; comment: string };
-      barber: { rating: number; comment?: string };
-      service: { rating: number; comment?: string };
-    }
+    bookingId: number;
+    overall: { rating: number; comment: string };
+    barber: { rating: number; comment?: string };
+    service: { rating: number; comment?: string };
+  }
   | { orderId: number; productId: number; rating: number; comment: string };
 
 export type ReviewableProduct = {
