@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { services, barbers, reviews, galleryImages } from '@/data/mockData';
 import { api } from '@/lib/api';
 import BarberCard from '@/components/BarberCard';
-import ReviewCard from '@/components/ReviewCard';
+import BarberReviewsModal from '@/components/BarberReviewsModal';
 import ServiceCard from '@/components/ServiceCard';
 import heroImage from '@/assets/hero-barber.jpg';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 const fadeUp = {
@@ -19,12 +19,23 @@ const fadeUp = {
   transition: { duration: 0.6 },
 };
 
+const badgeStyles: Record<string, string> = {
+  overview: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  barber: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  service: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  product: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+};
+
 const Index = () => {
   const { t } = useTranslation();
-  const [serviceList, setServiceList] = useState(services);
-  const [barberList, setBarberList] = useState(barbers);
-  const [reviewList, setReviewList] = useState(reviews);
+  const [serviceList, setServiceList] = useState<any[]>([]);
+  const [barberList, setBarberList] = useState<any[]>([]);
+  const [reviewList, setReviewList] = useState<any[]>([]);
   const [galleryList, setGalleryList] = useState<string[]>([]);
+  
+  // Barber Modal State
+  const [selectedBarber, setSelectedBarber] = useState<any | null>(null);
+  const [isBarberModalOpen, setIsBarberModalOpen] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -40,7 +51,7 @@ const Index = () => {
         setReviewList(loadedReviews);
         setGalleryList(loadedGallery.map((g) => g.src));
       } catch {
-        // keep mock fallback
+        // Fallback or keep empty
       }
     };
     void loadData();
@@ -49,13 +60,96 @@ const Index = () => {
   const featured = serviceList.slice(0, 4);
 
   const galleryPreviewImages = galleryList.length > 0 ? galleryList : galleryImages.map((image) => image.src);
-  const galleryMarqueeImages = [...galleryPreviewImages, ...galleryPreviewImages];
+  
+  // Ensure gallery track is wide enough to prevent gaps
+  const galleryMarqueeImages = useMemo(() => {
+    if (galleryPreviewImages.length === 0) return [];
+    const repeatCount = Math.max(4, Math.ceil(10 / galleryPreviewImages.length));
+    const baseList = Array(repeatCount).fill(galleryPreviewImages).flat();
+    return [...baseList, ...baseList];
+  }, [galleryPreviewImages]);
 
   const avgRating = reviewList.length > 0 
     ? (reviewList.reduce((acc, curr) => acc + curr.rating, 0) / reviewList.length).toFixed(1)
     : '4.9';
   const totalReviewsCount = reviewList.length > 0 ? reviewList.length : 128;
-  const reviewMarqueeList = [...reviewList, ...reviewList];
+
+  // Categorize reviews list for the running marquee under "What Customers Say" using real API data
+  const categorizedReviewsList = useMemo(() => {
+    const list: any[] = [];
+    reviewList.forEach((r) => {
+      const rComment = r.comment || "";
+      
+      // Product review check
+      if (r.reviewType === 'product' || r.productId || r.productName) {
+        list.push({
+          id: `${r.id}-product`,
+          category: 'product',
+          categoryLabel: 'Đánh Giá Sản Phẩm',
+          targetName: r.productName || 'Sản phẩm',
+          name: r.name,
+          rating: r.rating,
+          comment: rComment || 'Sản phẩm chất lượng tốt, cực kỳ hài lòng.',
+          date: r.date,
+          avatar: r.avatar,
+        });
+        return;
+      }
+
+      // Booking / Overall Review
+      list.push({
+        id: `${r.id}-overview`,
+        category: 'overview',
+        categoryLabel: 'Tổng Quan',
+        name: r.name,
+        rating: r.rating,
+        comment: rComment || 'Không gian tuyệt vời, dịch vụ tận tâm chuyên nghiệp.',
+        date: r.date,
+        avatar: r.avatar,
+      });
+
+      // Specific Barber comment
+      if (r.barberId || r.barberName || r.barberRating || r.barberComment) {
+        list.push({
+          id: `${r.id}-barber`,
+          category: 'barber',
+          categoryLabel: 'Đánh Giá Barber',
+          targetName: r.barberName || 'Barber',
+          name: r.name,
+          rating: r.barberRating || r.rating,
+          comment: r.barberComment || rComment || 'Cắt tóc cẩn thận, tạo kiểu đúng mong muốn.',
+          date: r.date,
+          avatar: r.avatar,
+        });
+      }
+
+      // Specific Service comment
+      if (r.serviceId || r.serviceName || r.serviceRating || r.serviceComment) {
+        list.push({
+          id: `${r.id}-service`,
+          category: 'service',
+          categoryLabel: 'Đánh Giá Dịch Vụ',
+          targetName: r.serviceName || 'Dịch vụ',
+          name: r.name,
+          rating: r.serviceRating || r.rating,
+          comment: r.serviceComment || rComment || 'Dịch vụ gội sấy tuyệt vời, sảng khoái.',
+          date: r.date,
+          avatar: r.avatar,
+        });
+      }
+    });
+
+    return list;
+  }, [reviewList]);
+
+  // Ensure reviews track is wide enough to prevent gaps and glitches
+  const categorizedMarqueeList = useMemo(() => {
+    if (categorizedReviewsList.length === 0) return [];
+    const repeatCount = Math.max(4, Math.ceil(12 / categorizedReviewsList.length));
+    const baseList = Array(repeatCount).fill(categorizedReviewsList).flat();
+    return [...baseList, ...baseList];
+  }, [categorizedReviewsList]);
+
 
   return (
     <div>
@@ -139,7 +233,13 @@ const Index = () => {
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6 max-w-6xl mx-auto">
             {barberList.map((b, i) => (
               <motion.div key={b.id} {...fadeUp} transition={{ duration: 0.6, delay: i * 0.15 }}>
-                <BarberCard barber={b} />
+                <BarberCard
+                  barber={b}
+                  onClick={() => {
+                    setSelectedBarber(b);
+                    setIsBarberModalOpen(true);
+                  }}
+                />
               </motion.div>
             ))}
           </div>
@@ -188,9 +288,43 @@ const Index = () => {
             <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background to-transparent md:w-28" />
             <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background to-transparent md:w-28" />
             <div className="flex w-max animate-gallery-marquee gap-4 hover:[animation-play-state:paused]">
-              {reviewMarqueeList.map((r, i) => (
-                <div key={`${r.id}-${i}`} className="snap-start shrink-0">
-                  <ReviewCard review={r} />
+              {categorizedMarqueeList.map((card, i) => (
+                <div key={`${card.id}-${i}`} className="snap-start shrink-0">
+                  <div className="bg-card/45 backdrop-blur-md border border-border/80 hover:border-primary/45 rounded-xl p-5 w-[310px] h-[190px] transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 flex flex-col justify-between select-none">
+                    <div>
+                      <div className="flex justify-between items-center gap-2 mb-2">
+                        <span className={cn("text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border", badgeStyles[card.category])}>
+                          {card.categoryLabel}
+                        </span>
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: 5 }, (_, idx) => (
+                            <Star key={idx} className={cn("h-3 w-3", idx < card.rating ? 'fill-primary text-primary' : 'text-muted-foreground/30')} />
+                          ))}
+                        </div>
+                      </div>
+
+                      {card.targetName && (
+                        <p className="text-[11px] font-bold text-primary mb-1 truncate">
+                          {card.category === 'barber' ? 'Barber: ' : card.category === 'service' ? 'Dịch vụ: ' : 'Sản phẩm: '}
+                          <span className="text-foreground font-semibold">{card.targetName}</span>
+                        </p>
+                      )}
+
+                      <p className="text-xs text-muted-foreground italic line-clamp-3 leading-relaxed">
+                        "{card.comment}"
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-[10px]">
+                          {card.avatar}
+                        </div>
+                        <span className="font-semibold text-[10px] text-foreground/80">{card.name}</span>
+                      </div>
+                      <span className="text-[9px] text-muted-foreground">{card.date}</span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -239,8 +373,17 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Barber Reviews Modal */}
+      <BarberReviewsModal
+        isOpen={isBarberModalOpen}
+        onClose={() => setIsBarberModalOpen(false)}
+        barber={selectedBarber}
+        reviews={reviewList}
+      />
     </div>
   );
 };
 
 export default Index;
+
