@@ -1,5 +1,6 @@
 import { barbers } from '@/data/mockData';
 import BarberCard from '@/components/BarberCard';
+import BarberReviewsModal from '@/components/BarberReviewsModal';
 import { Scissors, Award, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +16,12 @@ const fadeUp = {
 
 const AboutPage = () => {
   const { t } = useTranslation();
-  const [barberList, setBarberList] = useState(barbers);
+  const [barberList, setBarberList] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  
+  // Barber Modal State
+  const [selectedBarber, setSelectedBarber] = useState<any | null>(null);
+  const [isBarberModalOpen, setIsBarberModalOpen] = useState(false);
 
   const sections = [
     { icon: Scissors, titleKey: 'about.storyTitle', textKey: 'about.storyText' },
@@ -24,16 +30,22 @@ const AboutPage = () => {
   ];
 
   useEffect(() => {
-    const loadBarbers = async () => {
+    const loadData = async () => {
       try {
-        setBarberList(await api.barbers.getAll());
+        const [loadedBarbers, loadedReviews] = await Promise.all([
+          api.barbers.getAll(),
+          api.reviews.getAll()
+        ]);
+        setBarberList(loadedBarbers);
+        setReviews(loadedReviews);
       } catch {
-        setBarberList(barbers);
+        // Fallback or keep empty
       }
     };
 
-    void loadBarbers();
+    void loadData();
   }, []);
+
 
   return (
     <div className="pt-24 pb-20">
@@ -64,13 +76,28 @@ const AboutPage = () => {
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5">
           {barberList.map((b, i) => (
             <motion.div key={b.id} {...fadeUp} transition={{ delay: i * 0.1 }}>
-              <BarberCard barber={b} />
+              <BarberCard
+                barber={b}
+                onClick={() => {
+                  setSelectedBarber(b);
+                  setIsBarberModalOpen(true);
+                }}
+              />
             </motion.div>
           ))}
         </div>
       </div>
+
+      {/* Barber Reviews Modal */}
+      <BarberReviewsModal
+        isOpen={isBarberModalOpen}
+        onClose={() => setIsBarberModalOpen(false)}
+        barber={selectedBarber}
+        reviews={reviews}
+      />
     </div>
   );
 };
 
 export default AboutPage;
+

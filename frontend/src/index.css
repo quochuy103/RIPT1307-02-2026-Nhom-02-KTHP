@@ -80,12 +80,13 @@
   }
 
   .animate-gallery-marquee {
-    animation: gallery-marquee 42s linear infinite;
+    animation: gallery-marquee 84s linear infinite;
   }
 
   .animate-gallery-marquee:hover {
     animation-play-state: paused;
   }
+
 }
 
 @keyframes gallery-marquee {
@@ -94,9 +95,10 @@
   }
 
   to {
-    transform: translateX(calc(-50% - 0.375rem));
+    transform: translateX(calc(-50% - 0.5rem));
   }
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   .animate-gallery-marquee {
