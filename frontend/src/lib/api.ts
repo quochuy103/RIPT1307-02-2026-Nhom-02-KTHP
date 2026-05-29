@@ -42,6 +42,10 @@ export interface Booking {
   status: 'pending' | 'confirmed' | 'done' | 'cancelled' | string;
   price?: number;
   duration?: number;
+  reviewEligible?: boolean;
+  reviewSubmitted?: boolean;
+  reviewId?: string;
+  overallRating?: number;
 }
 
 export type ProductReview = Review;
@@ -138,6 +142,10 @@ type BookingRow = {
   status: Booking['status'];
   price?: number;
   duration?: number;
+  reviewEligible?: boolean;
+  reviewSubmitted?: boolean;
+  reviewId?: number;
+  overallRating?: number;
 };
 
 type ReviewableProductRow = {
@@ -152,7 +160,12 @@ type ReviewableProductRow = {
 };
 
 export type CreateReviewPayload =
-  | { bookingId: number; serviceId?: number; barberId?: number; rating: number; comment: string }
+  | {
+      bookingId: number;
+      overall: { rating: number; comment: string };
+      barber: { rating: number; comment?: string };
+      service: { rating: number; comment?: string };
+    }
   | { orderId: number; productId: number; rating: number; comment: string };
 
 export type ReviewableProduct = {
@@ -344,6 +357,10 @@ const mapBooking = (row: BookingRow): Booking => ({
   status: row.status,
   price: row.price,
   duration: row.duration,
+  reviewEligible: row.reviewEligible,
+  reviewSubmitted: row.reviewSubmitted,
+  reviewId: row.reviewId === undefined ? undefined : String(row.reviewId),
+  overallRating: row.overallRating,
 });
 
 const mapOrder = (row: OrderRow): Order => ({
@@ -437,7 +454,15 @@ export const api = {
       }));
     },
     create: async (payload: CreateReviewPayload) => {
-      if (!Number.isInteger(payload.rating) || payload.rating < 1 || payload.rating > 5) {
+      if ('bookingId' in payload) {
+        const ratings = [payload.overall.rating, payload.barber.rating, payload.service.rating];
+        if (ratings.some((rating) => !Number.isInteger(rating) || rating < 1 || rating > 5)) {
+          throw new ApiError('All booking review ratings must be between 1 and 5', 400, payload);
+        }
+        if (!payload.overall.comment.trim()) {
+          throw new ApiError('Overall comment is required', 400, payload);
+        }
+      } else if (!Number.isInteger(payload.rating) || payload.rating < 1 || payload.rating > 5) {
         throw new ApiError('Rating must be between 1 and 5', 400, payload);
       }
       return request('/api/reviews', { method: 'POST', body: JSON.stringify(payload) }, true);
