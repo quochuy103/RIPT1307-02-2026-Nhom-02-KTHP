@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -62,4 +63,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                   @Param("todayDate") LocalDate todayDate,
                                   @Param("nowTime") LocalTime nowTime,
                                   Pageable pageable);
+
+    long countByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
+
+    @Query("SELECT COALESCE(SUM(b.price), 0.0) FROM Booking b WHERE LOWER(b.status) = 'done'")
+    Double sumTotalRevenue();
+
+    @Query("SELECT COALESCE(SUM(b.price), 0.0) FROM Booking b WHERE LOWER(b.status) = 'done' AND b.createdAt >= :from AND b.createdAt < :to")
+    Double sumRevenueByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

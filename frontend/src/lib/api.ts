@@ -575,5 +575,29 @@ export const api = {
     updateUser: async (id: string, payload: { name: string; phone: string }) => request(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }, true),
     updateUserRole: async (id: string, role: 'user' | 'admin') => request(`/api/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }, true),
     deleteUser: async (id: string) => request(`/api/users/${id}`, { method: 'DELETE' }, true),
+
+    getDashboardStats: async (): Promise<{
+      stats: {
+        totalBookings: number;
+        bookingGrowth: number;
+        totalRevenue: number;
+        revenueGrowth: number;
+        totalUsers: number;
+        userGrowth: number;
+        totalOrders: number;
+        orderGrowth: number;
+      };
+      revenueData: Array<{ month: string; revenue: number; bookings: number }>;
+      recentBookings: Array<{
+        id: string;
+        userName: string;
+        serviceName: string;
+        barberName: string;
+        date: string;
+        time: string;
+        status: string;
+        price: number;
+      }>;
+    }> => request('/api/admin/dashboard', undefined, true),
   },
 };
