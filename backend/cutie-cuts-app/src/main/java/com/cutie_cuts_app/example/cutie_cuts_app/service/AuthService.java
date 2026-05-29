@@ -76,6 +76,7 @@ public class AuthService {
 
     // ── Registration ────────────────────────────────────────────────────
 
+    @Transactional
     public Map<String, String> register(RegisterRequest request) {
         String name = requireValue(request.getName(), "Name is required");
         String email = normalizeEmail(request.getEmail());
@@ -104,9 +105,9 @@ public class AuthService {
 
         user.setAuthMethods(List.of(auth));
 
-        emailService.sendRegistrationOtp(email, otp);
-
         userRepository.save(user);
+
+        emailService.sendRegistrationOtp(email, otp);
 
         return Map.of("message", "Registration successful. Please check your email for a verification code.");
     }
@@ -182,6 +183,7 @@ public class AuthService {
 
     // ── Password reset OTP ──────────────────────────────────────────────
 
+    @Transactional
     public void forgotPassword(String email) {
         String normalizedEmail = normalizeEmail(email);
 
@@ -210,6 +212,7 @@ public class AuthService {
         emailService.sendPasswordResetOtp(normalizedEmail, otp);
     }
 
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public void resetPassword(String email, String otp, String newPassword) {
         String normalizedEmail = normalizeEmail(email);
 
@@ -252,6 +255,7 @@ public class AuthService {
 
     // ── Email verification ──────────────────────────────────────────────
 
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public Map<String, String> verifyEmail(String email, String otp) {
         String normalizedEmail = normalizeEmail(email);
 
@@ -298,6 +302,7 @@ public class AuthService {
         return Map.of("message", "Email verified successfully");
     }
 
+    @Transactional
     public void resendVerificationOtp(String email) {
         String normalizedEmail = normalizeEmail(email);
 

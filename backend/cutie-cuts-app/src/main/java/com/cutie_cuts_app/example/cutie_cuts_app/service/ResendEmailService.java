@@ -50,7 +50,7 @@ public class ResendEmailService implements EmailService {
                     Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.
                   </p>
                 </div>
-                """.formatted(passwordResetOtpExpiryMinutes, otp);
+                """.formatted(otp, passwordResetOtpExpiryMinutes);
 
         try {
             CreateEmailOptions params = CreateEmailOptions.builder()
@@ -84,7 +84,7 @@ public class ResendEmailService implements EmailService {
                     Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email.
                   </p>
                 </div>
-                """.formatted(emailVerificationOtpExpiryMinutes, otp);
+                """.formatted(otp, emailVerificationOtpExpiryMinutes);
 
         try {
             CreateEmailOptions params = CreateEmailOptions.builder()
