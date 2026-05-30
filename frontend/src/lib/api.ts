@@ -1022,11 +1022,11 @@ export const api = {
       return rows.map((r) => ({ id: String(r.id), name: r.name, experience: r.experience, avatar: r.image, specialties: r.specialties ? r.specialties.split(',').map((s) => s.trim()) : [] }));
     },
     createBarber: async (payload: Omit<AdminBarber, 'id'> & { objectKey?: string; contentType?: string; fileSize?: number }) => {
-      const body = { name: payload.name, experience: payload.experience, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8, objectKey: payload.objectKey, contentType: payload.contentType, fileSize: payload.fileSize };
+      const body = { name: payload.name, experience: payload.experience, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', objectKey: payload.objectKey, contentType: payload.contentType, fileSize: payload.fileSize };
       return request('/api/barbers', { method: 'POST', body: JSON.stringify(body) }, true);
     },
     updateBarber: async (id: string, payload: Omit<AdminBarber, 'id'> & { objectKey?: string; contentType?: string; fileSize?: number }) => {
-      const body = { name: payload.name, experience: payload.experience, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', rating: 4.8, objectKey: payload.objectKey, contentType: payload.contentType, fileSize: payload.fileSize };
+      const body = { name: payload.name, experience: payload.experience, image: payload.avatar, specialties: payload.specialties.join(','), role: 'Barber', objectKey: payload.objectKey, contentType: payload.contentType, fileSize: payload.fileSize };
       return request(`/api/barbers/${id}`, { method: 'PUT', body: JSON.stringify(body) }, true);
     },
     deleteBarber: async (id: string) => request(`/api/barbers/${id}`, { method: 'DELETE' }, true),
