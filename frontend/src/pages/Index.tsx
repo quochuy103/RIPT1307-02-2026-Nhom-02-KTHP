@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Scissors, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { services, barbers, reviews, galleryImages } from '@/data/mockData';
+import type { Barber, Review } from '@/data/mockData';
 import { api } from '@/lib/api';
 import BarberCard from '@/components/BarberCard';
 import BarberReviewsModal from '@/components/BarberReviewsModal';
@@ -9,7 +10,7 @@ import ServiceCard from '@/components/ServiceCard';
 import heroImage from '@/assets/hero-barber.jpg';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 const fadeUp = {
@@ -20,21 +21,31 @@ const fadeUp = {
 };
 
 const badgeStyles: Record<string, string> = {
-  overview: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  barber: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  service: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  product: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  overview: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  barber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  service: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  product: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+};
+
+type CategorizedReviewCard = {
+  id: string;
+  category: 'overview' | 'barber' | 'service' | 'product';
+  categoryLabel: string;
+  targetName?: string;
+  name: string;
+  rating: number;
+  comment: string;
+  date: string;
+  avatar: string;
 };
 
 const Index = () => {
   const { t } = useTranslation();
   const [serviceList, setServiceList] = useState(services);
-  const [barberList, setBarberList] = useState(barbers);
-  const [reviewList, setReviewList] = useState(reviews);
+  const [barberList, setBarberList] = useState<Barber[]>(barbers);
+  const [reviewList, setReviewList] = useState<Review[]>(reviews);
   const [galleryList, setGalleryList] = useState(galleryImages.map((image) => image.src));
-  
-  // Barber Modal State
-  const [selectedBarber, setSelectedBarber] = useState<any | null>(null);
+  const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [isBarberModalOpen, setIsBarberModalOpen] = useState(false);
 
   useEffect(() => {
@@ -59,14 +70,13 @@ const Index = () => {
         setGalleryList(loadedGallery.value.map((g) => g.src));
       }
     };
+
     void loadData();
   }, []);
 
   const featured = serviceList.slice(0, 4);
-
   const galleryPreviewImages = galleryList.length > 0 ? galleryList : galleryImages.map((image) => image.src);
-  
-  // Ensure gallery track is wide enough to prevent gaps
+
   const galleryMarqueeImages = useMemo(() => {
     if (galleryPreviewImages.length === 0) return [];
     const repeatCount = Math.max(4, Math.ceil(10 / galleryPreviewImages.length));
@@ -74,18 +84,17 @@ const Index = () => {
     return [...baseList, ...baseList];
   }, [galleryPreviewImages]);
 
-  const avgRating = reviewList.length > 0 
+  const avgRating = reviewList.length > 0
     ? (reviewList.reduce((acc, curr) => acc + curr.rating, 0) / reviewList.length).toFixed(1)
     : '4.9';
   const totalReviewsCount = reviewList.length > 0 ? reviewList.length : 128;
 
-  // Categorize reviews list for the running marquee under "What Customers Say" using real API data
   const categorizedReviewsList = useMemo(() => {
-    const list: any[] = [];
+    const list: CategorizedReviewCard[] = [];
+
     reviewList.forEach((r) => {
-      const rComment = r.comment || "";
-      
-      // Product review check
+      const rComment = r.comment || '';
+
       if (r.reviewType === 'product' || r.productId || r.productName) {
         list.push({
           id: `${r.id}-product`,
@@ -101,7 +110,6 @@ const Index = () => {
         return;
       }
 
-      // Booking / Overall Review
       list.push({
         id: `${r.id}-overview`,
         category: 'overview',
@@ -113,7 +121,6 @@ const Index = () => {
         avatar: r.avatar,
       });
 
-      // Specific Barber comment
       if (r.barberId || r.barberName || r.barberRating || r.barberComment) {
         list.push({
           id: `${r.id}-barber`,
@@ -128,7 +135,6 @@ const Index = () => {
         });
       }
 
-      // Specific Service comment
       if (r.serviceId || r.serviceName || r.serviceRating || r.serviceComment) {
         list.push({
           id: `${r.id}-service`,
@@ -147,7 +153,6 @@ const Index = () => {
     return list;
   }, [reviewList]);
 
-  // Ensure reviews track is wide enough to prevent gaps and glitches
   const categorizedMarqueeList = useMemo(() => {
     if (categorizedReviewsList.length === 0) return [];
     const repeatCount = Math.max(4, Math.ceil(12 / categorizedReviewsList.length));
@@ -155,31 +160,29 @@ const Index = () => {
     return [...baseList, ...baseList];
   }, [categorizedReviewsList]);
 
-
   return (
     <div>
-      {/* Hero */}
-      <section className="relative min-h-screen flex items-center">
+      <section className="relative flex min-h-screen items-center">
         <div className="absolute inset-0">
-          <img src={heroImage} alt="Lì He Men's Hair Designer" className="w-full h-full object-cover" width={1920} height={1080} />
+          <img src={heroImage} alt="Lì He Men's Hair Designer" className="h-full w-full object-cover" width={1920} height={1080} />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/40" />
         </div>
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container relative z-10 mx-auto px-4">
           <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="max-w-xl">
-            <div className="flex items-center gap-2 mb-4">
+            <div className="mb-4 flex items-center gap-2">
               <Scissors className="h-5 w-5 text-primary" />
-              <span className="text-primary text-sm font-medium tracking-widest uppercase">{t('hero.est')}</span>
+              <span className="text-primary text-sm font-medium uppercase tracking-widest">{t('hero.est')}</span>
             </div>
-            <h1 className="font-display text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            <h1 className="mb-6 font-display text-5xl font-bold leading-tight md:text-7xl">
               {t('hero.title1')}<br />
               <span className="text-gradient-gold">{t('hero.title2')}</span>
             </h1>
-            <p className="text-muted-foreground text-lg mb-8 max-w-md">{t('hero.subtitle')}</p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8">
+            <p className="mb-8 max-w-md text-lg text-muted-foreground">{t('hero.subtitle')}</p>
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <Button asChild size="lg" className="bg-primary px-8 text-base text-primary-foreground hover:bg-primary/90">
                 <Link to="/booking">{t('hero.bookNow')} <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 text-base">
+              <Button asChild size="lg" variant="outline" className="border-primary/30 text-base text-primary hover:bg-primary/10">
                 <Link to="/services">{t('hero.ourServices')}</Link>
               </Button>
             </div>
@@ -187,31 +190,29 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-16 border-y border-border bg-card/50">
+      <section className="border-y border-border bg-card/50 py-16">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
             {[
               { label: t('stats.happyClients'), value: '5,000+' },
               { label: t('stats.expertBarbers'), value: '3' },
               { label: t('stats.yearsExperience'), value: '14+' },
               { label: t('stats.avgRating'), value: '4.9' },
-            ].map(s => (
+            ].map((s) => (
               <motion.div key={s.label} {...fadeUp}>
-                <p className="text-3xl md:text-4xl font-display font-bold text-gradient-gold">{s.value}</p>
-                <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
+                <p className="text-3xl font-bold text-gradient-gold md:text-4xl">{s.value}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{s.label}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Featured Services */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.servicesTitle')} <span className="text-gradient-gold">{t('home.servicesHighlight')}</span></h2>
-            <p className="text-muted-foreground max-w-md mx-auto">{t('home.servicesSubtitle')}</p>
+          <motion.div {...fadeUp} className="mb-12 text-center">
+            <h2 className="mb-3 font-display text-3xl font-bold md:text-4xl">{t('home.servicesTitle')} <span className="text-gradient-gold">{t('home.servicesHighlight')}</span></h2>
+            <p className="mx-auto max-w-md text-muted-foreground">{t('home.servicesSubtitle')}</p>
           </motion.div>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {featured.map((s, i) => (
@@ -220,7 +221,7 @@ const Index = () => {
               </motion.div>
             ))}
           </div>
-          <div className="text-center mt-10">
+          <div className="mt-10 text-center">
             <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
               <Link to="/services">{t('home.viewAll')} <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
@@ -228,14 +229,13 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Barbers */}
-      <section className="py-20 bg-card/50 border-y border-border">
+      <section className="border-y border-border bg-card/50 py-20">
         <div className="container mx-auto px-4">
-          <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.barbersTitle')} <span className="text-gradient-gold">{t('home.barbersHighlight')}</span></h2>
+          <motion.div {...fadeUp} className="mb-12 text-center">
+            <h2 className="mb-3 font-display text-3xl font-bold md:text-4xl">{t('home.barbersTitle')} <span className="text-gradient-gold">{t('home.barbersHighlight')}</span></h2>
             <p className="text-muted-foreground">{t('home.barbersSubtitle')}</p>
           </motion.div>
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6 max-w-6xl mx-auto">
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
             {barberList.map((b, i) => (
               <motion.div key={b.id} {...fadeUp} transition={{ duration: 0.6, delay: i * 0.15 }}>
                 <BarberCard
@@ -251,14 +251,13 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Reviews */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">
+          <motion.div {...fadeUp} className="mb-12 text-center">
+            <h2 className="mb-3 font-display text-3xl font-bold md:text-4xl">
               {t('home.reviewsTitle')} <span className="text-gradient-gold">{t('home.reviewsHighlight')}</span>
             </h2>
-            <div className="flex flex-col items-center justify-center gap-2 mt-3">
+            <div className="mt-3 flex flex-col items-center justify-center gap-2">
               <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }, (_, i) => {
                   const ratingNum = parseFloat(avgRating);
@@ -266,23 +265,23 @@ const Index = () => {
                     <Star
                       key={i}
                       className={cn(
-                        "h-5 w-5",
+                        'h-5 w-5',
                         i < Math.floor(ratingNum)
-                          ? "fill-primary text-primary"
+                          ? 'fill-primary text-primary'
                           : i < ratingNum
-                          ? "fill-primary/50 text-primary"
-                          : "text-muted-foreground/30"
+                            ? 'fill-primary/50 text-primary'
+                            : 'text-muted-foreground/30',
                       )}
                     />
                   );
                 })}
               </div>
               <p className="text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground">{avgRating} / 5</span> dựa trên{" "}
+                <span className="font-semibold text-foreground">{avgRating} / 5</span> dựa trên{' '}
                 <span className="font-semibold text-foreground">{totalReviewsCount}</span> đánh giá từ khách hàng
               </p>
               <div className="mt-4">
-                <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6">
+                <Button asChild className="bg-primary px-6 font-medium text-primary-foreground hover:bg-primary/90">
                   <Link to="/my-orders?tab=reviewable">{t('home.writeReviewButton')}</Link>
                 </Button>
               </div>
@@ -295,37 +294,37 @@ const Index = () => {
             <div className="flex w-max animate-gallery-marquee gap-4 hover:[animation-play-state:paused]">
               {categorizedMarqueeList.map((card, i) => (
                 <div key={`${card.id}-${i}`} className="snap-start shrink-0">
-                  <div className="bg-card/45 backdrop-blur-md border border-border/80 hover:border-primary/45 rounded-xl p-5 w-[310px] h-[190px] transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 flex flex-col justify-between select-none">
+                  <div className="flex h-[190px] w-[310px] flex-col justify-between rounded-xl border border-border/80 bg-card/45 p-5 backdrop-blur-md transition-all duration-300 hover:border-primary/45 hover:shadow-lg hover:shadow-primary/5 select-none">
                     <div>
-                      <div className="flex justify-between items-center gap-2 mb-2">
-                        <span className={cn("text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border", badgeStyles[card.category])}>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <span className={cn('rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider', badgeStyles[card.category])}>
                           {card.categoryLabel}
                         </span>
                         <div className="flex gap-0.5">
                           {Array.from({ length: 5 }, (_, idx) => (
-                            <Star key={idx} className={cn("h-3 w-3", idx < card.rating ? 'fill-primary text-primary' : 'text-muted-foreground/30')} />
+                            <Star key={idx} className={cn('h-3 w-3', idx < card.rating ? 'fill-primary text-primary' : 'text-muted-foreground/30')} />
                           ))}
                         </div>
                       </div>
 
                       {card.targetName && (
-                        <p className="text-[11px] font-bold text-primary mb-1 truncate">
+                        <p className="mb-1 truncate text-[11px] font-bold text-primary">
                           {card.category === 'barber' ? 'Barber: ' : card.category === 'service' ? 'Dịch vụ: ' : 'Sản phẩm: '}
-                          <span className="text-foreground font-semibold">{card.targetName}</span>
+                          <span className="font-semibold text-foreground">{card.targetName}</span>
                         </p>
                       )}
 
-                      <p className="text-xs text-muted-foreground italic line-clamp-3 leading-relaxed">
+                      <p className="line-clamp-3 text-xs italic leading-relaxed text-muted-foreground">
                         "{card.comment}"
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40">
+                    <div className="mt-2 flex items-center justify-between border-t border-border/40 pt-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-[10px]">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
                           {card.avatar}
                         </div>
-                        <span className="font-semibold text-[10px] text-foreground/80">{card.name}</span>
+                        <span className="text-[10px] font-semibold text-foreground/80">{card.name}</span>
                       </div>
                       <span className="text-[9px] text-muted-foreground">{card.date}</span>
                     </div>
@@ -337,11 +336,10 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Gallery Preview */}
-      <section className="py-20 bg-card/50 border-y border-border">
+      <section className="border-y border-border bg-card/50 py-20">
         <div className="container mx-auto px-4">
-          <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{t('home.galleryTitle')} <span className="text-gradient-gold">{t('home.galleryHighlight')}</span></h2>
+          <motion.div {...fadeUp} className="mb-12 text-center">
+            <h2 className="mb-3 font-display text-3xl font-bold md:text-4xl">{t('home.galleryTitle')} <span className="text-gradient-gold">{t('home.galleryHighlight')}</span></h2>
           </motion.div>
 
           <div className="relative -mx-4 overflow-hidden px-4">
@@ -355,7 +353,7 @@ const Index = () => {
               ))}
             </div>
           </div>
-          <div className="text-center mt-10">
+          <div className="mt-10 text-center">
             <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
               <Link to="/gallery">{t('home.viewGallery')} <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
@@ -363,15 +361,14 @@ const Index = () => {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <motion.div {...fadeUp} className="text-center bg-card border border-border rounded-2xl p-12 md:p-16 relative overflow-hidden">
+          <motion.div {...fadeUp} className="relative overflow-hidden rounded-2xl border border-border bg-card p-12 text-center md:p-16">
             <div className="absolute inset-0 bg-gold-gradient opacity-5" />
             <div className="relative z-10">
-              <h2 className="font-display text-3xl md:text-5xl font-bold mb-4">{t('home.ctaTitle')} <span className="text-gradient-gold">{t('home.ctaHighlight')}</span></h2>
-              <p className="text-muted-foreground mb-8 max-w-md mx-auto">{t('home.ctaSubtitle')}</p>
-              <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-10">
+              <h2 className="mb-4 font-display text-3xl font-bold md:text-5xl">{t('home.ctaTitle')} <span className="text-gradient-gold">{t('home.ctaHighlight')}</span></h2>
+              <p className="mx-auto mb-8 max-w-md text-muted-foreground">{t('home.ctaSubtitle')}</p>
+              <Button asChild size="lg" className="bg-primary px-10 text-base text-primary-foreground hover:bg-primary/90">
                 <Link to="/booking">{t('home.ctaButton')} <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </div>
@@ -379,7 +376,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Barber Reviews Modal */}
       <BarberReviewsModal
         isOpen={isBarberModalOpen}
         onClose={() => setIsBarberModalOpen(false)}
@@ -391,4 +387,3 @@ const Index = () => {
 };
 
 export default Index;
-
