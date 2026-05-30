@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8081';
+import { API_BASE_HAS_API_PREFIX, API_BASE_URL } from '@/lib/runtime-config';
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -37,7 +37,8 @@ async function apiRequest<T>(path: string, init?: RequestInit, auth = true): Pro
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+  const normalizedPath = API_BASE_HAS_API_PREFIX && path.startsWith('/api/') ? path.slice(4) : path;
+  const response = await fetch(`${API_BASE_URL}${normalizedPath}`, { ...init, headers });
 
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
@@ -128,7 +129,7 @@ export async function confirmUpload(
           contentType,
           fileSize,
           alt: metadata?.alt ?? '',
-          category: metadata?.category ?? 'general',
+          category: metadata?.category ?? 'fade',
         }),
       },
     );

@@ -12,6 +12,9 @@ public class SalonServiceRequest {
     @Min(value = 0, message = "Price must be non-negative")
     private Integer price;
 
+    @Size(max = 50)
+    private String displayPrice;
+
     @NotNull(message = "Duration is required")
     @Min(value = 1, message = "Duration must be at least 1 minute")
     private Integer duration;
@@ -30,6 +33,8 @@ public class SalonServiceRequest {
     public void setName(String name) { this.name = name; }
     public Integer getPrice() { return price; }
     public void setPrice(Integer price) { this.price = price; }
+    public String getDisplayPrice() { return displayPrice; }
+    public void setDisplayPrice(String displayPrice) { this.displayPrice = displayPrice; }
     public Integer getDuration() { return duration; }
     public void setDuration(Integer duration) { this.duration = duration; }
     public String getCategory() { return category; }

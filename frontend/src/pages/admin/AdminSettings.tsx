@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const AdminSettings = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -15,40 +17,40 @@ const AdminSettings = () => {
   const [confirmPass, setConfirmPass] = useState('');
 
   const handleProfileUpdate = () => {
-    toast.success('Profile updated successfully');
+    toast.success(t('admin.settingsPage.profileUpdated'));
   };
 
   const handlePasswordChange = () => {
-    if (!currentPass || !newPass) { toast.error('Please fill all fields'); return; }
-    if (newPass !== confirmPass) { toast.error('Passwords do not match'); return; }
-    if (newPass.length < 6) { toast.error('Password must be at least 6 characters'); return; }
-    toast.success('Password changed successfully');
+    if (!currentPass || !newPass) { toast.error(t('admin.common.fillAll')); return; }
+    if (newPass !== confirmPass) { toast.error(t('admin.common.passwordMismatch')); return; }
+    if (newPass.length < 6) { toast.error(t('admin.common.passwordLength')); return; }
+    toast.success(t('admin.settingsPage.passwordChanged'));
     setCurrentPass(''); setNewPass(''); setConfirmPass('');
   };
 
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="text-sm text-muted-foreground">Manage your profile and preferences</p>
+        <h1 className="text-2xl font-bold text-foreground">{t('admin.settingsPage.title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('admin.settingsPage.subtitle')}</p>
       </div>
 
       <Card className="border-border bg-card">
-        <CardHeader><CardTitle className="text-base">Profile Information</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t('admin.settingsPage.profileInfo')}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <div><Label>Email</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-          <Button onClick={handleProfileUpdate}>Save Changes</Button>
+          <div><Label>{t('admin.fields.name')}</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div><Label>{t('admin.fields.email')}</Label><Input value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+          <Button onClick={handleProfileUpdate}>{t('admin.settingsPage.saveChanges')}</Button>
         </CardContent>
       </Card>
 
       <Card className="border-border bg-card">
-        <CardHeader><CardTitle className="text-base">Change Password</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t('admin.settingsPage.changePassword')}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div><Label>Current Password</Label><Input type="password" value={currentPass} onChange={(e) => setCurrentPass(e.target.value)} /></div>
-          <div><Label>New Password</Label><Input type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)} /></div>
-          <div><Label>Confirm Password</Label><Input type="password" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} /></div>
-          <Button onClick={handlePasswordChange}>Change Password</Button>
+          <div><Label>{t('admin.fields.currentPassword')}</Label><Input type="password" value={currentPass} onChange={(e) => setCurrentPass(e.target.value)} /></div>
+          <div><Label>{t('admin.fields.newPassword')}</Label><Input type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)} /></div>
+          <div><Label>{t('admin.fields.confirmPassword')}</Label><Input type="password" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} /></div>
+          <Button onClick={handlePasswordChange}>{t('admin.settingsPage.changePassword')}</Button>
         </CardContent>
       </Card>
     </div>

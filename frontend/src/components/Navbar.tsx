@@ -56,7 +56,9 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link to="/" className="flex items-center gap-2">
             <Scissors className="h-6 w-6 text-primary" />
-            <span className="font-display text-xl font-bold text-gradient-gold">BLADE & CO</span>
+            <span className="max-w-[210px] truncate font-display text-base font-bold text-gradient-gold sm:max-w-none sm:text-xl">
+              Lì He Men's Hair Designer
+            </span>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
@@ -77,14 +79,16 @@ const Navbar = () => {
               <Globe className="h-4 w-4" />
               {i18n.language === 'vi' ? 'EN' : 'VI'}
             </button>
-            <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-muted-foreground hover:text-primary transition-colors">
-              <ShoppingBag className="h-5 w-5" />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                  {totalItems}
-                </span>
-              )}
-            </button>
+            {user?.role !== 'admin' && (
+              <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-muted-foreground hover:text-primary transition-colors">
+                <ShoppingBag className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                    {totalItems}
+                  </span>
+                )}
+              </button>
+            )}
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -101,21 +105,23 @@ const Navbar = () => {
                     <span className="block text-xs font-normal text-muted-foreground">{user?.email}</span>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {user?.role === 'admin' && (
+                  {user?.role === 'admin' ? (
                     <DropdownMenuItem asChild>
-                      <Link to="/admin">Admin Dashboard</Link>
+                      <Link to="/admin">{t('admin.dashboard')}</Link>
                     </DropdownMenuItem>
+                  ) : (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile">{t('nav.profile')}</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/my-bookings">{t('nav.myBookings')}</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/my-orders">{t('nav.myOrders')}</Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile">{t('nav.profile')}</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/my-bookings">{t('nav.myBookings')}</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/my-orders">{t('nav.myOrders')}</Link>
-                  </DropdownMenuItem>
-                  {user?.role === 'admin' && <DropdownMenuSeparator />}
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
                     {t('nav.logout')}
@@ -156,27 +162,39 @@ const Navbar = () => {
               ))}
               {isAuthenticated ? (
                 <>
-                  <Link
-                    to="/profile"
-                    onClick={() => setIsOpen(false)}
-                    className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    {t('nav.profile')}
-                  </Link>
-                  <Link
-                    to="/my-bookings"
-                    onClick={() => setIsOpen(false)}
-                    className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    {t('nav.myBookings')}
-                  </Link>
-                  <Link
-                    to="/my-orders"
-                    onClick={() => setIsOpen(false)}
-                    className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    {t('nav.myOrders')}
-                  </Link>
+                  {user?.role === 'admin' ? (
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsOpen(false)}
+                      className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                    >
+                      {t('admin.dashboard')}
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsOpen(false)}
+                        className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                      >
+                        {t('nav.profile')}
+                      </Link>
+                      <Link
+                        to="/my-bookings"
+                        onClick={() => setIsOpen(false)}
+                        className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                      >
+                        {t('nav.myBookings')}
+                      </Link>
+                      <Link
+                        to="/my-orders"
+                        onClick={() => setIsOpen(false)}
+                        className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                      >
+                        {t('nav.myOrders')}
+                      </Link>
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={handleLogout}

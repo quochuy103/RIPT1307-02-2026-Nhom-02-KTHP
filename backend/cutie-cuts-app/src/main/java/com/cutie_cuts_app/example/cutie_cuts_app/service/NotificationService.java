@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -24,6 +25,7 @@ public class NotificationService {
         this.notificationRepository = notificationRepository;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notify(User user, String type, String message, String referenceType, Long referenceId) {
         Notification notification = new Notification();
         notification.setUser(user);
