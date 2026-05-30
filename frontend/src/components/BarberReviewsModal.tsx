@@ -25,13 +25,11 @@ const BarberReviewsModal = ({ isOpen, onClose, barber, reviews }: BarberReviewsM
 
   if (!barber) return null;
 
-  // Filter reviews matching this barber using real backend API fields
   const barberReviews = reviews.filter((r) => {
     if (r.barberId && String(r.barberId) === String(barber.id)) return true;
     if (r.barberName && barber.name && r.barberName.toLowerCase() === barber.name.toLowerCase()) return true;
     return false;
   });
-
 
   return (
     <AnimatePresence>
@@ -49,15 +47,14 @@ const BarberReviewsModal = ({ isOpen, onClose, barber, reviews }: BarberReviewsM
           <motion.div
             role="dialog"
             aria-modal="true"
-            className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-2xl shadow-black/40 flex flex-col"
+            className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-2xl shadow-black/40"
             initial={{ opacity: 0, y: 30, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.96 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
             <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-primary/30 via-primary to-primary/30" />
-            
-            {/* Close Button */}
+
             <button
               type="button"
               className="absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground transition hover:border-primary hover:text-primary"
@@ -67,66 +64,63 @@ const BarberReviewsModal = ({ isOpen, onClose, barber, reviews }: BarberReviewsM
               <X className="h-4 w-4" />
             </button>
 
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
-              {/* Barber Details Card */}
-              <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-border/60">
-                <div className="relative w-28 h-28 shrink-0 rounded-full overflow-hidden border-2 border-primary">
-                  <img src={barber.image} alt={barber.name} className="w-full h-full object-cover" />
+            <div className="flex-1 space-y-6 overflow-y-auto p-6 sm:p-8">
+              <div className="flex flex-col items-center gap-6 border-b border-border/60 pb-6 sm:flex-row">
+                <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full border-2 border-primary">
+                  <img src={barber.image} alt={barber.name} className="h-full w-full object-cover" />
                 </div>
-                <div className="text-center sm:text-left space-y-2">
-                  <span className="text-[10px] font-semibold tracking-wider uppercase px-2.5 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-full">
+                <div className="space-y-2 text-center sm:text-left">
+                  <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
                     {barber.role}
                   </span>
                   <h3 className="font-display text-2xl font-bold text-foreground">{barber.name}</h3>
                   <p className="text-sm text-muted-foreground">
                     {barber.experience} năm kinh nghiệm • Chuyên môn: {barber.specialties.join(', ')}
                   </p>
-                  <div className="flex items-center justify-center sm:justify-start gap-1 text-sm font-semibold">
+                  <div className="flex items-center justify-center gap-1 text-sm font-semibold sm:justify-start">
                     <Star className="h-4 w-4 fill-primary text-primary" />
                     <span>{barber.rating} / 5</span>
-                    <span className="text-muted-foreground font-normal ml-1">
+                    <span className="ml-1 font-normal text-muted-foreground">
                       ({barberReviews.length} đánh giá từ khách hàng)
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Reviews Section */}
               <div className="space-y-4">
                 <h4 className="font-display text-lg font-bold text-foreground">
                   Đánh Giá Từ Khách Hàng
                 </h4>
-                
+
                 {barberReviews.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground border border-dashed border-border rounded-xl bg-card/30">
+                  <div className="rounded-xl border border-dashed border-border bg-card/30 py-8 text-center text-muted-foreground">
                     Chưa có đánh giá chi tiết nào cho barber này.
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {barberReviews.map((r) => {
                       const rating = r.barberRating || r.rating;
-                      const comment = r.barberComment || r.comment || "Đánh giá tuyệt vời!";
-                      
+                      const comment = r.barberComment || r.comment || 'Đánh giá tuyệt vời!';
+
                       return (
-                        <div key={r.id} className="bg-card/50 border border-border/80 rounded-xl p-5 space-y-3 transition-colors hover:border-primary/25">
+                        <div key={r.id} className="space-y-3 rounded-xl border border-border/80 bg-card/50 p-5 transition-colors hover:border-primary/25">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
                                 {r.avatar}
                               </div>
                               <div>
-                                <p className="font-semibold text-xs text-foreground/90">{r.name}</p>
+                                <p className="text-xs font-semibold text-foreground/90">{r.name}</p>
                                 <span className="text-[10px] text-muted-foreground">{r.date}</span>
                               </div>
                             </div>
                             <div className="flex gap-0.5">
                               {Array.from({ length: 5 }, (_, i) => (
-                                <Star key={i} className={cn("h-3 w-3", i < rating ? 'fill-primary text-primary' : 'text-muted-foreground/30')} />
+                                <Star key={i} className={cn('h-3 w-3', i < rating ? 'fill-primary text-primary' : 'text-muted-foreground/30')} />
                               ))}
                             </div>
                           </div>
-                          <p className="text-sm text-muted-foreground italic pl-11">
+                          <p className="pl-11 text-sm italic text-muted-foreground">
                             "{comment}"
                           </p>
                         </div>
@@ -136,11 +130,11 @@ const BarberReviewsModal = ({ isOpen, onClose, barber, reviews }: BarberReviewsM
                 )}
               </div>
             </div>
-            
-            <div className="px-6 py-4 border-t border-border/60 bg-muted/20 flex justify-end">
+
+            <div className="flex justify-end border-t border-border/60 bg-muted/20 px-6 py-4">
               <button
                 type="button"
-                className="px-5 py-2 text-xs font-semibold rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground transition-colors"
+                className="rounded-lg bg-secondary px-5 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary/80"
                 onClick={onClose}
               >
                 Đóng

@@ -1,20 +1,22 @@
 import { useMemo, useState } from 'react';
-import DataTable, { Column } from '@/components/admin/DataTable';
-import type { AdminReview } from '@/data/adminMockData';
-import { Button } from '@/components/ui/button';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Eye, Star, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import DataTable, { Column } from '@/components/admin/DataTable';
+import FilterDatePicker from '@/components/admin/FilterDatePicker';
+import FormModal from '@/components/admin/FormModal';
+import type { AdminReview } from '@/data/adminMockData';
 import { api } from '@/lib/api';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import FilterDatePicker from '@/components/admin/FilterDatePicker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import FormModal from '@/components/admin/FormModal';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/context/AuthContext';
 
 const AdminReviews = () => {
   const { t } = useTranslation();
+  const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const [userIdFilter, setUserIdFilter] = useState('all');
   const [reviewTypeFilter, setReviewTypeFilter] = useState<'all' | 'product' | 'booking'>('all');
@@ -81,8 +83,11 @@ const AdminReviews = () => {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'reviews'] });
       toast.success(t('admin.reviewsPage.deleted'));
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : t('admin.common.deleteFailed')),
+    onError: (mutationError) => toast.error(mutationError instanceof Error ? mutationError.message : t('admin.common.deleteFailed')),
   });
+
+  const canDeleteReview = (review: AdminReview) =>
+    currentUser?.id !== undefined && review.userId !== undefined && String(currentUser.id) === review.userId;
 
   const formatReviewType = (review: AdminReview) => (
     review.reviewType === 'product'
@@ -243,9 +248,11 @@ const AdminReviews = () => {
             <Button size="sm" variant="ghost" onClick={() => setViewReview(review)}>
               <Eye className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => deleteReviewMutation.mutate(review.id)} className="text-destructive" disabled={deleteReviewMutation.isPending}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {canDeleteReview(review) && (
+              <Button size="sm" variant="ghost" onClick={() => deleteReviewMutation.mutate(review.id)} className="text-destructive" disabled={deleteReviewMutation.isPending}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         )}
       />
