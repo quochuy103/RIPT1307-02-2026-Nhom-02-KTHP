@@ -34,6 +34,7 @@ const AdminBarbers = () => {
   const [search, setSearch] = useState('');
   const [specialtyFilter, setSpecialtyFilter] = useState('');
   const [minExperienceFilter, setMinExperienceFilter] = useState('');
+  const [specialtiesInput, setSpecialtiesInput] = useState('');
 
   const { data: barbers = [], isLoading, isError, error } = useQuery({
     queryKey: ['admin', 'barbers', { search, specialtyFilter, minExperienceFilter }],
@@ -78,14 +79,24 @@ const AdminBarbers = () => {
     onError: (error) => toast.error(error instanceof Error ? error.message : t('admin.common.deleteFailed')),
   });
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); setModalOpen(true); };
-  const openEdit = (barber: AdminBarber) => { setEditing(barber); setForm({ ...barber, objectKey: '', contentType: '', fileSize: 0 }); setModalOpen(true); };
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyForm);
+    setSpecialtiesInput('');
+    setModalOpen(true);
+  };
+  const openEdit = (barber: AdminBarber) => {
+    setEditing(barber);
+    setForm({ ...barber, objectKey: '', contentType: '', fileSize: 0 });
+    setSpecialtiesInput(barber.specialties.join(', '));
+    setModalOpen(true);
+  };
 
   const handleSubmit = () => {
     const payload = {
       ...form,
       name: form.name.trim(),
-      specialties: form.specialties.map((specialty) => specialty.trim()).filter(Boolean),
+      specialties: specialtiesInput.split(',').map((specialty) => specialty.trim()).filter(Boolean),
     };
 
     if (!payload.name) {
@@ -179,9 +190,9 @@ const AdminBarbers = () => {
           <div>
             <Label>{t('admin.fields.specialties')}</Label>
             <Input
-              value={form.specialties.join(', ')}
+              value={specialtiesInput}
               placeholder={t('admin.barbersPage.specialtiesPlaceholder')}
-              onChange={(e) => setForm({ ...form, specialties: e.target.value.split(',').map((specialty) => specialty.trim()) })}
+              onChange={(e) => setSpecialtiesInput(e.target.value)}
             />
           </div>
         </div>
