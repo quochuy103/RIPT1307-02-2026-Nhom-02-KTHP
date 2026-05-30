@@ -37,6 +37,18 @@ Ngoài các màn hình đang hiện diện trên frontend, backend hiện còn h
 | Tài liệu API | OpenAPI / Swagger |
 | Kiểm thử | JUnit, Spring Boot Test, Vitest, Playwright |
 
+## Frontend
+
+Frontend được xây dựng bằng React 18, TypeScript và Vite theo hướng SPA, gộp website public, khu vực người dùng và admin panel trong cùng một ứng dụng. Phần giao diện sử dụng Tailwind CSS kết hợp Radix UI và shadcn/ui để dựng các thành phần tương tác, đồng thời có Framer Motion cho chuyển động và Recharts cho dashboard trực quan.
+
+Ở lớp trải nghiệm ứng dụng, frontend dùng React Router cho điều hướng, TanStack Query cho gọi và đồng bộ dữ liệu từ API, React Hook Form cùng Zod cho form và validation, i18next cho đa ngôn ngữ, và Google OAuth cho đăng nhập liên kết. Hiện giao diện đã bao phủ các luồng chính như khám phá dịch vụ, booking, shop, checkout, hồ sơ cá nhân, lịch sử đơn hàng và khu vực quản trị.
+
+## Backend
+
+Backend được xây dựng bằng Java 17 và Spring Boot 3, đóng vai trò API trung tâm cho toàn bộ nghiệp vụ của hệ thống. Lớp này xử lý authentication, phân quyền, booking, order, review, gallery, quản lý người dùng, thanh toán QR và các tác vụ quản trị dành cho admin.
+
+Về kỹ thuật, backend sử dụng Spring Security và JWT cho bảo mật, Spring Data JPA cho truy cập dữ liệu PostgreSQL, WebSocket cho cập nhật trạng thái gần realtime, OpenAPI/Swagger cho tài liệu API, cùng các tích hợp ngoài như OAuth, email service và S3-compatible storage. Ngoài các tính năng đã được frontend sử dụng trực tiếp, backend còn hỗ trợ thêm các capability ở mức API như address book, notifications, payment tracking và các luồng media/upload phục vụ mở rộng sản phẩm.
+
 ## Góc nhìn kiến trúc
 
 Hệ thống được tổ chức theo mô hình frontend SPA tách biệt với backend API. Frontend đảm nhiệm trải nghiệm public, khu vực người dùng và admin panel; backend chịu trách nhiệm cho nghiệp vụ booking, order, authentication, payment, review, media và quản trị. Bên dưới là cơ sở dữ liệu quan hệ cho dữ liệu nghiệp vụ, object storage cho tệp hình ảnh và các tích hợp ngoài cho email, OAuth và QR payment.
