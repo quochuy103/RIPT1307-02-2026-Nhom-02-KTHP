@@ -10,6 +10,21 @@ Mục tiêu của dự án là đưa một website salon vượt khỏi vai trò
 
 Ngoài các màn hình đang hiện diện trên frontend, backend hiện còn hỗ trợ thêm một số capability vận hành như hồ sơ người dùng nâng cao, lưu địa chỉ, thông báo, tổng hợp dữ liệu cá nhân, thanh toán và media flow ở mức API. Vì vậy phạm vi kỹ thuật của hệ thống đang rộng hơn phần giao diện người dùng đang mở ra công khai.
 
+## Bức tranh tổng thể
+
+```mermaid
+flowchart LR
+    U[Khách hàng] --> F[Frontend Web App]
+    A[Quản trị viên] --> F
+    F --> B[Backend API]
+    B --> DB[(PostgreSQL)]
+    B --> S3[(S3-compatible Storage)]
+    B --> Q[VietQR]
+    B --> M[Email Service]
+    B --> O[OAuth Provider]
+    B --> W[Realtime Updates]
+```
+
 ## Nhóm chức năng chính
 
 - Website public để giới thiệu thương hiệu, dịch vụ, gallery và sản phẩm.
@@ -30,7 +45,7 @@ Ngoài các màn hình đang hiện diện trên frontend, backend hiện còn h
 | Routing & i18n | React Router, i18next |
 | Backend | Java 17, Spring Boot 3 |
 | Bảo mật | Spring Security, JWT, OAuth |
-| Dữ liệu | PostgreSQL |
+| Database | PostgreSQL |
 | Media storage | S3-compatible storage / MinIO |
 | Thanh toán | VietQR |
 | Realtime & async | WebSocket, scheduler/background jobs |
@@ -48,6 +63,28 @@ Frontend được xây dựng bằng React 18, TypeScript và Vite theo hướng
 Backend được xây dựng bằng Java 17 và Spring Boot 3, đóng vai trò API trung tâm cho toàn bộ nghiệp vụ của hệ thống. Lớp này xử lý authentication, phân quyền, booking, order, review, gallery, quản lý người dùng, thanh toán QR và các tác vụ quản trị dành cho admin.
 
 Về kỹ thuật, backend sử dụng Spring Security và JWT cho bảo mật, Spring Data JPA cho truy cập dữ liệu PostgreSQL, WebSocket cho cập nhật trạng thái gần realtime, OpenAPI/Swagger cho tài liệu API, cùng các tích hợp ngoài như OAuth, email service và S3-compatible storage. Ngoài các tính năng đã được frontend sử dụng trực tiếp, backend còn hỗ trợ thêm các capability ở mức API như address book, notifications, payment tracking và các luồng media/upload phục vụ mở rộng sản phẩm.
+
+## Luồng trải nghiệm chính
+
+```mermaid
+flowchart LR
+    A[Khám phá dịch vụ và sản phẩm] --> B[Tạo tài khoản hoặc đăng nhập]
+    B --> C[Đặt lịch hoặc tạo đơn hàng]
+    C --> D[Thanh toán QR]
+    D --> E[Theo dõi booking và đơn hàng]
+    E --> F[Quay lại trải nghiệm dịch vụ]
+```
+
+## Mô hình vận hành
+
+```mermaid
+flowchart TD
+    A[Admin Dashboard] --> B[Quản lý booking]
+    A --> C[Quản lý đơn hàng]
+    A --> D[Quản lý dịch vụ và barber]
+    A --> E[Quản lý sản phẩm và gallery]
+    A --> F[Theo dõi đánh giá và dữ liệu vận hành]
+```
 
 ## Góc nhìn kiến trúc
 
