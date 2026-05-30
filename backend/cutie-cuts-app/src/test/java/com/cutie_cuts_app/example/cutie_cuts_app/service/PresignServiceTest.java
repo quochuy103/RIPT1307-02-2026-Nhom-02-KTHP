@@ -15,7 +15,8 @@ class PresignServiceTest {
 
     @BeforeEach
     void setUp() {
-        presignService = new PresignService();
+        S3StorageService mockS3StorageService = org.mockito.Mockito.mock(S3StorageService.class);
+        presignService = new PresignService(mockS3StorageService);
         ReflectionTestUtils.setField(presignService, "endpoint", "http://localhost:9000");
         ReflectionTestUtils.setField(presignService, "publicUrl", "http://localhost:9000");
         ReflectionTestUtils.setField(presignService, "accessKey", "minioadmin");
@@ -55,6 +56,22 @@ class PresignServiceTest {
         var ex = assertThrows(ResponseStatusException.class,
                 () -> presignService.generateUploadUrl("INVALID", "image/jpeg", 1024));
         assertTrue(ex.getMessage().contains("Invalid context"));
+    }
+
+    @Test
+    @DisplayName("generateUploadUrl requires user id for AVATAR")
+    void generateUploadUrl_avatarWithoutUserId_throws() {
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> presignService.generateUploadUrl("AVATAR", "image/png", 1024));
+        assertTrue(ex.getMessage().contains("userId is required"));
+    }
+
+    @Test
+    @DisplayName("generateUploadUrl returns user-scoped AVATAR key")
+    void generateUploadUrl_avatarWithUserId_returnsScopedKey() {
+        var result = presignService.generateUploadUrl("AVATAR", "image/png", 1024, 42L);
+        assertTrue(result.objectKey().startsWith("avatars/42/"));
+        assertTrue(result.objectKey().endsWith(".png"));
     }
 
     @Test

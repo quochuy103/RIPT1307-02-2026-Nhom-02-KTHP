@@ -1,6 +1,8 @@
 package com.cutie_cuts_app.example.cutie_cuts_app.controller;
 
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.domain.PresignRequest;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
+import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.PresignService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -19,9 +21,11 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 public class PresignController {
 
     private final PresignService presignService;
+    private final CurrentUserService currentUserService;
 
-    public PresignController(PresignService presignService) {
+    public PresignController(PresignService presignService, CurrentUserService currentUserService) {
         this.presignService = presignService;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping("/presign")
@@ -39,10 +43,17 @@ public class PresignController {
                     "Only admins can upload images for context: " + request.getContext());
         }
 
+        Long userId = null;
+        if ("AVATAR".equalsIgnoreCase(request.getContext())) {
+            User currentUser = currentUserService.getByEmail(authentication.getName());
+            userId = currentUser.getId();
+        }
+
         PresignService.PresignResult result = presignService.generateUploadUrl(
                 request.getContext(),
                 request.getContentType(),
-                request.getSizeBytes());
+                request.getSizeBytes(),
+                userId);
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("uploadUrl", result.uploadUrl());

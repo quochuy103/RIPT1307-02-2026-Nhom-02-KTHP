@@ -37,13 +37,18 @@ public class VietQRService {
 
     public VietQRResponse generateQRCode(String paymentCode, Double amount) {
         try {
+            // VietQR API: addInfo max 25 chars, acqId must be integer (bank BIN)
+            String addInfo = paymentCode != null && paymentCode.length() > 25
+                    ? paymentCode.substring(0, 25)
+                    : paymentCode;
+
             VietQRRequest request = new VietQRRequest();
             request.setAccountNo(accountNo);
             request.setAccountName(accountName);
-            request.setAcqId(bankId);
-            request.setAmount(amount);
-            request.setAddInfo(paymentCode);
-            request.setFormat("text");
+            request.setAcqId(Long.parseLong(bankId));
+            request.setAmount(amount != null ? amount.intValue() : 0);
+            request.setAddInfo(addInfo);
+            request.setFormat("image");
             request.setTemplate(template);
 
             HttpHeaders headers = new HttpHeaders();
@@ -53,7 +58,7 @@ public class VietQRService {
 
             String url = vietqrApiUrl + "/generate";
             logger.info("Calling VietQR API: {} with payment code: {}, amount: {}", url, paymentCode, amount);
-            logger.info("Request body: accountNo={}, bankId={}, accountName={}", accountNo, bankId, accountName);
+            logger.info("Request body: accountNo={}, bankId={}, accountName={}, addInfo={}", accountNo, bankId, accountName, addInfo);
 
             ResponseEntity<VietQRResponse> response = restTemplate.exchange(
                     url,

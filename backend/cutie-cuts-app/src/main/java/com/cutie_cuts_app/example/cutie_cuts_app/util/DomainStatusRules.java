@@ -9,7 +9,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 public final class DomainStatusRules {
 
-    private static final Set<String> BOOKING_UPDATE_STATUSES = Set.of("pending", "confirmed", "done");
+    private static final Set<String> BOOKING_UPDATE_STATUSES = Set.of("pending", "confirmed", "done", "cancelled");
     private static final Set<String> ORDER_PUBLIC_UPDATE_STATUSES = Set.of("pending", "paid", "shipping", "shipped", "delivered");
 
     private DomainStatusRules() {
@@ -76,6 +76,32 @@ public final class DomainStatusRules {
             default -> throw new ResponseStatusException(BAD_REQUEST,
                     "Cannot confirm receipt for an order that is " + currentStatus);
         }
+    }
+
+    public static void ensureBookingStatusTransitionAllowed(String currentStatus, String newStatus) {
+        if (currentStatus.equals(newStatus)) {
+            return;
+        }
+
+        switch (currentStatus) {
+            case "pending" -> {
+                if ("confirmed".equals(newStatus) || "cancelled".equals(newStatus)) {
+                    return;
+                }
+            }
+            case "confirmed" -> {
+                if ("done".equals(newStatus) || "cancelled".equals(newStatus)) {
+                    return;
+                }
+            }
+            case "done", "cancelled" -> throw new ResponseStatusException(BAD_REQUEST,
+                    "Cannot change a booking that is already " + currentStatus);
+            default -> throw new ResponseStatusException(BAD_REQUEST,
+                    "Booking has an invalid status: " + currentStatus);
+        }
+
+        throw new ResponseStatusException(BAD_REQUEST,
+                "Invalid booking status transition from " + currentStatus + " to " + newStatus);
     }
 
     private static String normalizeAllowedStatus(String status, Set<String> allowedStatuses, String domainName) {

@@ -9,48 +9,54 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-const usersQueryKey = ['admin', 'users'] as const;
+import { useTranslation } from 'react-i18next';
+import { Input } from '@/components/ui/input';
 
 const AdminUsers = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
 
   const { data: users = [], isLoading, isError, error } = useQuery({
-    queryKey: usersQueryKey,
-    queryFn: api.admin.getUsers,
+    queryKey: ['admin', 'users', { roleFilter, search }],
+    queryFn: async () => {
+      const result = await api.admin.getUsersFiltered({
+        role: roleFilter,
+        search,
+      });
+      return result.content;
+    },
   });
 
-  const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: usersQueryKey });
+  const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ id, role }: { id: string; role: AdminUser['role'] }) => api.admin.updateUserRole(id, role),
     onSuccess: async () => {
       await invalidateUsers();
-      toast.success('User role updated');
+      toast.success(t('admin.usersPage.roleUpdated'));
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : 'Update failed'),
+    onError: (error) => toast.error(error instanceof Error ? error.message : t('admin.common.updateFailed')),
   });
 
   const updateUserMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: { name: string; phone: string } }) => api.admin.updateUser(id, payload),
     onSuccess: async () => {
       await invalidateUsers();
-      toast.success('User updated');
+      toast.success(t('admin.usersPage.updated'));
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : 'Update failed'),
+    onError: (error) => toast.error(error instanceof Error ? error.message : t('admin.common.updateFailed')),
   });
 
   const deleteUserMutation = useMutation({
     mutationFn: api.admin.deleteUser,
     onSuccess: async () => {
       await invalidateUsers();
-      toast.success('User soft deleted');
+      toast.success(t('admin.usersPage.deleted'));
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : 'Delete failed'),
+    onError: (error) => toast.error(error instanceof Error ? error.message : t('admin.common.deleteFailed')),
   });
-
-  const filtered = roleFilter === 'all' ? users : users.filter((u) => u.role === roleFilter);
 
   const toggleRole = async (id: string) => {
     const user = users.find((u) => u.id === id);
@@ -61,14 +67,14 @@ const AdminUsers = () => {
 
   const editUser = async (user: AdminUser) => {
     if (user.deleted) {
-      toast.error('Deleted users cannot be edited');
+      toast.error(t('admin.usersPage.cannotEditDeleted'));
       return;
     }
 
-    const name = window.prompt('Update user name', user.name);
+    const name = window.prompt(t('admin.usersPage.updateName'), user.name);
     if (name === null) return;
 
-    const phone = window.prompt('Update user phone', user.phone);
+    const phone = window.prompt(t('admin.usersPage.updatePhone'), user.phone);
     if (phone === null) return;
 
     updateUserMutation.mutate({ id: user.id, payload: { name, phone } });
@@ -76,11 +82,11 @@ const AdminUsers = () => {
 
   const deleteUser = async (user: AdminUser) => {
     if (user.deleted) {
-      toast.info('User already deleted');
+      toast.info(t('admin.usersPage.alreadyDeleted'));
       return;
     }
 
-    if (!window.confirm(`Soft delete user ${user.name}?`)) {
+    if (!window.confirm(t('admin.usersPage.confirmDelete', { name: user.name }))) {
       return;
     }
 
@@ -88,50 +94,68 @@ const AdminUsers = () => {
   };
 
   const columns: Column<AdminUser>[] = [
-    { key: 'name', label: 'Name', render: (u) => <span className="font-medium">{u.name}</span> },
-    { key: 'email', label: 'Email' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'role', label: 'Role', render: (u) => <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>{u.role}</Badge> },
+    { key: 'name', label: t('admin.fields.name'), render: (u) => <span className="font-medium">{u.name}</span> },
+    { key: 'email', label: t('admin.fields.email') },
+    { key: 'phone', label: t('admin.fields.phone') },
+    { key: 'role', label: t('admin.fields.role'), render: (u) => <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>{t(`admin.common.${u.role}`)}</Badge> },
     {
       key: 'deleted',
-      label: 'Status',
-      render: (u) => <Badge variant={u.deleted ? 'destructive' : 'secondary'}>{u.deleted ? 'deleted' : 'active'}</Badge>,
+      label: t('admin.fields.status'),
+      render: (u) => <Badge variant={u.deleted ? 'destructive' : 'secondary'}>{u.deleted ? t('admin.common.deleted') : t('admin.common.active')}</Badge>,
       searchable: false,
     },
-    { key: 'createdAt', label: 'Joined' },
+    { key: 'createdAt', label: t('admin.fields.joined') },
   ];
+
+  const resetFilters = () => {
+    setRoleFilter('all');
+    setSearch('');
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">User Management</h1>
-          <p className="text-sm text-muted-foreground">{users.length} total users</p>
+          <h1 className="text-2xl font-bold text-foreground">{t('admin.usersPage.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('admin.usersPage.count', { count: users.length })}</p>
         </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('admin.usersPage.search')}
+        />
         <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
-            <SelectItem value="user">User</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="all">{t('admin.common.allRoles')}</SelectItem>
+            <SelectItem value="user">{t('admin.common.user')}</SelectItem>
+            <SelectItem value="admin">{t('admin.common.admin')}</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={resetFilters}>
+          {t('common.reset', { defaultValue: 'Reset' })}
+        </Button>
       </div>
 
       {isError && (
         <Alert variant="destructive">
-          <AlertTitle>Could not load users</AlertTitle>
-          <AlertDescription>{error instanceof Error ? error.message : 'Please check your admin access and API route.'}</AlertDescription>
+          <AlertTitle>{t('admin.usersPage.loadError')}</AlertTitle>
+          <AlertDescription>{error instanceof Error ? error.message : t('admin.common.loadFallback')}</AlertDescription>
         </Alert>
       )}
 
       <DataTable
-        data={isLoading ? [] : filtered}
+        data={isLoading ? [] : users}
         columns={columns}
-        searchPlaceholder={isLoading ? 'Loading users...' : 'Search users...'}
+        showSearch={false}
         actions={(u) => (
           <div className="flex items-center justify-end gap-1">
-            <Button size="sm" variant="ghost" onClick={() => toggleRole(u.id)} title="Toggle role" disabled={u.deleted || updateRoleMutation.isPending}><Shield className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" onClick={() => toggleRole(u.id)} title={t('admin.usersPage.toggleRole')} disabled={u.deleted || updateRoleMutation.isPending}><Shield className="h-4 w-4" /></Button>
             <Button size="sm" variant="ghost" onClick={() => editUser(u)} disabled={u.deleted || updateUserMutation.isPending}><Edit className="h-4 w-4" /></Button>
             <Button size="sm" variant="ghost" onClick={() => deleteUser(u)} className="text-destructive" disabled={u.deleted || deleteUserMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
           </div>

@@ -19,6 +19,9 @@ public class SalonService {
     @Column(nullable = false)
     private Integer price;
 
+    @Column(name = "display_price")
+    private String displayPrice;
+
     @Column(nullable = false)
     private Integer duration;
 
@@ -46,6 +49,8 @@ public class SalonService {
     public void setName(String name) { this.name = name; }
     public Integer getPrice() { return price; }
     public void setPrice(Integer price) { this.price = price; }
+    public String getDisplayPrice() { return displayPrice; }
+    public void setDisplayPrice(String displayPrice) { this.displayPrice = displayPrice; }
     public Integer getDuration() { return duration; }
     public void setDuration(Integer duration) { this.duration = duration; }
     public String getCategory() { return category; }

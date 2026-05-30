@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, Scissors, UserRound, XCircle } from 'lucide-react';
+import { CalendarClock, Scissors, Star, UserRound, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { ApiError, api, type Booking } from '@/lib/api';
+import BookingReviewModal, { type BookingReviewTarget } from '@/components/BookingReviewModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  BOOKING_NOTICE_MINUTES,
+  MAX_CANCELLATIONS_PER_DATE,
+  canCancelBooking,
+  hasReachedCancellationLimitForDate,
+} from '@/lib/booking-policy';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   confirmed: 'default',
@@ -21,6 +29,10 @@ const getBookingError = (error: unknown, fallback: string) => {
     return 'Please sign in again to manage your bookings.';
   }
 
+  if (error instanceof ApiError && error.status === 400 && error.message.includes('at most 3 bookings for the selected appointment date')) {
+    return `You can only cancel ${MAX_CANCELLATIONS_PER_DATE} bookings for the same appointment date.`;
+  }
+
   if (error instanceof Error) {
     return error.message;
   }
@@ -34,18 +46,21 @@ const MyBookingsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [selectedBookingForReview, setSelectedBookingForReview] = useState<BookingReviewTarget | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'done' | 'cancelled'>('all');
 
   const loadBookings = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      setBookings(await api.bookings.getMine());
+      setBookings(await api.bookings.getMine(statusFilter === 'all' ? undefined : statusFilter));
     } catch (err) {
       setError(getBookingError(err, t('myBookings.loadError')));
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [statusFilter, t]);
 
   useEffect(() => {
     void loadBookings();
@@ -66,6 +81,17 @@ const MyBookingsPage = () => {
     }
   };
 
+  const openReviewModal = (booking: Booking) => {
+    setSelectedBookingForReview({
+      bookingId: Number(booking.id),
+      serviceName: booking.serviceName,
+      barberName: booking.barberName,
+      date: booking.date,
+      time: booking.time,
+    });
+    setIsReviewModalOpen(true);
+  };
+
   return (
     <div className="pt-24 pb-20">
       <div className="container mx-auto px-4 max-w-5xl">
@@ -74,6 +100,21 @@ const MyBookingsPage = () => {
             {t('myBookings.title')} <span className="text-gradient-gold">{t('myBookings.highlight')}</span>
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">{t('myBookings.subtitle')}</p>
+        </div>
+
+        <div className="mb-6 flex justify-end">
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+            <SelectTrigger className="w-full max-w-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('admin.common.allStatus')}</SelectItem>
+              <SelectItem value="pending">{t('myBookings.status.pending', { defaultValue: 'Pending' })}</SelectItem>
+              <SelectItem value="confirmed">{t('myBookings.status.confirmed', { defaultValue: 'Confirmed' })}</SelectItem>
+              <SelectItem value="done">{t('myBookings.status.done', { defaultValue: 'Done' })}</SelectItem>
+              <SelectItem value="cancelled">{t('myBookings.status.cancelled', { defaultValue: 'Cancelled' })}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {isLoading ? (
@@ -98,7 +139,10 @@ const MyBookingsPage = () => {
         ) : (
           <div className="space-y-4">
             {bookings.map((booking) => {
-              const canCancel = cancellableStatuses.has(booking.status);
+              const canCancelByStatus = cancellableStatuses.has(booking.status);
+              const hasReachedCancellationLimit = hasReachedCancellationLimitForDate(bookings, booking.date);
+              const canCancel = canCancelBooking(booking) && !hasReachedCancellationLimit;
+              const canReview = booking.reviewEligible && !booking.reviewSubmitted;
               return (
                 <Card key={booking.id} className="overflow-hidden">
                   <CardContent className="p-5">
@@ -106,7 +150,12 @@ const MyBookingsPage = () => {
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-3">
                           <h2 className="font-display text-xl font-semibold">{booking.serviceName}</h2>
-                          <Badge variant={statusColors[booking.status] ?? 'outline'}>{t(`myBookings.status.${booking.status}`, { defaultValue: booking.status })}</Badge>
+                          <Badge variant={statusColors[booking.status.toLowerCase()] ?? 'outline'}>{t(`myBookings.status.${booking.status.toLowerCase()}`, { defaultValue: booking.status })}</Badge>
+                          {booking.reviewSubmitted && (
+                            <Badge variant="secondary">
+                              {booking.overallRating ? `${booking.overallRating}/5` : t('myBookings.reviewed', { defaultValue: 'Đã đánh giá' })}
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
@@ -130,17 +179,38 @@ const MyBookingsPage = () => {
                         </div>
                       </div>
 
-                      {canCancel && (
-                        <Button
-                          variant="outline"
-                          className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                          disabled={cancellingId === booking.id}
-                          onClick={() => void cancelBooking(booking)}
-                        >
-                          <XCircle className="mr-2 h-4 w-4" />
-                          {cancellingId === booking.id ? t('common.saving') : t('myBookings.cancel')}
-                        </Button>
-                      )}
+                      <div className="flex flex-col items-stretch gap-2 md:items-end">
+                        {canCancel && (
+                          <Button
+                            variant="outline"
+                            className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            disabled={cancellingId === booking.id}
+                            onClick={() => void cancelBooking(booking)}
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            {cancellingId === booking.id ? t('common.saving') : t('myBookings.cancel')}
+                          </Button>
+                        )}
+                        {canCancelByStatus && !canCancel && (
+                          <p className="max-w-56 text-xs text-muted-foreground md:text-right">
+                            {hasReachedCancellationLimit
+                              ? `You already cancelled ${MAX_CANCELLATIONS_PER_DATE} bookings on ${booking.date}.`
+                              : t('myBookings.cancelWindowNotice', {
+                                  minutes: BOOKING_NOTICE_MINUTES,
+                                  defaultValue: 'Bookings can only be cancelled at least {{minutes}} minutes before the appointment.',
+                                })}
+                          </p>
+                        )}
+                        {canReview && (
+                          <Button
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            onClick={() => openReviewModal(booking)}
+                          >
+                            <Star className="mr-2 h-4 w-4" />
+                            {t('myBookings.reviewAction', { defaultValue: 'Đánh giá' })}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -149,6 +219,18 @@ const MyBookingsPage = () => {
           </div>
         )}
       </div>
+
+      <BookingReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          setIsReviewModalOpen(false);
+          setSelectedBookingForReview(null);
+        }}
+        onSubmitSuccess={() => {
+          void loadBookings();
+        }}
+        target={selectedBookingForReview}
+      />
     </div>
   );
 };

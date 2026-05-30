@@ -11,9 +11,13 @@ import com.cutie_cuts_app.example.cutie_cuts_app.repository.BookingRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.repository.SalonServiceRepository;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.DomainStatusRules;
 import com.cutie_cuts_app.example.cutie_cuts_app.util.NotificationType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,8 +36,16 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class BookingService {
 
     private static final int MAX_DAILY_CANCELLATIONS = 3;
+    private static final int MAX_BOOKINGS_PER_APPOINTMENT_DATE = 3;
+    private static final long MIN_BOOKING_LEAD_TIME_MINUTES = 30;
     private static final long MIN_CANCEL_NOTICE_MINUTES = 30;
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final Logger log = LoggerFactory.getLogger(BookingService.class);
+    private static final Sort BOOKING_SCHEDULE_SORT = Sort.by(
+            Sort.Order.desc("date"),
+            Sort.Order.desc("time"),
+            Sort.Order.desc("createdAt"),
+            Sort.Order.desc("id"));
 
     // Per-slot lock registry for single-instance race-condition prevention.
     // Key = "{barberId}_{date}_{time}". Lock is removed via remove(key, lock)
@@ -73,15 +85,29 @@ public class BookingService {
     }
 
     public List<Booking> getBookings() {
-        return bookingRepository.findAll();
+        return bookingRepository.findAll(BOOKING_SCHEDULE_SORT);
     }
 
     public Page<Booking> getBookingsPaginated(Pageable pageable) {
         return bookingRepository.findAll(pageable);
     }
 
+    public Page<Booking> getBookingsFiltered(String status, Long barberId, Long userId, Long serviceId,
+                                              java.time.LocalDate dateFrom, java.time.LocalDate dateTo,
+                                              Boolean upcoming, Pageable pageable) {
+        java.time.LocalDate today = null;
+        java.time.LocalTime now = null;
+        if (Boolean.TRUE.equals(upcoming)) {
+            java.time.ZonedDateTime nowHcm = java.time.ZonedDateTime.now(BUSINESS_ZONE);
+            today = nowHcm.toLocalDate();
+            now = nowHcm.toLocalTime();
+        }
+        return bookingRepository.findAllFiltered(status, barberId, userId, serviceId,
+                dateFrom, dateTo, upcoming, today, now, pageable);
+    }
+
     public List<Booking> getBookingsByUser(User user) {
-        return bookingRepository.findByUser(user);
+        return bookingRepository.findByUser(user, BOOKING_SCHEDULE_SORT);
     }
 
     @Transactional
@@ -92,40 +118,40 @@ public class BookingService {
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Barber not found"));
 
         LocalDateTime bookingDateTime = LocalDateTime.of(request.getDate(), request.getTime());
-        LocalDateTime now = LocalDateTime.now(clock);
-        if (bookingDateTime.isBefore(now)) {
-            throw new ResponseStatusException(BAD_REQUEST, "Booking date/time cannot be in the past");
+        LocalDateTime minimumBookingDateTime = LocalDateTime.now(clock).plusMinutes(MIN_BOOKING_LEAD_TIME_MINUTES);
+        if (bookingDateTime.isBefore(minimumBookingDateTime)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Bookings must be made at least 30 minutes in advance");
         }
+        enforceBookingLimitForAppointmentDate(user, request.getDate());
 
-        String slotKey = barber.getId() + "_" + request.getDate() + "_" + request.getTime();
-        Object lock = slotLocks.computeIfAbsent(slotKey, k -> new Object());
-        synchronized (lock) {
-            try {
-                if (bookingRepository.existsByBarberAndDateAndTimeAndStatusNot(
-                        barber,
-                        request.getDate(),
-                        request.getTime(),
-                        "cancelled")) {
-                    throw new SlotAlreadyBookedException();
-                }
 
-                Booking booking = new Booking();
-                booking.setUser(user);
-                booking.setService(service);
-                booking.setBarber(barber);
-                booking.setDate(request.getDate());
-                booking.setTime(request.getTime());
-                booking.setPrice(service.getPrice().doubleValue());
+        Booking booking = new Booking();
+        booking.setUser(user);
+        booking.setService(service);
+        booking.setBarber(barber);
+        booking.setDate(request.getDate());
+        booking.setTime(request.getTime());
+        booking.setPrice(service.getPrice().doubleValue());
 
-                Booking saved = bookingRepository.save(booking);
-                notificationService.notify(user, NotificationType.BOOKING_CREATED,
-                        "Booking created for " + service.getName() + " with " + barber.getName() + " on " + request.getDate() + " at " + request.getTime(),
-                        "booking", saved.getId());
-                return saved;
-            } finally {
-                slotLocks.remove(slotKey, lock);
+        Booking saved;
+        try {
+            saved = bookingRepository.save(booking);
+        } catch (DataIntegrityViolationException exception) {
+            if (isActiveSlotConflict(exception)) {
+                throw new SlotAlreadyBookedException();
             }
+            throw exception;
         }
+
+        try {
+            notificationService.notify(user, NotificationType.BOOKING_CREATED,
+                    "Booking created for " + service.getName() + " with " + barber.getName() + " on " + request.getDate() + " at " + request.getTime(),
+                    "booking", saved.getId());
+        } catch (RuntimeException exception) {
+            log.warn("Failed to persist booking notification for bookingId={}", saved.getId(), exception);
+        }
+        return saved;
+
     }
 
     public Booking updateStatus(Long id, String status, User user, boolean isAdmin) {
@@ -136,12 +162,18 @@ public class BookingService {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Booking not found"));
         String normalizedStatus = DomainStatusRules.normalizeBookingStatusForUpdate(status);
+        String currentStatus = DomainStatusRules.normalizeCurrentStatus(booking.getStatus(), "booking");
+        DomainStatusRules.ensureBookingStatusTransitionAllowed(currentStatus, normalizedStatus);
 
         booking.setStatus(normalizedStatus);
         Booking saved = bookingRepository.save(booking);
-        notificationService.notify(booking.getUser(), NotificationType.BOOKING_STATUS_UPDATED,
-                "Booking status updated to: " + normalizedStatus,
-                "booking", saved.getId());
+        try {
+            notificationService.notify(booking.getUser(), NotificationType.BOOKING_STATUS_UPDATED,
+                    "Booking status updated to: " + normalizedStatus,
+                    "booking", saved.getId());
+        } catch (RuntimeException exception) {
+            log.warn("Failed to persist booking status notification for bookingId={}", saved.getId(), exception);
+        }
         return saved;
     }
 
@@ -157,15 +189,19 @@ public class BookingService {
         DomainStatusRules.ensureBookingCanBeCancelled(currentStatus);
         if (!isAdmin) {
             enforceCancellationWindow(booking);
-            enforceDailyCancellationLimit(user);
+            enforceCancellationLimitForAppointmentDate(user, booking.getDate());
         }
 
         booking.setStatus("cancelled");
         booking.setCancelledAt(LocalDateTime.now(clock));
         Booking saved = bookingRepository.save(booking);
-        notificationService.notify(booking.getUser(), NotificationType.BOOKING_CANCELLED,
-                "Booking cancelled for " + booking.getService().getName() + " with " + booking.getBarber().getName(),
-                "booking", saved.getId());
+        try {
+            notificationService.notify(booking.getUser(), NotificationType.BOOKING_CANCELLED,
+                    "Booking cancelled for " + booking.getService().getName() + " with " + booking.getBarber().getName(),
+                    "booking", saved.getId());
+        } catch (RuntimeException exception) {
+            log.warn("Failed to persist booking cancellation notification for bookingId={}", saved.getId(), exception);
+        }
         return saved;
     }
 
@@ -178,17 +214,32 @@ public class BookingService {
         }
     }
 
-    private void enforceDailyCancellationLimit(User user) {
-        LocalDateTime now = LocalDateTime.now(clock);
-        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
-        LocalDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
-        long cancelledCount = bookingRepository.countByUserAndStatusAndCancelledAtBetween(
-                user,
-                "cancelled",
-                startOfDay,
-                endOfDay);
-        if (cancelledCount >= MAX_DAILY_CANCELLATIONS) {
-            throw new ResponseStatusException(BAD_REQUEST, "You can cancel at most 3 bookings per day");
+    private void enforceBookingLimitForAppointmentDate(User user, java.time.LocalDate appointmentDate) {
+        long bookingCount = bookingRepository.countByUserAndDate(user, appointmentDate);
+        if (bookingCount >= MAX_BOOKINGS_PER_APPOINTMENT_DATE) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "You can create at most 3 bookings on the selected appointment date");
         }
+    }
+
+    private void enforceCancellationLimitForAppointmentDate(User user, java.time.LocalDate appointmentDate) {
+        long cancelledCount = bookingRepository.countByUserAndDateWithStatus(user, appointmentDate, "cancelled");
+        if (cancelledCount >= MAX_DAILY_CANCELLATIONS) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "You can cancel at most 3 bookings for the selected appointment date");
+        }
+    }
+
+    private boolean isActiveSlotConflict(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null && (message.contains("idx_booking_active_slot_unique")
+                    || message.contains("uk_booking_barber_date_time"))) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }
