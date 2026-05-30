@@ -1,317 +1,101 @@
 # Cutie Cuts
 
-<p align="center">
-  Full-stack salon platform for booking, commerce, VietQR payments, media management, and admin operations.
-</p>
+Cutie Cuts là một nền tảng web full-stack cho salon/barbershop, kết hợp website giới thiệu dịch vụ, đặt lịch, bán sản phẩm, thanh toán QR và khu vực quản trị vận hành trong cùng một hệ sinh thái.
 
-<p align="center">
-  <img alt="Frontend" src="https://img.shields.io/badge/Frontend-React%2018%20%2B%20TypeScript-111827?style=for-the-badge&logo=react" />
-  <img alt="Backend" src="https://img.shields.io/badge/Backend-Spring%20Boot%203-111827?style=for-the-badge&logo=springboot" />
-  <img alt="Database" src="https://img.shields.io/badge/Database-PostgreSQL%2016-111827?style=for-the-badge&logo=postgresql" />
-  <img alt="Storage" src="https://img.shields.io/badge/Storage-MinIO%20%2F%20S3-111827?style=for-the-badge&logo=minio" />
-  <img alt="Payments" src="https://img.shields.io/badge/Payments-VietQR-111827?style=for-the-badge" />
-</p>
+Mục tiêu của dự án là đưa một website salon vượt khỏi vai trò landing page đơn thuần để trở thành một sản phẩm có thể hỗ trợ cả trải nghiệm khách hàng lẫn các nhu cầu vận hành phía sau.
 
-## Tổng Quan
+## Tổng quan sản phẩm
 
-Cutie Cuts là hệ thống web salon gồm:
+Ở góc nhìn người dùng, Cutie Cuts hoạt động như một website nơi khách có thể khám phá dịch vụ, xem barber, theo dõi hình ảnh thực tế, tạo tài khoản, đặt lịch và mua sản phẩm chăm sóc tóc. Với người quản trị, hệ thống cung cấp không gian để quản lý dịch vụ, barber, sản phẩm, đơn hàng, booking, hình ảnh và nội dung đánh giá.
 
-- Website khách hàng để khám phá dịch vụ, barber, gallery và sản phẩm.
-- Khu vực người dùng để đặt lịch, theo dõi booking, đơn hàng và hồ sơ cá nhân.
-- Trang quản trị để vận hành booking, catalog, đơn hàng, review và dashboard.
-- Backend API phục vụ authentication, media upload, VietQR payment, webhook và realtime status updates.
+Ngoài các màn hình đang hiện diện trên frontend, backend hiện còn hỗ trợ thêm một số capability vận hành như hồ sơ người dùng nâng cao, lưu địa chỉ, thông báo, tổng hợp dữ liệu cá nhân, thanh toán và media flow ở mức API. Vì vậy phạm vi kỹ thuật của hệ thống đang rộng hơn phần giao diện người dùng đang mở ra công khai.
 
-Repo này phù hợp cho các bài toán:
-
-- Booking dịch vụ có ràng buộc lịch, trạng thái và quy tắc hủy.
-- E-commerce cho salon hoặc business nhỏ.
-- QR payment theo flow nội địa Việt Nam.
-- Hệ thống admin tách riêng với public storefront.
-
-## Điểm Nổi Bật
-
-| Nhóm | Những gì đang có |
-| --- | --- |
-| Customer experience | Đăng ký, đăng nhập, Google OAuth, xem dịch vụ, xem barber, gallery, mua sản phẩm, checkout |
-| Booking | Tạo booking theo service, barber, ngày và giờ; xem lịch sử booking; hủy booking theo policy |
-| Commerce | Shop, giỏ hàng, đơn hàng, theo dõi trạng thái thanh toán và lịch sử mua hàng |
-| Payments | Tạo payment bằng VietQR, webhook cập nhật trạng thái, WebSocket phục vụ realtime flow |
-| Content | Gallery, ảnh barber, avatar người dùng, upload qua MinIO/S3-compatible storage |
-| Admin | Dashboard doanh thu và booking, quản lý users, services, barbers, products, orders, gallery, reviews |
-| Platform | Swagger UI, JWT auth, email OTP cho verify/reset password, pagination/filtering ở nhiều màn quản trị |
-
-## Luồng Sản Phẩm
-
-1. Khách tạo tài khoản hoặc đăng nhập qua Google.
-2. Người dùng duyệt dịch vụ, barber và gallery.
-3. Người dùng đặt lịch hoặc thêm sản phẩm vào giỏ.
-4. Hệ thống tạo order, sinh mã thanh toán VietQR và theo dõi trạng thái.
-5. Admin quản lý booking, đơn hàng, catalog và xem số liệu dashboard.
-
-## Kiến Trúc
+## Bức tranh tổng thể
 
 ```mermaid
 flowchart LR
-    A[Frontend<br/>React + Vite] --> B[Spring Boot API]
-    A --> C[WebSocket]
-    B --> D[(PostgreSQL)]
-    B --> E[MinIO / S3 Storage]
-    B --> F[VietQR]
-    F --> G[Payment Webhook]
-    G --> B
-    B --> H[Swagger UI]
+    U[Khách hàng] --> F[Frontend Web App]
+    A[Quản trị viên] --> F
+    F --> B[Backend API]
+    B --> DB[(PostgreSQL)]
+    B --> S3[(S3-compatible Storage)]
+    B --> Q[VietQR]
+    B --> M[Email Service]
+    B --> O[OAuth Provider]
+    B --> W[Realtime Updates]
 ```
 
-### Thành phần chính
+## Nhóm chức năng chính
 
-- `frontend/`
-  Website public, trang người dùng và admin panel trong cùng một React app.
-- `backend/cutie-cuts-app/`
-  Spring Boot API cho auth, booking, shop, payment, upload, notifications và admin data.
-- `backend/docker-compose.yml`
-  Local stack cho backend, PostgreSQL và MinIO.
-- Root docs
-  Tài liệu vận hành riêng cho QR payment, API testing và troubleshooting.
+- Website public để giới thiệu thương hiệu, dịch vụ, gallery và sản phẩm.
+- Khu vực người dùng cho đăng ký, đăng nhập, cập nhật hồ sơ, theo dõi booking và lịch sử mua hàng.
+- Luồng booking theo dịch vụ, barber, ngày và khung giờ.
+- Luồng commerce cơ bản với giỏ hàng, checkout và quản lý đơn hàng.
+- Thanh toán QR cho đơn hàng, kèm cơ chế cập nhật trạng thái thanh toán.
+- Khu vực admin để theo dõi số liệu và quản trị dữ liệu vận hành.
+- Hỗ trợ upload và quản lý media phục vụ avatar, gallery và hình ảnh nghiệp vụ.
 
-## Giao Diện Và Route Chính
+## Công nghệ sử dụng
 
-### Public
-
-- `/`
-- `/services`
-- `/shop`
-- `/gallery`
-- `/about`
-- `/contact`
-- `/auth`
-
-### Yêu cầu đăng nhập
-
-- `/booking`
-- `/checkout`
-- `/profile`
-- `/my-bookings`
-- `/my-orders`
-
-### Admin
-
-- `/admin`
-- `/admin/users`
-- `/admin/bookings`
-- `/admin/services`
-- `/admin/barbers`
-- `/admin/products`
-- `/admin/orders`
-- `/admin/gallery`
-- `/admin/reviews`
-- `/admin/settings`
-
-## API Và Nghiệp Vụ Chính
-
-Các module backend đáng chú ý:
-
-- `AuthController`: register, login, verify email OTP, forgot/reset password, OAuth.
-- `BookingController`: booking CRUD theo user/admin, filter trang quản trị, hủy booking theo policy.
-- `OrderController`: order lifecycle cho shop.
-- `PaymentController` và `PaymentWebhookController`: tạo payment, tra cứu payment, nhận cập nhật từ webhook.
-- `ProductController`, `SalonServiceController`, `BarberController`, `GalleryController`, `ReviewController`: quản lý dữ liệu nghiệp vụ chính.
-- `PresignController`, `UserAvatarController`: upload flow cho media.
-- `AdminDashboardController`: dữ liệu dashboard vận hành.
-
-Swagger UI là điểm vào tốt nhất để xem contract API và test request thực tế.
-
-## Tech Stack
-
-| Layer | Công nghệ |
+| Lớp | Công nghệ |
 | --- | --- |
 | Frontend | React 18, TypeScript, Vite |
 | UI | Tailwind CSS, Radix UI, shadcn/ui, Framer Motion |
-| Data fetching | TanStack Query |
-| Forms | React Hook Form, Zod |
-| i18n | i18next |
-| Backend | Java 17, Spring Boot 3.2 |
-| Security | Spring Security, JWT, Google OAuth |
-| Database | PostgreSQL 16 |
-| Storage | MinIO, AWS S3 SDK |
-| Realtime | Spring WebSocket |
-| API docs | springdoc-openapi, Swagger UI |
-| Email | Resend, SMTP |
-| Testing | JUnit, Spring Boot Test, Vitest, Playwright |
-| DevOps | Docker, Docker Compose, Nginx |
+| State & data | TanStack Query, React Context, React Hook Form, Zod |
+| Routing & i18n | React Router, i18next |
+| Backend | Java 17, Spring Boot 3 |
+| Bảo mật | Spring Security, JWT, OAuth |
+| Database | PostgreSQL |
+| Media storage | S3-compatible storage / MinIO |
+| Thanh toán | VietQR |
+| Realtime & async | WebSocket, scheduler/background jobs |
+| Tài liệu API | OpenAPI / Swagger |
+| Kiểm thử | JUnit, Spring Boot Test, Vitest, Playwright |
 
-## Cấu Trúc Thư Mục
+## Frontend
 
-```text
-main-app/
-├── backend/
-│   ├── init.sql
-│   ├── pg_hba.conf
-│   └── cutie-cuts-app/
-│       ├── src/main/java/.../
-│       │   ├── config/
-│       │   ├── controller/
-│       │   ├── dto/
-│       │   ├── entity/
-│       │   ├── repository/
-│       │   ├── security/
-│       │   └── service/
-│       ├── src/main/resources/
-│       ├── Dockerfile
-│       └── pom.xml
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── context/
-│   │   ├── hooks/
-│   │   ├── i18n/
-│   │   ├── lib/
-│   │   ├── pages/
-│   │   └── services/
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   └── package.json
-├── HOW_TO_TEST_QR_PAYMENT.md
-├── HOW_TO_UPDATE_PRODUCT_PRICES.md
-├── PAYMENT_API_TESTING_GUIDE.md
-├── PAYMENT_VIETQR_GUIDE.md
-└── TROUBLESHOOTING_QR_NULL.md
+Frontend được xây dựng bằng React 18, TypeScript và Vite theo hướng SPA, gộp website public, khu vực người dùng và admin panel trong cùng một ứng dụng. Phần giao diện sử dụng Tailwind CSS kết hợp Radix UI và shadcn/ui để dựng các thành phần tương tác, đồng thời có Framer Motion cho chuyển động và Recharts cho dashboard trực quan.
+
+Ở lớp trải nghiệm ứng dụng, frontend dùng React Router cho điều hướng, TanStack Query cho gọi và đồng bộ dữ liệu từ API, React Hook Form cùng Zod cho form và validation, i18next cho đa ngôn ngữ, và Google OAuth cho đăng nhập liên kết. Hiện giao diện đã bao phủ các luồng chính như khám phá dịch vụ, booking, shop, checkout, hồ sơ cá nhân, lịch sử đơn hàng và khu vực quản trị.
+
+## Backend
+
+Backend được xây dựng bằng Java 17 và Spring Boot 3, đóng vai trò API trung tâm cho toàn bộ nghiệp vụ của hệ thống. Lớp này xử lý authentication, phân quyền, booking, order, review, gallery, quản lý người dùng, thanh toán QR và các tác vụ quản trị dành cho admin.
+
+Về kỹ thuật, backend sử dụng Spring Security và JWT cho bảo mật, Spring Data JPA cho truy cập dữ liệu PostgreSQL, WebSocket cho cập nhật trạng thái gần realtime, OpenAPI/Swagger cho tài liệu API, cùng các tích hợp ngoài như OAuth, email service và S3-compatible storage. Ngoài các tính năng đã được frontend sử dụng trực tiếp, backend còn hỗ trợ thêm các capability ở mức API như address book, notifications, payment tracking và các luồng media/upload phục vụ mở rộng sản phẩm.
+
+## Luồng trải nghiệm chính
+
+```mermaid
+flowchart LR
+    A[Khám phá dịch vụ và sản phẩm] --> B[Tạo tài khoản hoặc đăng nhập]
+    B --> C[Đặt lịch hoặc tạo đơn hàng]
+    C --> D[Thanh toán QR]
+    D --> E[Theo dõi booking và đơn hàng]
+    E --> F[Quay lại trải nghiệm dịch vụ]
 ```
 
-## Chạy Nhanh
+## Mô hình vận hành
 
-### Yêu cầu
-
-- Java 17+
-- Maven 3.9+
-- Node.js 20+
-- Docker Desktop
-
-### 1. Khởi động backend stack
-
-```bash
-cd backend/cutie-cuts-app
-docker compose up -d --build
+```mermaid
+flowchart TD
+    A[Admin Dashboard] --> B[Quản lý booking]
+    A --> C[Quản lý đơn hàng]
+    A --> D[Quản lý dịch vụ và barber]
+    A --> E[Quản lý sản phẩm và gallery]
+    A --> F[Theo dõi đánh giá và dữ liệu vận hành]
 ```
 
-Stack local sẽ mở:
+## Góc nhìn kiến trúc
 
-- Backend API: `http://localhost:8081`
-- PostgreSQL: `localhost:5433`
-- MinIO API: `http://localhost:9000`
-- MinIO Console: `http://localhost:9003`
+Hệ thống được tổ chức theo mô hình frontend SPA tách biệt với backend API. Frontend đảm nhiệm trải nghiệm public, khu vực người dùng và admin panel; backend chịu trách nhiệm cho nghiệp vụ booking, order, authentication, payment, review, media và quản trị. Bên dưới là cơ sở dữ liệu quan hệ cho dữ liệu nghiệp vụ, object storage cho tệp hình ảnh và các tích hợp ngoài cho email, OAuth và QR payment.
 
-### 2. Chạy frontend
+## Phù hợp cho bài toán nào
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+Cutie Cuts phù hợp làm nền tảng cho salon, barbershop hoặc các mô hình dịch vụ tương tự cần kết hợp:
 
-Frontend mặc định chạy tại:
-
-- `http://localhost:8080`
-
-## Chạy Local Không Dùng Docker
-
-### Backend
-
-```bash
-cd backend/cutie-cuts-app
-./mvnw spring-boot:run
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Truy Cập Dịch Vụ
-
-- Frontend: `http://localhost:8080`
-- Backend API: `http://localhost:8081`
-- Swagger UI: `http://localhost:8081/swagger-ui/index.html`
-- MinIO Console: `http://localhost:9003`
-
-## Biến Môi Trường Quan Trọng
-
-### Backend
-
-| Biến | Mục đích |
-| --- | --- |
-| `SERVER_PORT` | Port cho Spring Boot |
-| `JWT_SECRET` | Ký JWT |
-| `GOOGLE_CLIENT_ID` | Google OAuth |
-| `PAYMENT_WEBHOOK_SECRET` | Xác thực webhook payment |
-| `VIETQR_BANK_ID` | Cấu hình ngân hàng VietQR |
-| `VIETQR_ACCOUNT_NO` | Số tài khoản nhận tiền |
-| `VIETQR_ACCOUNT_NAME` | Tên tài khoản nhận tiền |
-| `SPRING_DATASOURCE_URL` | Kết nối PostgreSQL |
-| `SPRING_DATASOURCE_USERNAME` | User database |
-| `SPRING_DATASOURCE_PASSWORD` | Password database |
-| `S3_ENDPOINT` | Endpoint MinIO/S3 |
-| `S3_PUBLIC_URL` | Public URL cho media |
-| `S3_ACCESS_KEY` | Access key storage |
-| `S3_SECRET_KEY` | Secret key storage |
-| `S3_BUCKET_AVATARS` | Bucket avatar |
-| `S3_BUCKET_GALLERY` | Bucket gallery |
-| `S3_BUCKET_BARBERS` | Bucket barber images |
-| `APP_MAIL_PROVIDER` | `console`, `smtp`, hoặc provider khác |
-| `RESEND_API_KEY` | API key cho Resend |
-| `MAIL_FROM` | Sender email |
-| `SMTP_HOST` | SMTP host |
-| `SMTP_PORT` | SMTP port |
-| `SMTP_USERNAME` | SMTP username |
-| `SMTP_PASSWORD` | SMTP password |
-
-### Frontend
-
-| Biến | Mục đích |
-| --- | --- |
-| `VITE_API_BASE_URL` | Base URL cho backend API |
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID |
-
-## Testing
-
-### Backend
-
-```bash
-cd backend/cutie-cuts-app
-./mvnw test
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm test
-```
-
-Repo hiện có cấu hình cho:
-
-- Unit/integration testing phía Spring Boot
-- Vitest cho frontend logic
-- Playwright config cho UI testing
-
-## Tài Liệu Bổ Sung
-
-- [HOW_TO_TEST_QR_PAYMENT.md](HOW_TO_TEST_QR_PAYMENT.md)
-- [PAYMENT_API_TESTING_GUIDE.md](PAYMENT_API_TESTING_GUIDE.md)
-- [PAYMENT_VIETQR_GUIDE.md](PAYMENT_VIETQR_GUIDE.md)
-- [TROUBLESHOOTING_QR_NULL.md](TROUBLESHOOTING_QR_NULL.md)
-- [HOW_TO_UPDATE_PRODUCT_PRICES.md](HOW_TO_UPDATE_PRODUCT_PRICES.md)
-
-## Ghi Chú Hiện Trạng
-
-- Frontend đang gộp public site, customer area và admin panel trong cùng app React.
-- Backend hỗ trợ JWT auth, OTP email flows, OAuth và Swagger.
-- Payment flow đã có VietQR, webhook và WebSocket cho cập nhật trạng thái.
-- Storage đang đi theo hướng S3-compatible nên có thể thay MinIO bằng dịch vụ object storage khác.
-
-## Kết Luận
-
-Cutie Cuts không chỉ là landing page cho salon. Đây là một codebase full-stack có đầy đủ booking, commerce, payment và admin operations, phù hợp để mở rộng thành sản phẩm vận hành thực tế hoặc dùng làm nền tảng cho các bài toán service business tương tự.
+- giới thiệu thương hiệu và dịch vụ,
+- đặt lịch có trạng thái,
+- bán sản phẩm đi kèm dịch vụ,
+- thanh toán nội địa bằng QR,
+- và khu vực quản trị tập trung cho vận hành hằng ngày.
