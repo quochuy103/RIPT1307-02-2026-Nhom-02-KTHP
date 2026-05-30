@@ -55,6 +55,7 @@ CLAUDE.md
 
 # Payment Guide
 *.md
+!README.md
 
 # node modules
 node_modules
