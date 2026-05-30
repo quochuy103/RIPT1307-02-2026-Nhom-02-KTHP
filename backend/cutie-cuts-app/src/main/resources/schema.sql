@@ -291,3 +291,15 @@ create index if not exists idx_user_addresses_user_default on user_addresses(use
 create unique index if not exists ux_user_addresses_one_default
     on user_addresses(user_id)
     where is_default = true and deleted = false;
+
+-- API response cache
+create table if not exists api_cache_entries (
+    id          bigserial primary key,
+    cache_key   varchar(150) not null unique,
+    payload     text not null,
+    expires_at  timestamp not null,
+    created_at  timestamp not null default current_timestamp,
+    updated_at  timestamp not null default current_timestamp
+);
+
+create index if not exists idx_api_cache_entries_expires_at on api_cache_entries(expires_at);
