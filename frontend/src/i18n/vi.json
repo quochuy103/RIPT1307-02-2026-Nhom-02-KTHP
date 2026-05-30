@@ -161,9 +161,9 @@
     "cancelSuccess": "Đã hủy lịch hẹn.",
     "cancelError": "Không thể hủy lịch hẹn.",
     "status": {
-      "pending": "Chờ xử lý",
+      "pending": "Chờ xác nhận",
       "confirmed": "Đã xác nhận",
-      "done": "Hoàn tất",
+      "done": "Hoàn thành",
       "cancelled": "Đã hủy"
     }
   },
@@ -468,9 +468,9 @@
       "confirmPassword": "Xác nhận mật khẩu"
     },
     "status": {
-      "pending": "Chờ xử lý",
+      "pending": "Chờ xác nhận",
       "confirmed": "Đã xác nhận",
-      "done": "Hoàn tất",
+      "done": "Hoàn thành",
       "cancelled": "Đã hủy",
       "paid": "Đã thanh toán",
       "shipping": "Đang giao",
@@ -593,7 +593,7 @@
     "barber": "Barber",
     "date": "Ngày",
     "time": "Giờ",
-    "status": "Trạng thái",
+
     "actions": "Thao tác",
     "name": "Tên",
     "category": "Danh mục",

@@ -150,7 +150,7 @@ const MyBookingsPage = () => {
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-3">
                           <h2 className="font-display text-xl font-semibold">{booking.serviceName}</h2>
-                          <Badge variant={statusColors[booking.status] ?? 'outline'}>{t(`myBookings.status.${booking.status}`, { defaultValue: booking.status })}</Badge>
+                          <Badge variant={statusColors[booking.status.toLowerCase()] ?? 'outline'}>{t(`myBookings.status.${booking.status.toLowerCase()}`, { defaultValue: booking.status })}</Badge>
                           {booking.reviewSubmitted && (
                             <Badge variant="secondary">
                               {booking.overallRating ? `${booking.overallRating}/5` : t('myBookings.reviewed', { defaultValue: 'Đã đánh giá' })}

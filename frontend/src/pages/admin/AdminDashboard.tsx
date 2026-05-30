@@ -319,8 +319,8 @@ const AdminDashboard = () => {
                     <TableCell>{booking.barberName}</TableCell>
                     <TableCell>{booking.date}</TableCell>
                     <TableCell>
-                      <Badge variant={statusColors[booking.status] || 'outline'}>
-                        {t(`admin.status.${booking.status}`)}
+                      <Badge variant={statusColors[booking.status.toLowerCase()] || 'outline'}>
+                        {t(`admin.status.${booking.status.toLowerCase()}`)}
                       </Badge>
                     </TableCell>
                   </TableRow>
