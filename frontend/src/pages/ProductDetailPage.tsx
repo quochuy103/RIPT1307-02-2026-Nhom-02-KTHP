@@ -201,12 +201,12 @@ const ProductDetailPage = () => {
                   <CardContent className="p-5">
                     <div className="flex gap-4">
                       <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                        {getInitials(review.userName)}
+                        {getInitials(review.name)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <p className="font-medium text-foreground">{review.userName}</p>
+                            <p className="font-medium text-foreground">{review.name}</p>
                             <p className="text-xs text-muted-foreground">{formatReviewDate(review.date)}</p>
                           </div>
                           <RatingStars rating={review.rating} />
