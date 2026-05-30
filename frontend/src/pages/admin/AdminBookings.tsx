@@ -14,7 +14,10 @@ import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 
 const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  confirmed: 'default', done: 'secondary', cancelled: 'destructive', pending: 'outline'
+  confirmed: 'default',
+  done: 'secondary',
+  cancelled: 'destructive',
+  pending: 'outline',
 };
 const bookingsQueryKey = ['admin', 'bookings'] as const;
 
@@ -56,7 +59,7 @@ const AdminBookings = () => {
     mutationFn: ({ id, status }: { id: string; status: AdminBooking['status'] }) => api.admin.updateBookingStatus(id, status),
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
-      toast.success(t('admin.bookingsPage.updated', { status: t(`admin.status.${variables.status}`) }));
+      toast.success(t('admin.bookingsPage.updated', { status: t(`admin.status.${variables.status.toLowerCase()}`) }));
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : t('admin.common.updateFailed')),
   });
@@ -70,7 +73,7 @@ const AdminBookings = () => {
     { key: 'date', label: t('admin.fields.date') },
     { key: 'time', label: t('admin.fields.time') },
     { key: 'price', label: t('admin.fields.price'), render: (b) => `${b.price.toLocaleString('vi-VN')}đ` },
-    { key: 'status', label: t('admin.fields.status'), render: (b) => <Badge variant={statusColors[b.status]}>{t(`admin.status.${b.status}`)}</Badge> },
+    { key: 'status', label: t('admin.fields.status'), render: (b) => <Badge variant={statusColors[b.status.toLowerCase()] || 'outline'}>{t(`admin.status.${b.status.toLowerCase()}`)}</Badge> },
   ];
 
   const resetFilters = () => {
@@ -146,13 +149,13 @@ const AdminBookings = () => {
         actions={(b) => (
           <div className="flex items-center justify-end gap-1">
             <Button size="sm" variant="ghost" onClick={() => setViewBooking(b)}><Eye className="h-4 w-4" /></Button>
-            {b.status === 'pending' && (
+            {b.status.toLowerCase() === 'pending' && (
               <>
                 <Button size="sm" variant="ghost" onClick={() => updateStatus(b.id, 'confirmed')} disabled={updateStatusMutation.isPending}><CheckCircle className="h-4 w-4 text-green-400" /></Button>
                 <Button size="sm" variant="ghost" onClick={() => updateStatus(b.id, 'cancelled')} disabled={updateStatusMutation.isPending}><XCircle className="h-4 w-4 text-destructive" /></Button>
               </>
             )}
-            {b.status === 'confirmed' && (
+            {b.status.toLowerCase() === 'confirmed' && (
               <>
                 <Button size="sm" variant="ghost" onClick={() => updateStatus(b.id, 'done')} disabled={updateStatusMutation.isPending}>
                   <CheckCircle className="h-4 w-4 text-primary" />
@@ -175,7 +178,7 @@ const AdminBookings = () => {
             <p><span className="text-muted-foreground">{t('admin.fields.date')}:</span> {viewBooking.date}</p>
             <p><span className="text-muted-foreground">{t('admin.fields.time')}:</span> {viewBooking.time}</p>
             <p><span className="text-muted-foreground">{t('admin.fields.price')}:</span> {viewBooking.price.toLocaleString('vi-VN')}đ</p>
-            <p><span className="text-muted-foreground">{t('admin.fields.status')}:</span> <Badge variant={statusColors[viewBooking.status]}>{t(`admin.status.${viewBooking.status}`)}</Badge></p>
+            <p><span className="text-muted-foreground">{t('admin.fields.status')}:</span> <Badge variant={statusColors[viewBooking.status.toLowerCase()] || 'outline'}>{t(`admin.status.${viewBooking.status.toLowerCase()}`)}</Badge></p>
           </div>
         )}
       </FormModal>
