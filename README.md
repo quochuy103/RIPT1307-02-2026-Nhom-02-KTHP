@@ -1,101 +1,224 @@
 # Cutie Cuts
 
-Cutie Cuts là một nền tảng web full-stack cho salon/barbershop, kết hợp website giới thiệu dịch vụ, đặt lịch, bán sản phẩm, thanh toán QR và khu vực quản trị vận hành trong cùng một hệ sinh thái.
+Cutie Cuts là một ứng dụng web full-stack cho salon/barbershop, kết hợp ba lớp trải nghiệm trong cùng một codebase:
 
-Mục tiêu của dự án là đưa một website salon vượt khỏi vai trò landing page đơn thuần để trở thành một sản phẩm có thể hỗ trợ cả trải nghiệm khách hàng lẫn các nhu cầu vận hành phía sau.
+- website public để giới thiệu thương hiệu, dịch vụ, barber và gallery
+- khu vực khách hàng để đăng ký, đăng nhập, đặt lịch, mua sản phẩm và theo dõi lịch sử
+- admin panel để vận hành booking, đơn hàng, nội dung và dữ liệu salon
 
-## Tổng quan sản phẩm
+## 1. Phạm vi sản phẩm
 
-Ở góc nhìn người dùng, Cutie Cuts hoạt động như một website nơi khách có thể khám phá dịch vụ, xem barber, theo dõi hình ảnh thực tế, tạo tài khoản, đặt lịch và mua sản phẩm chăm sóc tóc. Với người quản trị, hệ thống cung cấp không gian để quản lý dịch vụ, barber, sản phẩm, đơn hàng, booking, hình ảnh và nội dung đánh giá.
+Từ những gì đang có trong code, hệ thống hiện bao phủ các nhóm nghiệp vụ chính sau:
 
-Ngoài các màn hình đang hiện diện trên frontend, backend hiện còn hỗ trợ thêm một số capability vận hành như hồ sơ người dùng nâng cao, lưu địa chỉ, thông báo, tổng hợp dữ liệu cá nhân, thanh toán và media flow ở mức API. Vì vậy phạm vi kỹ thuật của hệ thống đang rộng hơn phần giao diện người dùng đang mở ra công khai.
+- `Services`: danh sách dịch vụ, phân loại, giá, thời lượng
+- `Barbers`: hồ sơ barber, kinh nghiệm, chuyên môn, đánh giá
+- `Bookings`: đặt lịch theo dịch vụ, barber, ngày và khung giờ
+- `Shop / Orders`: giỏ hàng, checkout, đơn hàng, lịch sử mua hàng
+- `Payments`: tạo thanh toán QR, theo dõi trạng thái thanh toán
+- `Reviews`: đánh giá cho booking và sản phẩm
+- `Gallery`: ảnh salon / kiểu tóc / nội dung showcase
+- `User profile`: hồ sơ cá nhân, xác thực, đồng bộ phiên đăng nhập
+- `Admin operations`: dashboard, users, bookings, services, barbers, products, orders, gallery, reviews, settings
 
-## Bức tranh tổng thể
+## 2. Trải nghiệm người dùng hiện có
+
+### Public routes
+
+- `/`
+- `/services`
+- `/shop`
+- `/gallery`
+- `/about`
+- `/contact`
+- `/auth`
+
+### Protected customer routes
+
+- `/booking`
+- `/profile`
+- `/my-bookings`
+- `/my-orders`
+- `/checkout`
+
+### Admin routes
+
+- `/admin`
+- `/admin/users`
+- `/admin/bookings`
+- `/admin/services`
+- `/admin/barbers`
+- `/admin/products`
+- `/admin/orders`
+- `/admin/gallery`
+- `/admin/reviews`
+- `/admin/settings`
+
+## 3. Kiến trúc tổng quan
 
 ```mermaid
 flowchart LR
-    U[Khách hàng] --> F[Frontend Web App]
-    A[Quản trị viên] --> F
-    F --> B[Backend API]
-    B --> DB[(PostgreSQL)]
-    B --> S3[(S3-compatible Storage)]
-    B --> Q[VietQR]
-    B --> M[Email Service]
-    B --> O[OAuth Provider]
-    B --> W[Realtime Updates]
+    U[Customer / Admin] --> F[React SPA]
+    F --> A[Spring Boot API]
+    A --> P[(PostgreSQL)]
+    A --> S[(S3 / MinIO)]
+    A --> Q[VietQR]
+    A --> M[Email Provider]
+    A --> O[Google OAuth]
 ```
 
-## Nhóm chức năng chính
+- `frontend/` là SPA React dùng chung cho public site, customer area và admin panel.
+- `backend/cutie-cuts-app/` là API trung tâm cho auth, booking, order, payment, review, gallery và quản trị.
+- Media được thiết kế để đi qua S3-compatible storage.
+- Thanh toán hiện đi theo luồng tạo QR và cập nhật trạng thái payment.
 
-- Website public để giới thiệu thương hiệu, dịch vụ, gallery và sản phẩm.
-- Khu vực người dùng cho đăng ký, đăng nhập, cập nhật hồ sơ, theo dõi booking và lịch sử mua hàng.
-- Luồng booking theo dịch vụ, barber, ngày và khung giờ.
-- Luồng commerce cơ bản với giỏ hàng, checkout và quản lý đơn hàng.
-- Thanh toán QR cho đơn hàng, kèm cơ chế cập nhật trạng thái thanh toán.
-- Khu vực admin để theo dõi số liệu và quản trị dữ liệu vận hành.
-- Hỗ trợ upload và quản lý media phục vụ avatar, gallery và hình ảnh nghiệp vụ.
+## 4. Tech stack
 
-## Công nghệ sử dụng
-
-| Lớp | Công nghệ |
+| Layer | Công nghệ |
 | --- | --- |
 | Frontend | React 18, TypeScript, Vite |
-| UI | Tailwind CSS, Radix UI, shadcn/ui, Framer Motion |
-| State & data | TanStack Query, React Context, React Hook Form, Zod |
-| Routing & i18n | React Router, i18next |
-| Backend | Java 17, Spring Boot 3 |
-| Bảo mật | Spring Security, JWT, OAuth |
+| UI | Tailwind CSS, Radix UI, shadcn/ui, Framer Motion, Recharts |
+| Data / state | TanStack Query, React Context, React Hook Form, Zod |
+| Routing / i18n | React Router, i18next |
+| Backend | Java 17, Spring Boot 3.2 |
+| Security | Spring Security, JWT, Google OAuth |
 | Database | PostgreSQL |
-| Media storage | S3-compatible storage / MinIO |
-| Thanh toán | VietQR |
-| Realtime & async | WebSocket, scheduler/background jobs |
-| Tài liệu API | OpenAPI / Swagger |
-| Kiểm thử | JUnit, Spring Boot Test, Vitest, Playwright |
+| Storage | AWS S3 SDK / MinIO-compatible storage |
+| API docs | springdoc OpenAPI / Swagger UI |
+| Testing | Vitest, Playwright, Spring Boot Test |
 
-## Frontend
+## 5. Cấu trúc repo
 
-Frontend được xây dựng bằng React 18, TypeScript và Vite theo hướng SPA, gộp website public, khu vực người dùng và admin panel trong cùng một ứng dụng. Phần giao diện sử dụng Tailwind CSS kết hợp Radix UI và shadcn/ui để dựng các thành phần tương tác, đồng thời có Framer Motion cho chuyển động và Recharts cho dashboard trực quan.
-
-Ở lớp trải nghiệm ứng dụng, frontend dùng React Router cho điều hướng, TanStack Query cho gọi và đồng bộ dữ liệu từ API, React Hook Form cùng Zod cho form và validation, i18next cho đa ngôn ngữ, và Google OAuth cho đăng nhập liên kết. Hiện giao diện đã bao phủ các luồng chính như khám phá dịch vụ, booking, shop, checkout, hồ sơ cá nhân, lịch sử đơn hàng và khu vực quản trị.
-
-## Backend
-
-Backend được xây dựng bằng Java 17 và Spring Boot 3, đóng vai trò API trung tâm cho toàn bộ nghiệp vụ của hệ thống. Lớp này xử lý authentication, phân quyền, booking, order, review, gallery, quản lý người dùng, thanh toán QR và các tác vụ quản trị dành cho admin.
-
-Về kỹ thuật, backend sử dụng Spring Security và JWT cho bảo mật, Spring Data JPA cho truy cập dữ liệu PostgreSQL, WebSocket cho cập nhật trạng thái gần realtime, OpenAPI/Swagger cho tài liệu API, cùng các tích hợp ngoài như OAuth, email service và S3-compatible storage. Ngoài các tính năng đã được frontend sử dụng trực tiếp, backend còn hỗ trợ thêm các capability ở mức API như address book, notifications, payment tracking và các luồng media/upload phục vụ mở rộng sản phẩm.
-
-## Luồng trải nghiệm chính
-
-```mermaid
-flowchart LR
-    A[Khám phá dịch vụ và sản phẩm] --> B[Tạo tài khoản hoặc đăng nhập]
-    B --> C[Đặt lịch hoặc tạo đơn hàng]
-    C --> D[Thanh toán QR]
-    D --> E[Theo dõi booking và đơn hàng]
-    E --> F[Quay lại trải nghiệm dịch vụ]
+```text
+main-app/
+├─ frontend/                  # React + Vite SPA
+│  ├─ src/
+│  │  ├─ pages/               # public pages + customer pages + admin pages
+│  │  ├─ components/          # shared UI, admin UI, route guards
+│  │  ├─ context/             # auth, cart
+│  │  └─ lib/                 # API client, runtime config, utils
+│  └─ package.json
+├─ backend/
+│  └─ cutie-cuts-app/         # Spring Boot application
+│     ├─ src/main/java/
+│     ├─ src/main/resources/
+│     └─ pom.xml
+├─ HOW_TO_TEST_QR_PAYMENT.md
+├─ PAYMENT_API_TESTING_GUIDE.md
+├─ PAYMENT_VIETQR_GUIDE.md
+└─ README.md
 ```
 
-## Mô hình vận hành
+## 6. Chạy local
 
-```mermaid
-flowchart TD
-    A[Admin Dashboard] --> B[Quản lý booking]
-    A --> C[Quản lý đơn hàng]
-    A --> D[Quản lý dịch vụ và barber]
-    A --> E[Quản lý sản phẩm và gallery]
-    A --> F[Theo dõi đánh giá và dữ liệu vận hành]
+### Yêu cầu
+
+- Node.js 18+
+- npm
+- Java 17
+- Maven Wrapper hoặc Maven cài sẵn
+- PostgreSQL
+- MinIO hoặc một S3-compatible storage nếu cần test upload/media
+
+### Backend
+
+Từ thư mục repo root:
+
+```powershell
+cd backend/cutie-cuts-app
+mvn spring-boot:run
 ```
 
-## Góc nhìn kiến trúc
+Những cấu hình backend đáng chú ý:
 
-Hệ thống được tổ chức theo mô hình frontend SPA tách biệt với backend API. Frontend đảm nhiệm trải nghiệm public, khu vực người dùng và admin panel; backend chịu trách nhiệm cho nghiệp vụ booking, order, authentication, payment, review, media và quản trị. Bên dưới là cơ sở dữ liệu quan hệ cho dữ liệu nghiệp vụ, object storage cho tệp hình ảnh và các tích hợp ngoài cho email, OAuth và QR payment.
+- `SERVER_PORT`
+- `JWT_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `VIETQR_BANK_ID`
+- `VIETQR_ACCOUNT_NO`
+- `VIETQR_ACCOUNT_NAME`
+- `PAYMENT_WEBHOOK_SECRET`
+- `S3_ENDPOINT`
+- `S3_PUBLIC_URL`
+- `S3_ACCESS_KEY`
+- `S3_SECRET_KEY`
+- `S3_BUCKET_AVATARS`
+- `S3_BUCKET_GALLERY`
+- `S3_BUCKET_BARBERS`
+- `APP_MAIL_PROVIDER`
+- `RESEND_API_KEY`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USERNAME`
+- `SMTP_PASSWORD`
 
-## Phù hợp cho bài toán nào
+Backend hiện mặc định chạy ở cổng `8081` nếu không override `SERVER_PORT`.
 
-Cutie Cuts phù hợp làm nền tảng cho salon, barbershop hoặc các mô hình dịch vụ tương tự cần kết hợp:
+Swagger UI:
 
-- giới thiệu thương hiệu và dịch vụ,
-- đặt lịch có trạng thái,
-- bán sản phẩm đi kèm dịch vụ,
-- thanh toán nội địa bằng QR,
-- và khu vực quản trị tập trung cho vận hành hằng ngày.
+```text
+http://localhost:8081/swagger-ui/index.html
+```
+
+### Frontend
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Biến môi trường frontend quan trọng:
+
+- `VITE_API_BASE_URL`
+- `VITE_GOOGLE_CLIENT_ID`
+- `VITE_API_DEBUG`
+
+Frontend sẽ gọi API theo `VITE_API_BASE_URL`. Nếu không cấu hình biến này và frontend đang chạy ở cổng `8080`, code hiện có fallback sang `http://localhost:8081`.
+
+## 7. Test và build
+
+### Frontend
+
+```powershell
+cd frontend
+npm run test
+npm run build
+```
+
+### Backend
+
+```powershell
+cd backend/cutie-cuts-app
+mvn test
+```
+
+## 8. API surface đang được frontend sử dụng
+
+Frontend hiện đã gọi các nhóm endpoint sau:
+
+- `auth`
+- `user/me`
+- `services`
+- `barbers`
+- `products`
+- `reviews`
+- `gallery`
+- `bookings`
+- `orders`
+- `payments`
+- `admin/*`
+
+Điều này cho thấy README nên được hiểu như tài liệu overview cho cả website, customer app và admin console, không chỉ là landing page salon.
+
+## 9. Tài liệu liên quan trong repo
+
+- [HOW_TO_TEST_QR_PAYMENT.md](./HOW_TO_TEST_QR_PAYMENT.md)
+- [PAYMENT_API_TESTING_GUIDE.md](./PAYMENT_API_TESTING_GUIDE.md)
+- [PAYMENT_VIETQR_GUIDE.md](./PAYMENT_VIETQR_GUIDE.md)
+- [HOW_TO_UPDATE_PRODUCT_PRICES.md](./HOW_TO_UPDATE_PRODUCT_PRICES.md)
+- [TROUBLESHOOTING_QR_NULL.md](./TROUBLESHOOTING_QR_NULL.md)
+
+## 10. Ghi chú
+
+- `README` này được viết lại dựa trên code đang có trong `frontend/` và `backend/`, không chỉ dựa trên mô tả cũ.
+- Repo hiện có thêm các tài liệu nghiệp vụ/payment riêng, nên README nên giữ vai trò entry point ngắn gọn và định hướng kiến trúc.
