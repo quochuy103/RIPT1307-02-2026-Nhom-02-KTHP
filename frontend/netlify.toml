@@ -1,4 +1,23 @@
+
+# Netlify proxy — frontend on HTTPS, backend/MinIO on HTTP VM
+# Browser calls same-origin (/api, /auth, /minio) → Netlify forwards to VM
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://e1.chiasegpu.vn:25232/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/auth/*"
+  to = "http://e1.chiasegpu.vn:25232/auth/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/minio/*"
+  to = "http://e1.chiasegpu.vn:53039/:splat"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
+
   status = 200
