@@ -22,19 +22,24 @@ const AdminTopbar = ({ onToggleSidebar }: Props) => {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
-      <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="lg:hidden">
-        <Menu className="h-5 w-5" />
-      </Button>
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-card/95 px-4 backdrop-blur sm:px-6">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="lg:hidden">
+          <Menu className="h-5 w-5" />
+        </Button>
+        <span className="hidden text-sm font-semibold text-foreground sm:inline-flex lg:hidden">
+          {t('admin.brand')}
+        </span>
+      </div>
 
       <div className="flex-1" />
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="text-xs font-bold"
+          className="px-2 text-xs font-bold"
           onClick={() => void i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi')}
         >
           {i18n.language === 'vi' ? 'EN' : 'VI'}
@@ -42,13 +47,13 @@ const AdminTopbar = ({ onToggleSidebar }: Props) => {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 px-2">
+            <Button variant="ghost" className="flex max-w-[180px] items-center gap-2 px-2">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                   {user?.name?.charAt(0).toUpperCase() || 'A'}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden text-sm font-medium sm:block">{user?.name || t('admin.common.admin')}</span>
+              <span className="hidden truncate text-sm font-medium sm:block">{user?.name || t('admin.common.admin')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">

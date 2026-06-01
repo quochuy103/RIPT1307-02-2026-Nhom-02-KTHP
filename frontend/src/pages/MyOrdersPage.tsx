@@ -152,7 +152,7 @@ const MyOrdersPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <h1 className="font-display text-4xl md:text-5xl font-bold mb-3">
+          <h1 className="mb-3 font-display text-3xl font-bold md:text-5xl">
             {t('myOrders.title')} <span className="text-gradient-gold">{t('myOrders.highlight')}</span>
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">{t('myOrders.subtitle')}</p>
@@ -165,12 +165,12 @@ const MyOrdersPage = () => {
         </motion.div>
 
         {/* Tab Selection */}
-        <div className="flex justify-center gap-4 mb-8">
+        <div className="mb-8 grid grid-cols-1 gap-3 sm:flex sm:justify-center sm:gap-4">
           <Button
             variant={activeTab === 'orders' ? 'default' : 'outline'}
             onClick={() => setActiveTab('orders')}
             className={cn(
-              "min-w-[150px] font-medium transition-all duration-200",
+              "w-full font-medium transition-all duration-200 sm:min-w-[150px] sm:w-auto",
               activeTab === 'orders' ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "border-primary/20 hover:border-primary/50"
             )}
           >
@@ -180,7 +180,7 @@ const MyOrdersPage = () => {
             variant={activeTab === 'reviewable' ? 'default' : 'outline'}
             onClick={() => setActiveTab('reviewable')}
             className={cn(
-              "min-w-[150px] font-medium transition-all duration-200",
+              "w-full font-medium transition-all duration-200 sm:min-w-[150px] sm:w-auto",
               activeTab === 'reviewable' ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "border-primary/20 hover:border-primary/50"
             )}
           >
@@ -189,7 +189,7 @@ const MyOrdersPage = () => {
         </div>
 
         {activeTab === 'orders' && (
-          <div className="mb-6 flex justify-end">
+          <div className="mb-6 flex justify-stretch sm:justify-end">
             <Select
               value={statusFilter}
               onValueChange={(value) => {
@@ -253,7 +253,7 @@ const MyOrdersPage = () => {
                       <Card className="overflow-hidden">
                         <CardContent className="p-5">
                           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                            <div className="space-y-3 flex-1">
+                            <div className="min-w-0 flex-1 space-y-3">
                               {/* Order header */}
                               <div className="flex flex-wrap items-center gap-3">
                                 <span className="font-display text-sm font-semibold text-muted-foreground">
@@ -270,13 +270,13 @@ const MyOrdersPage = () => {
                                   {t('myOrders.products')}
                                 </p>
                                 {order.products.map((p, i) => (
-                                  <div key={i} className="flex items-center justify-between text-sm">
-                                    <span className="flex items-center gap-2">
+                                  <div key={i} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                    <span className="flex min-w-0 items-center gap-2">
                                       <Package className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                                      <span>{p.name}</span>
+                                      <span className="break-words">{p.name}</span>
                                       <span className="text-muted-foreground">× {p.qty}</span>
                                     </span>
-                                    <span className="text-muted-foreground">{formatVND(p.price * p.qty)}</span>
+                                    <span className="text-muted-foreground sm:text-right">{formatVND(p.price * p.qty)}</span>
                                   </div>
                                 ))}
                               </div>
@@ -289,13 +289,13 @@ const MyOrdersPage = () => {
                                 </span>
                                 <span className="flex items-center gap-2">
                                   <MapPin className="h-4 w-4 text-primary" />
-                                  <span className="truncate">{order.address}</span>
+                                  <span className="break-words">{order.address}</span>
                                 </span>
                               </div>
                             </div>
 
                             {/* Total */}
-                            <div className="flex flex-col items-end gap-1 min-w-[100px]">
+                            <div className="flex min-w-[100px] flex-col gap-1 md:items-end">
                               <p className="text-xs text-muted-foreground">{t('myOrders.total')}</p>
                               <p className="font-bold text-lg text-primary">{formatVND(order.totalPrice)}</p>
                             </div>
@@ -313,7 +313,7 @@ const MyOrdersPage = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="mt-8 flex items-center justify-center gap-2"
+                  className="mt-8 flex flex-wrap items-center justify-center gap-2"
                 >
                   {/* Prev */}
                   <Button
@@ -330,7 +330,7 @@ const MyOrdersPage = () => {
                   </Button>
 
                   {/* Page numbers */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center justify-center gap-1">
                     {buildPageNumbers().map((p, idx) =>
                       p === 'ellipsis' ? (
                         <span key={`ellipsis-${idx}`} className="w-8 text-center text-muted-foreground select-none">
@@ -419,7 +419,7 @@ const MyOrdersPage = () => {
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-display font-semibold text-base truncate">{item.productName}</h3>
+                          <h3 className="break-words font-display text-base font-semibold">{item.productName}</h3>
                           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                             <span>Mã đơn hàng: #{item.orderId}</span>
                             <span>Ngày đặt: {formatOrderDate(item.orderedAt)}</span>
