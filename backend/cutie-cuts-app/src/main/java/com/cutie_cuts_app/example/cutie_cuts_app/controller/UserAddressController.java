@@ -15,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/user/me/addresses")
+@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 @Tag(name = "User Addresses", description = "Saved addresses for the authenticated user")
 public class UserAddressController {
 
