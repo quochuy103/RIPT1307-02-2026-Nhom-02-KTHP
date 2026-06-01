@@ -1,1 +1,4 @@
-/*    /index.html   200
+/api/*    http://e1.chiasegpu.vn:25232/api/:splat    200!
+/auth/*   http://e1.chiasegpu.vn:25232/auth/:splat   200!
+/minio/*  http://e1.chiasegpu.vn:53039/:splat        200!
+/*        /index.html                               200
