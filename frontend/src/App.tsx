@@ -55,7 +55,7 @@ const App = () => (
   <BrowserRouter>
     <ScrollToTop />
     <QueryClientProvider client={queryClient}>
-      <GoogleOAuthProvider clientId={googleClientId || 'not-configured'}>
+      <GoogleOAuthProvider clientId={googleClientId && googleClientId.trim() ? googleClientId : '100000000000-dummyclientid.apps.googleusercontent.com'}>
         <AuthProvider>
           <CartProvider>
             <TooltipProvider>
