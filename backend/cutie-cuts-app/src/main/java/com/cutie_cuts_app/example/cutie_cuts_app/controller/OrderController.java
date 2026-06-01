@@ -46,6 +46,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
 @RequestMapping("/api/orders")
+@CrossOrigin(origins = { "http://localhost:8080", "http://localhost:5173" })
 @Tag(name = "Order", description = "Order management APIs")
 public class OrderController {
 

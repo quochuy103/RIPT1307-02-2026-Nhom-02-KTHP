@@ -43,9 +43,6 @@ public class PresignService {
     @Value("${s3.public-url}")
     private String publicUrl;
 
-    @Value("${s3.upload-url}")
-    private String uploadUrl;
-
     @Value("${s3.access-key}")
     private String accessKey;
 
@@ -72,7 +69,7 @@ public class PresignService {
         if (presigner != null) return presigner;
         AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
         return S3Presigner.builder()
-                .endpointOverride(URI.create(uploadUrl))
+                .endpointOverride(URI.create(publicUrl))
                 .region(Region.of("us-east-1"))
                 .credentialsProvider(StaticCredentialsProvider.create(credentials))
                 .serviceConfiguration(S3Configuration.builder()
