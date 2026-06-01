@@ -294,7 +294,8 @@ const AdminDashboard = () => {
           <CardTitle className="text-base">{t('admin.stats.recentBookings')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[680px]">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>{t('admin.fields.client')}</TableHead>
@@ -328,6 +329,7 @@ const AdminDashboard = () => {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

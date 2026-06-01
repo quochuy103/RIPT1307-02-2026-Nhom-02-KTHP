@@ -189,7 +189,7 @@ const ProfilePage = () => {
     <div className="pt-24 pb-20">
       <div className="container mx-auto px-4 max-w-5xl">
         <div className="mb-10 text-center">
-          <h1 className="font-display text-4xl md:text-5xl font-bold mb-3">
+          <h1 className="mb-3 font-display text-3xl font-bold md:text-5xl">
             {t('profile.title')} <span className="text-gradient-gold">{t('profile.highlight')}</span>
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">{t('profile.subtitle')}</p>
@@ -250,7 +250,7 @@ const ProfilePage = () => {
                     />
                   </div>
 
-                  <h2 className="mt-5 font-display text-2xl font-semibold">{displayName}</h2>
+                  <h2 className="mt-5 break-words font-display text-2xl font-semibold">{displayName}</h2>
                   {profile.email && <p className="mt-1 text-sm text-muted-foreground break-all">{profile.email}</p>}
                   {profile.role && (
                     <Badge className="mt-4 capitalize" variant={profile.role === 'admin' ? 'default' : 'secondary'}>
@@ -273,20 +273,20 @@ const ProfilePage = () => {
               <Card className="border-border bg-card">
                 <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <CardTitle className="text-base">{t('profile.personalInfo')}</CardTitle>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     {isEditing ? (
                       <>
-                        <Button variant="outline" onClick={cancelEdit} disabled={isSaving}>
+                        <Button variant="outline" onClick={cancelEdit} disabled={isSaving} className="w-full sm:w-auto">
                           <X className="mr-2 h-4 w-4" />
                           {t('profile.cancel')}
                         </Button>
-                        <Button onClick={() => void handleSave()} disabled={isSaving}>
+                        <Button onClick={() => void handleSave()} disabled={isSaving} className="w-full sm:w-auto">
                           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                           {isSaving ? t('common.saving') : t('profile.save')}
                         </Button>
                       </>
                     ) : (
-                      <Button onClick={() => setIsEditing(true)}>{t('profile.edit')}</Button>
+                      <Button onClick={() => setIsEditing(true)} className="w-full sm:w-auto">{t('profile.edit')}</Button>
                     )}
                   </div>
                 </CardHeader>
@@ -386,7 +386,7 @@ const ProfilePage = () => {
                       <MapPin className="mt-0.5 h-4 w-4 text-primary" />
                       <div>
                         <dt className="text-xs font-medium uppercase text-muted-foreground">{t('profile.fields.address')}</dt>
-                        <dd className="mt-1 text-sm">{profile.address || t('profile.notProvided')}</dd>
+                        <dd className="mt-1 break-words text-sm">{profile.address || t('profile.notProvided')}</dd>
                       </div>
                     </div>
                   </dl>

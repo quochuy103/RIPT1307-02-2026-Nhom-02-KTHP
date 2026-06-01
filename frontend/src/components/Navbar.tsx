@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ShoppingBag, User, Scissors, Globe, LogOut } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -41,6 +41,17 @@ const Navbar = () => {
   const location = useLocation();
   const { t, i18n } = useTranslation();
 
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   const toggleLang = () => {
     i18n.changeLanguage(i18n.language === 'vi' ? 'en' : 'vi');
   };
@@ -52,11 +63,11 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-3 sm:px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
-          <Link to="/" className="flex items-center gap-2">
-            <Scissors className="h-6 w-6 text-primary" />
-            <span className="max-w-[210px] truncate font-display text-base font-bold text-gradient-gold sm:max-w-none sm:text-xl">
+          <Link to="/" className="flex min-w-0 items-center gap-2">
+            <Scissors className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" />
+            <span className="max-w-[150px] truncate font-display text-sm font-bold text-gradient-gold sm:max-w-[210px] sm:text-base md:max-w-none md:text-xl">
               Lì He Men's Hair Designer
             </span>
           </Link>
@@ -74,13 +85,21 @@ const Navbar = () => {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
-            <button onClick={toggleLang} className="p-2 text-muted-foreground hover:text-primary transition-colors text-xs font-bold flex items-center gap-1">
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+            <button
+              onClick={toggleLang}
+              aria-label="Toggle language"
+              className="flex items-center gap-1 rounded-md p-2 text-[11px] font-bold text-muted-foreground transition-colors hover:text-primary sm:text-xs"
+            >
               <Globe className="h-4 w-4" />
-              {i18n.language === 'vi' ? 'EN' : 'VI'}
+              <span className="hidden sm:inline">{i18n.language === 'vi' ? 'EN' : 'VI'}</span>
             </button>
             {user?.role !== 'admin' && (
-              <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-muted-foreground hover:text-primary transition-colors">
+              <button
+                onClick={() => setIsCartOpen(true)}
+                aria-label="Open cart"
+                className="relative rounded-md p-2 text-muted-foreground transition-colors hover:text-primary"
+              >
                 <ShoppingBag className="h-5 w-5" />
                 {totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
@@ -129,11 +148,15 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link to="/auth" className="p-2 text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/auth" className="rounded-md p-2 text-muted-foreground transition-colors hover:text-primary" aria-label="Sign in">
                 <User className="h-5 w-5" />
               </Link>
             )}
-            <button onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2 text-muted-foreground hover:text-primary transition-colors">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="rounded-md p-2 text-muted-foreground transition-colors hover:text-primary md:hidden"
+              aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
@@ -148,12 +171,11 @@ const Navbar = () => {
             exit={{ opacity: 0, height: 0 }}
             className="md:hidden border-t border-border bg-background/95 backdrop-blur-lg"
           >
-            <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
+            <div className="container mx-auto flex max-h-[calc(100vh-4rem)] flex-col gap-3 overflow-y-auto px-4 py-4">
               {navLinks.map(link => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  onClick={() => setIsOpen(false)}
                   className={`py-2 text-sm font-medium transition-colors ${location.pathname === link.to ? 'text-primary' : 'text-muted-foreground'
                     }`}
                 >
@@ -165,7 +187,6 @@ const Navbar = () => {
                   {user?.role === 'admin' ? (
                     <Link
                       to="/admin"
-                      onClick={() => setIsOpen(false)}
                       className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                     >
                       {t('admin.dashboard')}
@@ -174,21 +195,18 @@ const Navbar = () => {
                     <>
                       <Link
                         to="/profile"
-                        onClick={() => setIsOpen(false)}
                         className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                       >
                         {t('nav.profile')}
                       </Link>
                       <Link
                         to="/my-bookings"
-                        onClick={() => setIsOpen(false)}
                         className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                       >
                         {t('nav.myBookings')}
                       </Link>
                       <Link
                         to="/my-orders"
-                        onClick={() => setIsOpen(false)}
                         className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                       >
                         {t('nav.myOrders')}
@@ -207,7 +225,6 @@ const Navbar = () => {
               ) : (
                 <Link
                   to="/auth"
-                  onClick={() => setIsOpen(false)}
                   className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
                 >
                   {t('auth.signIn')}

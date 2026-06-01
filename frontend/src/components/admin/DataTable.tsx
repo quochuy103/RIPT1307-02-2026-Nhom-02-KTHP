@@ -62,7 +62,7 @@ function DataTable<T extends { id: string }>({
   return (
     <div className="space-y-4">
       {showSearch && (
-        <div className="relative max-w-sm">
+        <div className="relative w-full max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={searchPlaceholder ?? t('admin.table.search')}
@@ -73,8 +73,9 @@ function DataTable<T extends { id: string }>({
         </div>
       )}
 
-      <div className="rounded-xl border border-border overflow-hidden">
-        <Table>
+      <div className="overflow-hidden rounded-xl border border-border">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[720px]">
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
               {columns.map((col) => (
@@ -98,16 +99,17 @@ function DataTable<T extends { id: string }>({
                       {col.render ? col.render(item) : String((item as Record<string, unknown>)[col.key] ?? '')}
                     </TableCell>
                   ))}
-                  {actions && <TableCell className="text-right">{actions(item)}</TableCell>}
+                  {actions && <TableCell className="whitespace-nowrap text-right">{actions(item)}</TableCell>}
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             {t('admin.table.showing', {
               from: (page - 1) * pageSize + 1,
@@ -115,7 +117,7 @@ function DataTable<T extends { id: string }>({
               total: filtered.length,
             })}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>

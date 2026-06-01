@@ -96,13 +96,13 @@ const MyBookingsPage = () => {
     <div className="pt-24 pb-20">
       <div className="container mx-auto px-4 max-w-5xl">
         <div className="text-center mb-10">
-          <h1 className="font-display text-4xl md:text-5xl font-bold mb-3">
+          <h1 className="mb-3 font-display text-3xl font-bold md:text-5xl">
             {t('myBookings.title')} <span className="text-gradient-gold">{t('myBookings.highlight')}</span>
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">{t('myBookings.subtitle')}</p>
         </div>
 
-        <div className="mb-6 flex justify-end">
+        <div className="mb-6 flex justify-stretch sm:justify-end">
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
             <SelectTrigger className="w-full max-w-xs">
               <SelectValue />
@@ -147,9 +147,9 @@ const MyBookingsPage = () => {
                 <Card key={booking.id} className="overflow-hidden">
                   <CardContent className="p-5">
                     <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                      <div className="space-y-3">
+                      <div className="min-w-0 space-y-3">
                         <div className="flex flex-wrap items-center gap-3">
-                          <h2 className="font-display text-xl font-semibold">{booking.serviceName}</h2>
+                          <h2 className="font-display text-lg font-semibold sm:text-xl">{booking.serviceName}</h2>
                           <Badge variant={statusColors[booking.status.toLowerCase()] ?? 'outline'}>{t(`myBookings.status.${booking.status.toLowerCase()}`, { defaultValue: booking.status })}</Badge>
                           {booking.reviewSubmitted && (
                             <Badge variant="secondary">
@@ -161,7 +161,7 @@ const MyBookingsPage = () => {
                         <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
                           <span className="flex items-center gap-2">
                             <UserRound className="h-4 w-4 text-primary" />
-                            {booking.barberName}
+                            <span className="min-w-0 break-words">{booking.barberName}</span>
                           </span>
                           <span className="flex items-center gap-2">
                             <CalendarClock className="h-4 w-4 text-primary" />
@@ -183,7 +183,7 @@ const MyBookingsPage = () => {
                         {canCancel && (
                           <Button
                             variant="outline"
-                            className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            className="w-full border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground md:w-auto"
                             disabled={cancellingId === booking.id}
                             onClick={() => void cancelBooking(booking)}
                           >
@@ -203,7 +203,7 @@ const MyBookingsPage = () => {
                         )}
                         {canReview && (
                           <Button
-                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 md:w-auto"
                             onClick={() => openReviewModal(booking)}
                           >
                             <Star className="mr-2 h-4 w-4" />
