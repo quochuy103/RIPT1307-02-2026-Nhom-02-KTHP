@@ -18,7 +18,6 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @RestController
 @RequestMapping("/api/products")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class ProductController {
 
     private final ProductService productService;
