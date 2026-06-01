@@ -138,7 +138,7 @@ const ProductDetailPage = () => {
 
           <section className="flex flex-col justify-center">
             <p className="mb-2 text-sm font-medium text-primary">{product.category}</p>
-            <h1 className="font-display text-4xl font-bold md:text-5xl">{product.name}</h1>
+            <h1 className="font-display text-3xl font-bold md:text-5xl">{product.name}</h1>
             <p className="mt-4 text-muted-foreground">{product.description}</p>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <RatingStars rating={averageRating} size="md" />
@@ -150,7 +150,7 @@ const ProductDetailPage = () => {
               <span className="text-3xl font-bold text-primary">{formatVND(product.price)}</span>
               <Button
                 type="button"
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto"
                 onClick={() => addToCart(product)}
               >
                 <ShoppingCart className="mr-2 h-4 w-4" />
@@ -166,7 +166,7 @@ const ProductDetailPage = () => {
               <h2 className="font-display text-3xl font-bold">Đánh giá sản phẩm</h2>
               <p className="text-sm text-muted-foreground">Đánh giá công khai từ khách đã mua sản phẩm này.</p>
             </div>
-            <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-card px-4 py-3">
+            <div className="flex w-full items-center gap-3 rounded-lg border border-primary/20 bg-card px-4 py-3 sm:w-auto">
               <span className="text-2xl font-bold text-primary">{averageRating > 0 ? averageRating.toFixed(1) : '0.0'}</span>
               <div>
                 <RatingStars rating={averageRating} />
@@ -199,7 +199,7 @@ const ProductDetailPage = () => {
               {reviews.map((review) => (
                 <Card key={review.id}>
                   <CardContent className="p-5">
-                    <div className="flex gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row">
                       <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                         {getInitials(review.name)}
                       </div>

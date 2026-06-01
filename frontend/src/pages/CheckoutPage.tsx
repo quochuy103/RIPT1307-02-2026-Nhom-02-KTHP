@@ -308,16 +308,16 @@ const CheckoutPage = () => {
   // ─── COD / simple success screen ─────────────────────────────────────────
   if (step === 'order_success') {
     return (
-      <div className="pt-24 pb-20 min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center px-4 pb-20 pt-24">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
+          className="w-full max-w-md text-center"
         >
           <CheckCircle className="h-20 w-20 text-primary mx-auto mb-6" />
           <h2 className="font-display text-3xl font-bold mb-3">{t('checkout.orderPlaced')}</h2>
           <p className="text-muted-foreground mb-6">{t('checkout.thankYou')}</p>
-          <div className="flex gap-3 justify-center">
+          <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
               <Link to="/shop">{t('checkout.continueShopping')}</Link>
             </Button>
@@ -382,7 +382,7 @@ const CheckoutPage = () => {
             >
               {/* Status bar */}
               <div
-                className={`px-6 py-3 flex items-center justify-between text-sm font-medium ${isSuccess
+                className={`flex flex-col gap-2 px-4 py-3 text-sm font-medium sm:flex-row sm:items-center sm:justify-between sm:px-6 ${isSuccess
                     ? 'bg-green-500/10 text-green-600 border-b border-green-500/20'
                     : 'bg-primary/10 text-primary border-b border-primary/20'
                   }`}
@@ -410,11 +410,11 @@ const CheckoutPage = () => {
                    Fallback: if VietQR is down and somehow null slips through, show manual
                    bank-transfer instructions so the user is never left with nothing. */}
               {payment.qrDataUrl ? (
-                <div className="flex justify-center p-6 bg-white">
+                <div className="flex justify-center bg-white p-4 sm:p-6">
                   <img
                     src={payment.qrDataUrl}
                     alt={t('checkout.scanQR')}
-                    className="w-56 h-56 object-contain rounded-lg"
+                    className="h-48 w-48 rounded-lg object-contain sm:h-56 sm:w-56"
                   />
                 </div>
               ) : (
@@ -434,18 +434,18 @@ const CheckoutPage = () => {
               )}
 
               {/* Info rows */}
-              <div className="px-6 py-4 space-y-3">
-                <div className="flex justify-between items-center">
+              <div className="space-y-3 px-4 py-4 sm:px-6">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm text-muted-foreground">{t('checkout.orderId')}</span>
                   <span className="font-medium text-sm">#{createdOrder?.id ?? payment.orderId}</span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm text-muted-foreground">{t('checkout.paymentCode')}</span>
-                  <span className="font-mono text-xs bg-secondary px-2 py-1 rounded select-all">
+                  <span className="break-all rounded bg-secondary px-2 py-1 font-mono text-xs select-all sm:max-w-[220px] sm:text-right">
                     {payment.paymentCode}
                   </span>
                 </div>
-                <div className="flex justify-between items-center border-t border-border pt-3">
+                <div className="flex flex-col gap-1 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm text-muted-foreground">{t('checkout.paymentAmount')}</span>
                   <span className="font-bold text-primary text-lg">{formatVND(payment.amount)}</span>
                 </div>
@@ -453,15 +453,15 @@ const CheckoutPage = () => {
                 {(payment.bankName || payment.bankAccount) && (
                   <div className="bg-secondary/50 rounded-lg p-3 space-y-1.5 text-sm">
                     {payment.bankName && (
-                      <div className="flex justify-between">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
                         <span className="text-muted-foreground">{t('checkout.bankInfo')}</span>
                         <span className="font-medium">{payment.bankName}</span>
                       </div>
                     )}
                     {payment.bankAccount && (
-                      <div className="flex justify-between">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
                         <span className="text-muted-foreground">{t('checkout.bankAccount')}</span>
-                        <span className="font-mono font-medium select-all">{payment.bankAccount}</span>
+                        <span className="break-all font-mono font-medium select-all sm:text-right">{payment.bankAccount}</span>
                       </div>
                     )}
                   </div>
@@ -506,16 +506,16 @@ const CheckoutPage = () => {
   // ─── Main checkout form ───────────────────────────────────────────────────
   return (
     <div className="pt-24 pb-20">
-      <div className="container mx-auto px-4 max-w-4xl">
+      <div className="container mx-auto max-w-5xl px-4">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="font-display text-4xl font-bold mb-8 text-center"
+          className="mb-8 text-center font-display text-3xl font-bold sm:text-4xl"
         >
           <span className="text-gradient-gold">{t('checkout.title')}</span>
         </motion.h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:gap-8">
           {/* ── Cart items ── */}
           <div className="lg:col-span-3 space-y-4">
             <h2 className="font-display text-xl font-semibold mb-4">{t('checkout.yourCart')}</h2>
@@ -534,44 +534,55 @@ const CheckoutPage = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="flex gap-4 bg-card border border-border rounded-lg p-4"
+                    className="rounded-lg border border-border bg-card p-4"
                   >
-                    <img
-                      src={item.product.image}
-                      alt={item.product.name}
-                      className="w-20 h-20 object-cover rounded-md"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-medium">{item.product.name}</h3>
-                      <p className="text-primary font-bold">{formatVND(item.product.price)}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                          className="p-1 bg-secondary rounded hover:bg-secondary/80 transition-colors"
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="w-6 text-center text-sm">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                          className="p-1 bg-secondary rounded hover:bg-secondary/80 transition-colors"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                        <button
-                          onClick={() => removeFromCart(item.product.id)}
-                          className="ml-auto text-muted-foreground hover:text-destructive transition-colors"
-                          aria-label="Remove item"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                    <div className="flex flex-col gap-4 sm:flex-row">
+                      <img
+                        src={item.product.image}
+                        alt={item.product.name}
+                        className="h-24 w-full rounded-md object-cover sm:h-20 sm:w-20 sm:min-w-[5rem]"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-medium">{item.product.name}</h3>
+                        <p className="text-primary font-bold">{formatVND(item.product.price)}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-muted-foreground sm:hidden">Qty</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                              className="rounded bg-secondary p-1 transition-colors hover:bg-secondary/80"
+                              aria-label="Decrease quantity"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="w-6 text-center text-sm">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                              className="rounded bg-secondary p-1 transition-colors hover:bg-secondary/80"
+                              aria-label="Increase quantity"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => removeFromCart(item.product.id)}
+                            className="text-muted-foreground transition-colors hover:text-destructive sm:ml-auto"
+                            aria-label="Remove item"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
+                      <p className="hidden self-center font-bold text-primary sm:block">
+                        {formatVND(item.product.price * item.quantity)}
+                      </p>
                     </div>
-                    <p className="font-bold text-primary self-center">
-                      {formatVND(item.product.price * item.quantity)}
-                    </p>
+                    <div className="mt-4 flex items-center justify-between border-t border-border pt-3 sm:hidden">
+                      <span className="text-sm text-muted-foreground">{t('checkout.total')}</span>
+                      <p className="font-bold text-primary">
+                        {formatVND(item.product.price * item.quantity)}
+                      </p>
+                    </div>
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -580,7 +591,7 @@ const CheckoutPage = () => {
 
           {/* ── Order summary + form ── */}
           <div className="lg:col-span-2">
-            <div className="bg-card border border-border rounded-xl p-6 sticky top-24">
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-6 lg:sticky lg:top-24">
               <h2 className="font-display text-xl font-semibold mb-4">{t('checkout.orderSummary')}</h2>
               <div className="flex justify-between mb-2 text-sm">
                 <span className="text-muted-foreground">{t('checkout.subtotal')}</span>
@@ -604,7 +615,7 @@ const CheckoutPage = () => {
                   </div>
 
                   {/* Mode selector */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <button
                       type="button"
                       id="shipping-mode-profile"
@@ -730,7 +741,7 @@ const CheckoutPage = () => {
                 {/* ── Payment method selector ── */}
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">{t('checkout.paymentMethod')}</p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <button
                       type="button"
                       id="payment-method-qr"
