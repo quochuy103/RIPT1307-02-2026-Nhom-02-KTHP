@@ -16,7 +16,6 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
 @RequestMapping("/api/notifications")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class NotificationController {
 
     private final NotificationService notificationService;

@@ -19,6 +19,7 @@ class PresignServiceTest {
         presignService = new PresignService(mockS3StorageService);
         ReflectionTestUtils.setField(presignService, "endpoint", "http://localhost:9000");
         ReflectionTestUtils.setField(presignService, "publicUrl", "http://localhost:9000");
+        ReflectionTestUtils.setField(presignService, "uploadUrl", "http://localhost:9000");
         ReflectionTestUtils.setField(presignService, "accessKey", "minioadmin");
         ReflectionTestUtils.setField(presignService, "secretKey", "minioadmin");
         ReflectionTestUtils.setField(presignService, "avatarsBucket", "avatars");
