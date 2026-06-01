@@ -17,7 +17,6 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
 @RequestMapping("/api/uploads")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class PresignController {
 
     private final PresignService presignService;

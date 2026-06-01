@@ -12,13 +12,18 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: "postgres"
       SERVER_PORT: 8081
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-https://lihebarbershop.netlify.app,http://localhost:*}
       JWT_SECRET: change-me-to-a-long-random-secret-key-at-least-32-bytes
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       VIETQR_BANK_ID: ${VIETQR_BANK_ID:-970422}
       VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-100845448666}
       VIETQR_ACCOUNT_NAME: ${VIETQR_ACCOUNT_NAME:-CUTIE CUTS SALON}
       S3_ENDPOINT: http://minio:9000
+
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-http://e1.chiasegpu.vn:53039}
+
       S3_PUBLIC_URL: http://e1.chiasegpu.vn:53039
+
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
       S3_BUCKET_AVATARS: avatars
@@ -54,7 +59,7 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+      MINIO_API_CORS_ALLOW_ORIGIN: ${MINIO_CORS_ORIGIN:-https://lihebarbershop.netlify.app}
     ports:
       - "53039:9000"
       - "9003:9001"

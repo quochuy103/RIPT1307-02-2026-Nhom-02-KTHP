@@ -14,7 +14,13 @@ const getConfiguredApiBaseUrl = () => {
     return 'http://localhost:8081';
   }
 
+
+  // No VITE_API_BASE_URL set and not on dev port — use same-origin.
+  // Works with nginx proxy or when frontend/backend share origin.
+  // If backend is on a different host, set VITE_API_BASE_URL.
+  return '';
   return PUBLIC_API_BASE_URL;
+
 };
 
 const getBooleanEnv = (value: string | undefined) => value?.trim().toLowerCase() === 'true';

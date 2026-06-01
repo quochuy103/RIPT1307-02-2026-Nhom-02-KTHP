@@ -17,6 +17,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.springframework.beans.factory.annotation.Value;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -25,6 +29,9 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
     private final InMemoryRateLimiter rateLimiter;
+
+    @Value("${app.cors.allowed-origins:http://localhost:*}")
+    private String corsAllowedOrigins;
 
     public SecurityConfig(JwtFilter jwtFilter, InMemoryRateLimiter rateLimiter) {
         this.jwtFilter = jwtFilter;
@@ -88,9 +95,20 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        List<String> origins = new ArrayList<>(Arrays.stream(corsAllowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList());
+
+        // Always allow localhost for local dev
+        for (String localOrigin : List.of("http://localhost:*", "http://127.0.0.1:*", "http://[::1]:*")) {
+            if (!origins.contains(localOrigin)) {
+                origins.add(localOrigin);
+            }
+        }
+
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(
-                List.of("http://localhost:*", "http://127.0.0.1:*", "http://[::1]:*"));
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
