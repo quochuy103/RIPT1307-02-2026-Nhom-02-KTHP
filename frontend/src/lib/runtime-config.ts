@@ -1,4 +1,5 @@
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');
+const PUBLIC_API_BASE_URL = 'http://e1.chiasegpu.vn:25232';
 
 const getConfiguredApiBaseUrl = () => {
   const explicitBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
@@ -9,11 +10,11 @@ const getConfiguredApiBaseUrl = () => {
     return trimTrailingSlash(configured.trim());
   }
 
-  if (typeof window !== 'undefined' && window.location.port === '8080') {
+  if (typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
     return 'http://localhost:8081';
   }
 
-  return '';
+  return PUBLIC_API_BASE_URL;
 };
 
 const getBooleanEnv = (value: string | undefined) => value?.trim().toLowerCase() === 'true';

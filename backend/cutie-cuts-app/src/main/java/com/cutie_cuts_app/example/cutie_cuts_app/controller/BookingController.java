@@ -28,7 +28,6 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
 @RequestMapping("/bookings")
-@CrossOrigin(origins = { "http://localhost:8080", "http://localhost:5173" })
 @Tag(name = "Booking", description = "Booking management APIs")
 public class BookingController {
 
