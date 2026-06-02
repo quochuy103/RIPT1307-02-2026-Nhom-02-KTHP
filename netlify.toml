@@ -4,6 +4,21 @@
   command = "npm run build"
 
 [[redirects]]
+  from = "/api/*"
+  to = "http://e1.chiasegpu.vn:25232/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/auth/*"
+  to = "http://e1.chiasegpu.vn:25232/auth/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/minio/*"
+  to = "http://e1.chiasegpu.vn:53039/:splat"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
