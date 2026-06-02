@@ -19,11 +19,8 @@ services:
       VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-100845448666}
       VIETQR_ACCOUNT_NAME: ${VIETQR_ACCOUNT_NAME:-CUTIE CUTS SALON}
       S3_ENDPOINT: http://minio:9000
-
       S3_PUBLIC_URL: ${S3_PUBLIC_URL:-http://e1.chiasegpu.vn:53039}
-
-      S3_PUBLIC_URL: http://e1.chiasegpu.vn:53039
-
+      S3_BROWSER_PROXY_PATH: ${S3_BROWSER_PROXY_PATH:-/minio}
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
       S3_BUCKET_AVATARS: avatars

@@ -16,7 +16,6 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -42,6 +41,9 @@ public class PresignService {
 
     @Value("${s3.public-url}")
     private String publicUrl;
+
+    @Value("${s3.browser-proxy-path:}")
+    private String browserProxyPath;
 
     @Value("${s3.access-key}")
     private String accessKey;
@@ -125,13 +127,13 @@ public class PresignService {
         S3Presigner p = getPresigner();
         PresignedPutObjectRequest presigned = p.presignPutObject(presignRequest);
 
-        String fullPublicUrl = String.format("%s/%s/%s",
-                publicUrl.replaceAll("/+$", ""), bucket, objectKey);
+        String uploadUrl = buildBrowserUploadUrl(presigned.url().toString());
+        String fullPublicUrl = buildBrowserObjectUrl(bucket, objectKey);
 
         log.info("Generated presigned upload URL for context={} key={}", normalizedContext, objectKey);
 
         return new PresignResult(
-                presigned.url().toString(),
+                uploadUrl,
                 objectKey,
                 fullPublicUrl,
                 PRESIGN_EXPIRY.toSeconds(),
@@ -154,7 +156,7 @@ public class PresignService {
 
     public String derivePublicUrl(String context, String objectKey) {
         String bucket = bucketForContext(context.toUpperCase());
-        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, objectKey);
+        return buildBrowserObjectUrl(bucket, objectKey);
     }
 
     public boolean isValidObjectKey(String context, String objectKey) {
@@ -197,6 +199,50 @@ public class PresignService {
             case "AVATAR" -> "avatars/" + userId + "/" + uuid + extension;
             default -> throw new ResponseStatusException(BAD_REQUEST, "Unknown context: " + context);
         };
+    }
+
+    private String buildBrowserUploadUrl(String directUploadUrl) {
+        if (browserProxyPath == null || browserProxyPath.isBlank()) {
+            return directUploadUrl;
+        }
+
+        URI uri = URI.create(directUploadUrl);
+        StringBuilder browserUrl = new StringBuilder(normalizeProxyPath(browserProxyPath));
+        appendPath(browserUrl, uri.getRawPath());
+
+        if (uri.getRawQuery() != null && !uri.getRawQuery().isBlank()) {
+            browserUrl.append('?').append(uri.getRawQuery());
+        }
+
+        return browserUrl.toString();
+    }
+
+    private String buildBrowserObjectUrl(String bucket, String objectKey) {
+        if (browserProxyPath == null || browserProxyPath.isBlank()) {
+            return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, objectKey);
+        }
+
+        StringBuilder browserUrl = new StringBuilder(normalizeProxyPath(browserProxyPath));
+        appendPath(browserUrl, "/" + bucket + "/" + objectKey);
+        return browserUrl.toString();
+    }
+
+    private String normalizeProxyPath(String value) {
+        String trimmed = value.trim();
+        String withLeadingSlash = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
+        return withLeadingSlash.replaceAll("/+$", "");
+    }
+
+    private void appendPath(StringBuilder builder, String rawPath) {
+        if (rawPath == null || rawPath.isBlank()) {
+            return;
+        }
+
+        if (builder.charAt(builder.length() - 1) != '/') {
+            builder.append('/');
+        }
+
+        builder.append(rawPath.startsWith("/") ? rawPath.substring(1) : rawPath);
     }
 
     public record PresignResult(String uploadUrl, String objectKey, String publicUrl,
