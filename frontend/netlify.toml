@@ -15,6 +15,7 @@
 [[redirects]]
   from = "/minio/*"
   to = "http://e1.chiasegpu.vn:53039/:splat"
+  status = 200
 
 [[redirects]]
   from = "/*"
