@@ -15,6 +15,13 @@ export interface UploadResult {
   objectKey: string;
 }
 
+interface PresignResponse {
+  uploadUrl: string;
+  objectKey: string;
+  publicUrl: string;
+  headers?: Record<string, string>;
+}
+
 export class UploadError extends Error {
   constructor(message: string) {
     super(message);
@@ -78,7 +85,7 @@ function validateFile(file: File): void {
 async function requestPresign(
   context: UploadContext,
   file: File,
-): Promise<{ uploadUrl: string; objectKey: string; publicUrl: string }> {
+): Promise<PresignResponse> {
   const body = JSON.stringify({
     context,
     fileName: file.name,
@@ -89,15 +96,44 @@ async function requestPresign(
   return apiRequest('/api/uploads/presign', { method: 'POST', body });
 }
 
-async function putToStorage(uploadUrl: string, file: File): Promise<void> {
-  const response = await fetch(uploadUrl, {
+function resolveUploadUrl(uploadUrl: string): string {
+  if (/^https?:\/\//i.test(uploadUrl)) {
+    return uploadUrl;
+  }
+
+  if (typeof window === 'undefined') {
+    return uploadUrl;
+  }
+
+  const baseOrigin = API_BASE_URL
+    ? new URL(API_BASE_URL, window.location.origin).origin
+    : window.location.origin;
+
+  return new URL(uploadUrl, baseOrigin).toString();
+}
+
+async function putToStorage(uploadUrl: string, file: File, presignHeaders?: Record<string, string>): Promise<void> {
+  const headers = new Headers(presignHeaders ?? {});
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', file.type);
+  }
+
+  const response = await fetch(resolveUploadUrl(uploadUrl), {
     method: 'PUT',
-    headers: { 'Content-Type': file.type },
+    headers,
     body: file,
   });
 
   if (!response.ok) {
-    throw new UploadError(`Direct upload to storage failed (${response.status})`);
+    let detail = '';
+    try {
+      detail = (await response.text()).trim();
+    } catch {
+      detail = '';
+    }
+
+    const suffix = detail ? `: ${detail.slice(0, 160)}` : '';
+    throw new UploadError(`Direct upload to storage failed (${response.status})${suffix}`);
   }
 }
 
@@ -151,7 +187,7 @@ export interface PresignResult {
 export async function uploadToStorage(file: File, context: UploadContext): Promise<PresignResult> {
   validateFile(file);
   const presign = await requestPresign(context, file);
-  await putToStorage(presign.uploadUrl, file);
+  await putToStorage(presign.uploadUrl, file, presign.headers);
   return {
     uploadUrl: presign.uploadUrl,
     objectKey: presign.objectKey,
@@ -176,7 +212,7 @@ export async function uploadImage(options: {
   const presign = await requestPresign(context, file);
 
   onProgress?.('uploading');
-  await putToStorage(presign.uploadUrl, file);
+  await putToStorage(presign.uploadUrl, file, presign.headers);
 
   onProgress?.('confirming');
   if (context === 'AVATAR' || context === 'GALLERY') {
