@@ -20,6 +20,10 @@ export default defineConfig(({ mode }) => ({
         target: "http://localhost:8081",
         changeOrigin: true,
       },
+      "/minio": {
+        target: "http://localhost:8081",
+        changeOrigin: true,
+      },
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
