@@ -23,7 +23,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:5173"})
 public class UsersController {
 
     private final UserRepository userRepository;

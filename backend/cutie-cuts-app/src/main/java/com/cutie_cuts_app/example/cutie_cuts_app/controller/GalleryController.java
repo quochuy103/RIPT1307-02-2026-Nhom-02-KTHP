@@ -21,7 +21,6 @@ import static org.springframework.http.HttpStatus.OK;
 
 @RestController
 @RequestMapping("/api/gallery")
-@CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*", "http://[::1]:*"})
 public class GalleryController {
 
     private final GalleryImageService galleryImageService;
