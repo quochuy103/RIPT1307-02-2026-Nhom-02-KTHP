@@ -31,7 +31,13 @@ const getConfiguredApiBaseUrl = () => {
 };
 
 const getBooleanEnv = (value: string | undefined) => value?.trim().toLowerCase() === 'true';
+const getTrimmedEnv = (value: string | undefined) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+};
 
 export const API_BASE_URL = getConfiguredApiBaseUrl();
 export const API_BASE_HAS_API_PREFIX = API_BASE_URL.endsWith('/api');
 export const API_DEBUG = getBooleanEnv(import.meta.env.VITE_API_DEBUG as string | undefined);
+export const GOOGLE_CLIENT_ID = getTrimmedEnv(import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined);
+export const GOOGLE_LOGIN_ENABLED = Boolean(GOOGLE_CLIENT_ID);
