@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { GOOGLE_CLIENT_ID, GOOGLE_LOGIN_ENABLED } from "@/lib/runtime-config";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartSidebar from "@/components/CartSidebar";
@@ -39,8 +40,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
-
 const ScrollToTop = () => {
   const { pathname } = useLocation();
 
@@ -51,11 +50,19 @@ const ScrollToTop = () => {
   return null;
 };
 
+const AppProviders = ({ children }: { children: ReactNode }) => {
+  if (!GOOGLE_LOGIN_ENABLED || !GOOGLE_CLIENT_ID) {
+    return <>{children}</>;
+  }
+
+  return <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>{children}</GoogleOAuthProvider>;
+};
+
 const App = () => (
   <BrowserRouter>
     <ScrollToTop />
     <QueryClientProvider client={queryClient}>
-      <GoogleOAuthProvider clientId={googleClientId && googleClientId.trim() ? googleClientId : '100000000000-dummyclientid.apps.googleusercontent.com'}>
+      <AppProviders>
         <AuthProvider>
           <CartProvider>
             <TooltipProvider>
@@ -110,7 +117,7 @@ const App = () => (
             </TooltipProvider>
           </CartProvider>
         </AuthProvider>
-      </GoogleOAuthProvider>
+      </AppProviders>
     </QueryClientProvider>
   </BrowserRouter>
 );

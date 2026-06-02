@@ -27,7 +27,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
-@RequestMapping("/bookings")
+@RequestMapping({"/bookings", "/api/bookings"})
 @Tag(name = "Booking", description = "Booking management APIs")
 public class BookingController {
 
