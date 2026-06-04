@@ -15,11 +15,12 @@ export interface UploadResult {
   objectKey: string;
 }
 
-interface PresignResponse {
-  uploadUrl: string;
+interface ImageUploadResponse {
+  imageUrl: string;
   objectKey: string;
-  publicUrl: string;
-  headers?: Record<string, string>;
+  bucket: string;
+  contentType: string;
+  sizeBytes: number;
 }
 
 export class UploadError extends Error {
@@ -35,7 +36,10 @@ function getToken(): string | null {
 
 async function apiRequest<T>(path: string, init?: RequestInit, auth = true): Promise<T> {
   const headers = new Headers(init?.headers ?? {});
-  headers.set('Content-Type', 'application/json');
+  // Only set JSON content type if not already set (multipart sets its own boundary)
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   if (auth) {
     const token = getToken();
@@ -82,59 +86,16 @@ function validateFile(file: File): void {
   }
 }
 
-async function requestPresign(
-  context: UploadContext,
-  file: File,
-): Promise<PresignResponse> {
-  const body = JSON.stringify({
-    context,
-    fileName: file.name,
-    contentType: file.type,
-    sizeBytes: file.size,
+async function uploadMultipart(file: File, context: UploadContext): Promise<ImageUploadResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('context', context);
+
+  return apiRequest('/api/uploads/image', {
+    method: 'POST',
+    body: formData,
+    // Do NOT set Content-Type header — browser sets it with multipart boundary
   });
-
-  return apiRequest('/api/uploads/presign', { method: 'POST', body });
-}
-
-function resolveUploadUrl(uploadUrl: string): string {
-  if (/^https?:\/\//i.test(uploadUrl)) {
-    return uploadUrl;
-  }
-
-  if (typeof window === 'undefined') {
-    return uploadUrl;
-  }
-
-  const baseOrigin = API_BASE_URL
-    ? new URL(API_BASE_URL, window.location.origin).origin
-    : window.location.origin;
-
-  return new URL(uploadUrl, baseOrigin).toString();
-}
-
-async function putToStorage(uploadUrl: string, file: File, presignHeaders?: Record<string, string>): Promise<void> {
-  const headers = new Headers(presignHeaders ?? {});
-  if (!headers.has('Content-Type')) {
-    headers.set('Content-Type', file.type);
-  }
-
-  const response = await fetch(resolveUploadUrl(uploadUrl), {
-    method: 'PUT',
-    headers,
-    body: file,
-  });
-
-  if (!response.ok) {
-    let detail = '';
-    try {
-      detail = (await response.text()).trim();
-    } catch {
-      detail = '';
-    }
-
-    const suffix = detail ? `: ${detail.slice(0, 160)}` : '';
-    throw new UploadError(`Direct upload to storage failed (${response.status})${suffix}`);
-  }
 }
 
 export async function confirmUpload(
@@ -172,7 +133,7 @@ export async function confirmUpload(
     return { publicUrl: result.url, objectKey };
   }
 
-  // BARBER / PRODUCT: no confirm endpoint — return derived URL
+  // BARBER / PRODUCT: no confirm endpoint — return the imageUrl
   return { publicUrl: '', objectKey };
 }
 
@@ -186,14 +147,13 @@ export interface PresignResult {
 
 export async function uploadToStorage(file: File, context: UploadContext): Promise<PresignResult> {
   validateFile(file);
-  const presign = await requestPresign(context, file);
-  await putToStorage(presign.uploadUrl, file, presign.headers);
+  const result = await uploadMultipart(file, context);
   return {
-    uploadUrl: presign.uploadUrl,
-    objectKey: presign.objectKey,
-    publicUrl: presign.publicUrl,
-    contentType: file.type,
-    fileSize: file.size,
+    uploadUrl: result.imageUrl, // no longer used for PUT, kept for backward compat
+    objectKey: result.objectKey,
+    publicUrl: result.imageUrl,
+    contentType: result.contentType,
+    fileSize: result.sizeBytes,
   };
 }
 
@@ -208,20 +168,17 @@ export async function uploadImage(options: {
   onProgress?.('validating');
   validateFile(file);
 
-  onProgress?.('presigning');
-  const presign = await requestPresign(context, file);
-
   onProgress?.('uploading');
-  await putToStorage(presign.uploadUrl, file, presign.headers);
+  const result = await uploadMultipart(file, context);
 
   onProgress?.('confirming');
   if (context === 'AVATAR' || context === 'GALLERY') {
-    const result = await confirmUpload(context, presign.objectKey, file.type, file.size, metadata);
+    const confirmed = await confirmUpload(context, result.objectKey, result.contentType, result.sizeBytes, metadata);
     onProgress?.('done');
-    return result;
+    return confirmed;
   }
 
-  // BARBER / PRODUCT: no confirmation — return presign result
+  // BARBER / PRODUCT: no confirmation — return upload result
   onProgress?.('done');
-  return { publicUrl: presign.publicUrl, objectKey: presign.objectKey };
+  return { publicUrl: result.imageUrl, objectKey: result.objectKey };
 }

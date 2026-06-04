@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -15,6 +16,7 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -112,8 +114,7 @@ public class S3StorageService {
 
         s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-        // MinIO path-style URL: {publicUrl}/{bucket}/{key}
-        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
+        return "/api/uploads/images/" + bucket + "/" + key;
     }
 
     public String uploadAvatar(MultipartFile file, Long userId) throws IOException {
@@ -140,8 +141,7 @@ public class S3StorageService {
     }
 
     public String derivePublicUrl(String bucket, String key) {
-        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
-
+        return "/api/uploads/images/" + bucket + "/" + key;
     }
 
     public String getAvatarsBucket() { return avatarsBucket; }
@@ -173,7 +173,7 @@ public class S3StorageService {
 
         s3Client.putObject(request, RequestBody.fromBytes(imageBytes));
 
-        return String.format("%s/%s", publicUrl.replaceAll("/+$", ""), key);
+        return "/api/uploads/images/" + avatarsBucket + "/" + key;
     }
 
     private String uploadBytesToBucket(byte[] imageBytes, String contentType, String extension, String bucket) throws IOException {
@@ -189,7 +189,7 @@ public class S3StorageService {
 
         s3Client.putObject(request, RequestBody.fromBytes(imageBytes));
 
-        return String.format("%s/%s/%s", publicUrl.replaceAll("/+$", ""), bucket, key);
+        return "/api/uploads/images/" + bucket + "/" + key;
     }
 
     private void applyPublicReadPolicy(String bucketName) {
@@ -217,6 +217,80 @@ public class S3StorageService {
         } catch (Exception e) {
             log.warn("Failed to apply public read policy to bucket {}: {}", bucketName, e.getMessage());
         }
+    }
+
+    public static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/webp", "image/gif");
+
+    public static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+    public record MultipartUploadResult(String objectKey, String bucket, String contentType, long sizeBytes) {}
+
+    public MultipartUploadResult uploadMultipartImage(MultipartFile file, String context, Long userId) throws IOException {
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new IllegalArgumentException("Unsupported content type: " + contentType);
+        }
+        if (file.getSize() <= 0 || file.getSize() > MAX_IMAGE_SIZE) {
+            throw new IllegalArgumentException("File size must be between 1 byte and 5 MB");
+        }
+
+        String extension = extensionFromContentType(contentType);
+        String bucket = bucketForContext(context);
+        String objectKey = generateObjectKey(context, extension, userId);
+
+        ensureBucketExists(bucket);
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(objectKey)
+                .contentType(contentType)
+                .build();
+
+        s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+        log.info("Uploaded multipart image context={} bucket={} key={} size={}", context, bucket, objectKey, file.getSize());
+
+        return new MultipartUploadResult(objectKey, bucket, contentType, file.getSize());
+    }
+
+    public ResponseInputStream<GetObjectResponse> getObjectStream(String bucket, String key) {
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+        return s3Client.getObject(request);
+    }
+
+    private String bucketForContext(String context) {
+        return switch (context.toUpperCase()) {
+            case "BARBER" -> barbersBucket;
+            case "GALLERY" -> galleryBucket;
+            case "AVATAR" -> avatarsBucket;
+            case "PRODUCT" -> barbersBucket;
+            default -> throw new IllegalArgumentException("Unknown context: " + context);
+        };
+    }
+
+    private String generateObjectKey(String context, String extension, Long userId) {
+        String uuid = UUID.randomUUID().toString();
+        return switch (context.toUpperCase()) {
+            case "BARBER" -> uuid + extension;
+            case "GALLERY" -> "images/" + uuid + extension;
+            case "PRODUCT" -> "products/" + uuid + extension;
+            case "AVATAR" -> "avatars/" + userId + "/" + uuid + extension;
+            default -> throw new IllegalArgumentException("Unknown context: " + context);
+        };
+    }
+
+    private String extensionFromContentType(String contentType) {
+        return switch (contentType) {
+            case "image/jpeg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            case "image/gif" -> ".gif";
+            default -> throw new IllegalArgumentException("Unsupported content type: " + contentType);
+        };
     }
 
     public void deleteFile(String url) {
