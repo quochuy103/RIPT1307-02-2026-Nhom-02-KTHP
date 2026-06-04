@@ -37,7 +37,7 @@ function getToken(): string | null {
 async function apiRequest<T>(path: string, init?: RequestInit, auth = true): Promise<T> {
   const headers = new Headers(init?.headers ?? {});
   // Only set JSON content type if not already set (multipart sets its own boundary)
-  if (!headers.has('Content-Type')) {
+  if (!headers.has('Content-Type') && !(init?.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
