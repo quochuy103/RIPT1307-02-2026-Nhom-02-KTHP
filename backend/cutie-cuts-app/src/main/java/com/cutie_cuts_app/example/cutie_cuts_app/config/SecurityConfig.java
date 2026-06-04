@@ -70,6 +70,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/webhooks/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/uploads/images/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/uploads/minio-legacy/**").permitAll()
                         .requestMatchers("/api/uploads/**").authenticated()
                         .requestMatchers("/api/users/me/avatar/**").authenticated()
                         .requestMatchers("/api/users/**").hasRole("ADMIN")

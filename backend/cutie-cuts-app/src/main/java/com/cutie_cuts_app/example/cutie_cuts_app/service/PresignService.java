@@ -156,7 +156,7 @@ public class PresignService {
 
     public String derivePublicUrl(String context, String objectKey) {
         String bucket = bucketForContext(context.toUpperCase());
-        return buildBrowserObjectUrl(bucket, objectKey);
+        return "/api/uploads/images/" + bucket + "/" + objectKey;
     }
 
     public boolean isValidObjectKey(String context, String objectKey) {
