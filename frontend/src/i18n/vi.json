@@ -631,6 +631,11 @@
     "changeImage": "Đổi ảnh",
     "uploadFailed": "Tải ảnh thất bại"
   },
+  "notifications": {
+    "title": "Thông báo",
+    "empty": "Không có thông báo mới",
+    "markAllRead": "Đánh dấu tất cả đã đọc"
+  },
   "reviews": {
     "r1": "Fade tốt nhất mà tôi từng có. Marcus đúng là một nghệ sĩ.",
     "r2": "Cạo khăn nóng thật tuyệt vời. Rất thư giãn.",
