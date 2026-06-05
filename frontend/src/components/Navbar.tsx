@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import NotificationBell from '@/components/NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,6 +95,7 @@ const Navbar = () => {
               <Globe className="h-4 w-4" />
               <span className="hidden sm:inline">{i18n.language === 'vi' ? 'EN' : 'VI'}</span>
             </button>
+            <NotificationBell />
             {user?.role !== 'admin' && (
               <button
                 onClick={() => setIsCartOpen(true)}

@@ -631,6 +631,11 @@
     "changeImage": "Change Image",
     "uploadFailed": "Upload failed"
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No new notifications",
+    "markAllRead": "Mark all as read"
+  },
   "reviews": {
     "r1": "Best fade I've ever had. Marcus is a true artist.",
     "r2": "The hot towel shave was incredible. So relaxing.",
