@@ -634,7 +634,14 @@
   "notifications": {
     "title": "Thông báo",
     "empty": "Không có thông báo mới",
-    "markAllRead": "Đánh dấu tất cả đã đọc"
+    "markAllRead": "Đánh dấu tất cả đã đọc",
+    "bookingCreated": "Lịch hẹn đã đặt cho dịch vụ {{service}} với {{barber}} vào ngày {{date}} lúc {{time}}",
+    "bookingCancelled": "Lịch hẹn đã hủy cho dịch vụ {{service}} với {{barber}}",
+    "bookingStatusUpdated": "Trạng thái lịch hẹn được cập nhật thành: {{status}}",
+    "orderPlaced": "Đơn hàng đã đặt trị giá {{total}}",
+    "orderStatusUpdated": "Trạng thái đơn hàng được cập nhật thành: {{status}}",
+    "orderReceived": "Đơn hàng được đánh dấu là đã nhận.",
+    "orderCancelled": "Đơn hàng đã hủy. Đã khôi phục số lượng tồn kho."
   },
   "reviews": {
     "r1": "Fade tốt nhất mà tôi từng có. Marcus đúng là một nghệ sĩ.",

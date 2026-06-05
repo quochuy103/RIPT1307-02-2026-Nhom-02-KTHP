@@ -634,7 +634,14 @@
   "notifications": {
     "title": "Notifications",
     "empty": "No new notifications",
-    "markAllRead": "Mark all as read"
+    "markAllRead": "Mark all as read",
+    "bookingCreated": "Booking created for {{service}} with {{barber}} on {{date}} at {{time}}",
+    "bookingCancelled": "Booking cancelled for {{service}} with {{barber}}",
+    "bookingStatusUpdated": "Booking status updated to: {{status}}",
+    "orderPlaced": "Order placed for {{total}}",
+    "orderStatusUpdated": "Order status updated to: {{status}}",
+    "orderReceived": "Order marked as received.",
+    "orderCancelled": "Order cancelled. Stock restored."
   },
   "reviews": {
     "r1": "Best fade I've ever had. Marcus is a true artist.",

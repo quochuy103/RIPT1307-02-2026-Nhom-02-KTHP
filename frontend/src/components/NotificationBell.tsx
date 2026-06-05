@@ -3,6 +3,7 @@ import { Bell, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { api, NotificationItem } from '@/lib/api';
+import { getLocalizedNotification } from '@/lib/notification-i18n';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -135,7 +136,7 @@ const NotificationBell = () => {
               }}
             >
               <div className="flex w-full items-start justify-between gap-2">
-                <span className="text-sm font-medium leading-tight">{n.message}</span>
+                <span className="text-sm font-medium leading-tight">{getLocalizedNotification(n, t)}</span>
                 {!n.isRead && (
                   <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
                 )}
