@@ -211,7 +211,7 @@ flowchart LR
     F --> G[User quét QR qua app ngân hàng]
     G --> H[User chuyển khoản]
     H --> I[Admin/User kiểm tra trạng thái qua API]
-    I --> J[Cập nhật payment thủ công hoặc polling]
+    I --> J[Quản trị viên kiểm tra và cập nhật trạng thái thanh toán trong hệ thống khi cần thiết]
     E --> K[Hết hạn?]
     K -->|Yes| L[Payment Expiry Scheduler → EXPIRED]
     K -->|No| F
@@ -479,7 +479,7 @@ erDiagram
 
 **Bảng `reviews`**: Lưu đánh giá của người dùng. Có thể đánh giá cho booking (dịch vụ + barber) hoặc order (sản phẩm). Ràng buộc UNIQUE đảm bảo mỗi booking chỉ được đánh giá 1 lần, mỗi cặp (order, product) chỉ 1 review.
 
-**Bảng `notifications`**: Lưu thông báo gửi đến người dùng. `type`: `BOOKING_CONFIRMED`, `BOOKING_CANCELLED`, `ORDER_STATUS`, `PAYMENT_RECEIVED`, v.v. `is_read` đánh dấu đã đọc.
+**Bảng `notifications`**: Lưu thông báo gửi đến người dùng. `type`: `BOOKING_CREATED`, `BOOKING_STATUS_UPDATED`, `BOOKING_CANCELLED`, `ORDER_PLACED`, `ORDER_STATUS_UPDATED`, v.v. `is_read` đánh dấu đã đọc.
 
 **Bảng `revoked_tokens`**: Lưu các JWT token đã bị thu hồi (logout, đổi mật khẩu). Dùng `jti` làm unique key. Tự động dọn dẹp token hết hạn.
 
