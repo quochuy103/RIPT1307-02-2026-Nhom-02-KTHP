@@ -1,35 +1,9 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Scissors, Facebook, MapPin, Phone, Clock, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const Footer = () => {
   const { t } = useTranslation();
-  const [selectedContact, setSelectedContact] = useState<'facebook' | 'gmail' | 'phone'>('gmail');
-
-  const contactOptions = {
-    facebook: {
-      label: 'Facebook',
-      value: 'https://www.facebook.com/share/17R3upwr9J/?mibextid=wwXIfr',
-      href: 'https://www.facebook.com/share/17R3upwr9J/?mibextid=wwXIfr',
-      icon: Facebook,
-    },
-    gmail: {
-      label: 'Gmail',
-      value: 'Lihebarbershop@gmail.com',
-      href: 'mailto:Lihebarbershop@gmail.com',
-      icon: Mail,
-    },
-    phone: {
-      label: 'Phone',
-      value: '0986.835.128',
-      href: 'tel:0986835128',
-      icon: Phone,
-    },
-  } as const;
-
-  const activeContact = contactOptions[selectedContact];
-  const contactButtons: Array<'facebook' | 'gmail' | 'phone'> = ['facebook', 'gmail', 'phone'];
 
   return (
     <footer className="bg-card border-t border-border">
@@ -41,42 +15,6 @@ const Footer = () => {
               <span className="font-display text-xl font-bold text-gradient-gold">Li He Men's Hair Designer</span>
             </Link>
             <p className="text-sm leading-relaxed text-muted-foreground">{t('footer.description')}</p>
-            <div className="mt-6 flex gap-4">
-              {contactButtons.map((contactKey) => {
-                const option = contactOptions[contactKey];
-                const Icon = option.icon;
-
-                return (
-                  <button
-                    key={contactKey}
-                    type="button"
-                    onClick={() => setSelectedContact(contactKey)}
-                    className={`rounded-lg p-2 transition-all ${
-                      selectedContact === contactKey
-                        ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
-                        : 'bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                    }`}
-                    aria-label={option.label}
-                    title={option.label}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                {activeContact.label}
-              </p>
-              <a
-                href={activeContact.href}
-                target={selectedContact === 'facebook' ? '_blank' : undefined}
-                rel={selectedContact === 'facebook' ? 'noreferrer' : undefined}
-                className="mt-2 block break-all text-sm font-medium text-foreground transition-colors hover:text-primary"
-              >
-                {activeContact.value}
-              </a>
-            </div>
           </div>
 
           <div>
