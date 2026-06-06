@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CalendarClock, Scissors, Star, UserRound, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { ApiError, api, type Booking } from '@/lib/api';
 import BookingReviewModal, { type BookingReviewTarget } from '@/components/BookingReviewModal';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +43,8 @@ const getBookingError = (error: unknown, fallback: string) => {
 
 const MyBookingsPage = () => {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const focusBookingId = searchParams.get('focus');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +52,7 @@ const MyBookingsPage = () => {
   const [selectedBookingForReview, setSelectedBookingForReview] = useState<BookingReviewTarget | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'done' | 'cancelled'>('all');
+  const [highlightedBookingId, setHighlightedBookingId] = useState<string | null>(null);
 
   const loadBookings = useCallback(async () => {
     try {
@@ -65,6 +69,28 @@ const MyBookingsPage = () => {
   useEffect(() => {
     void loadBookings();
   }, [loadBookings]);
+
+  useEffect(() => {
+    if (isLoading || !focusBookingId || bookings.length === 0) return;
+    const target = bookings.find((booking) => booking.id === focusBookingId);
+    if (!target) return;
+
+    setHighlightedBookingId(focusBookingId);
+    const frameId = window.requestAnimationFrame(() => {
+      document.getElementById(`booking-${focusBookingId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    });
+    const timeoutId = window.setTimeout(() => {
+      setHighlightedBookingId((current) => (current === focusBookingId ? null : current));
+    }, 3000);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [bookings, focusBookingId, isLoading]);
 
   const cancelBooking = async (booking: Booking) => {
     if (!window.confirm(t('myBookings.cancelConfirm'))) return;
@@ -144,7 +170,13 @@ const MyBookingsPage = () => {
               const canCancel = canCancelBooking(booking) && !hasReachedCancellationLimit;
               const canReview = booking.reviewEligible && !booking.reviewSubmitted;
               return (
-                <Card key={booking.id} className="overflow-hidden">
+                <Card
+                  key={booking.id}
+                  id={`booking-${booking.id}`}
+                  className={`overflow-hidden transition-all ${
+                    highlightedBookingId === booking.id ? 'ring-2 ring-primary shadow-lg shadow-primary/20' : ''
+                  }`}
+                >
                   <CardContent className="p-5">
                     <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                       <div className="min-w-0 space-y-3">

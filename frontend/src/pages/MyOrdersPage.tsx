@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Package, CalendarDays, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { ApiError, api, type Order, type ReviewableProduct } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,8 @@ const getOrderError = (error: unknown, fallback: string) => {
 
 const MyOrdersPage = () => {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const focusOrderId = searchParams.get('focus');
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +68,7 @@ const MyOrdersPage = () => {
   const [reviewableError, setReviewableError] = useState<string | null>(null);
   const [selectedProductForReview, setSelectedProductForReview] = useState<ReviewTarget | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [highlightedOrderId, setHighlightedOrderId] = useState<string | null>(null);
 
   const loadOrders = useCallback(async (page: number) => {
     try {
@@ -112,6 +116,34 @@ const MyOrdersPage = () => {
       void loadReviewableProducts();
     }
   }, [activeTab, loadReviewableProducts]);
+
+  useEffect(() => {
+    if (focusOrderId) {
+      setActiveTab('orders');
+    }
+  }, [focusOrderId]);
+
+  useEffect(() => {
+    if (activeTab !== 'orders' || isLoading || !focusOrderId || orders.length === 0) return;
+    const target = orders.find((order) => order.id === focusOrderId);
+    if (!target) return;
+
+    setHighlightedOrderId(focusOrderId);
+    const frameId = window.requestAnimationFrame(() => {
+      document.getElementById(`order-${focusOrderId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    });
+    const timeoutId = window.setTimeout(() => {
+      setHighlightedOrderId((current) => (current === focusOrderId ? null : current));
+    }, 3000);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeTab, focusOrderId, isLoading, orders]);
 
   const handlePrev = () => {
     if (currentPage > 0) void loadOrders(currentPage - 1);
@@ -250,7 +282,12 @@ const MyOrdersPage = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.04 }}
                     >
-                      <Card className="overflow-hidden">
+                      <Card
+                        id={`order-${order.id}`}
+                        className={`overflow-hidden transition-all ${
+                          highlightedOrderId === order.id ? 'ring-2 ring-primary shadow-lg shadow-primary/20' : ''
+                        }`}
+                      >
                         <CardContent className="p-5">
                           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                             <div className="min-w-0 flex-1 space-y-3">
