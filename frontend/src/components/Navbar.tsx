@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import NotificationBell from '@/components/NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,6 +95,7 @@ const Navbar = () => {
               <Globe className="h-4 w-4" />
               <span className="hidden sm:inline">{i18n.language === 'vi' ? 'EN' : 'VI'}</span>
             </button>
+            <NotificationBell />
             {user?.role !== 'admin' && (
               <button
                 onClick={() => setIsCartOpen(true)}
@@ -107,51 +109,54 @@ const Navbar = () => {
                   </span>
                 )}
               </button>
-            )}
-            {isAuthenticated ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatarUrl || undefined} alt={user?.name || 'User'} />
-                      <AvatarFallback className="text-xs">{getInitials(user?.name)}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="space-y-1">
-                    <span className="block font-medium text-foreground">{user?.name}</span>
-                    <span className="block text-xs font-normal text-muted-foreground">{user?.email}</span>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {user?.role === 'admin' ? (
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin">{t('admin.dashboard')}</Link>
+            )
+            }
+            {
+              isAuthenticated ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.avatarUrl || undefined} alt={user?.name || 'User'} />
+                        <AvatarFallback className="text-xs">{getInitials(user?.name)}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="space-y-1">
+                      <span className="block font-medium text-foreground">{user?.name}</span>
+                      <span className="block text-xs font-normal text-muted-foreground">{user?.email}</span>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {user?.role === 'admin' ? (
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin">{t('admin.dashboard')}</Link>
+                      </DropdownMenuItem>
+                    ) : (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to="/profile">{t('nav.profile')}</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/my-bookings">{t('nav.myBookings')}</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/my-orders">{t('nav.myOrders')}</Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      {t('nav.logout')}
                     </DropdownMenuItem>
-                  ) : (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link to="/profile">{t('nav.profile')}</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/my-bookings">{t('nav.myBookings')}</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/my-orders">{t('nav.myOrders')}</Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    {t('nav.logout')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Link to="/auth" className="rounded-md p-2 text-muted-foreground transition-colors hover:text-primary" aria-label="Sign in">
-                <User className="h-5 w-5" />
-              </Link>
-            )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link to="/auth" className="rounded-md p-2 text-muted-foreground transition-colors hover:text-primary" aria-label="Sign in">
+                  <User className="h-5 w-5" />
+                </Link>
+              )
+            }
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="rounded-md p-2 text-muted-foreground transition-colors hover:text-primary md:hidden"
@@ -159,9 +164,9 @@ const Navbar = () => {
             >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-          </div>
-        </div>
-      </div>
+          </div >
+        </div >
+      </div >
 
       <AnimatePresence>
         {isOpen && (
@@ -234,7 +239,7 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </nav >
   );
 };
 

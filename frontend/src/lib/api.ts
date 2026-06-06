@@ -578,7 +578,58 @@ const mapOrder = (row: OrderRow): Order => ({
   createdAt: row.createdAt ?? '',
 });
 
+export interface NotificationItem {
+  id: number;
+  type: string;
+  message: string;
+  referenceType: string | null;
+  referenceId: number | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+type NotificationPageResponse = {
+  data: NotificationItem[];
+  meta: {
+    total: number;
+    page: number;
+    size: number;
+    totalPages: number;
+  };
+};
+
+type UnreadCountResponse = {
+  unreadCount: number;
+};
+
 export const api = {
+  notifications: {
+    getNotifications: async ({
+      unreadOnly = false,
+      page = 0,
+      size = 5,
+    }: {
+      unreadOnly?: boolean;
+      page?: number;
+      size?: number;
+    } = {}): Promise<NotificationPageResponse> => {
+      const params = new URLSearchParams({ page: String(page), size: String(size) });
+      if (unreadOnly) params.append('unreadOnly', 'true');
+      return request<NotificationPageResponse>(`/api/notifications?${params.toString()}`, undefined, true);
+    },
+    getUnreadCount: async (): Promise<number> => {
+      const data = await request<UnreadCountResponse>('/api/notifications/unread-count', undefined, true);
+      return data.unreadCount;
+    },
+    markAsRead: async (id: number): Promise<void> => {
+      await request(`/api/notifications/${id}/read`, { method: 'PATCH' }, true);
+    },
+    markAllAsRead: async (): Promise<void> => {
+      await request('/api/notifications/read-all', { method: 'POST' }, true);
+    },
+  },
+
+  // ---- rest of existing api ----
   user: {
     getMe: async (): Promise<UserProfile> => request<UserProfile>('/api/user/me', undefined, true),
     updateProfile: async (payload: UpdateUserProfilePayload): Promise<UserProfile> => (
