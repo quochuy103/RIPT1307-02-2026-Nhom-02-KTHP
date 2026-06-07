@@ -53,13 +53,28 @@ export type ProductReview = Review;
 type ServiceRow = { id: number; name: string; description: string; price: number; displayPrice?: string; duration: number; category: string };
 type BarberRow = { id: number; name: string; role: string; image: string; experience: number; specialties: string; rating: number };
 type ProductRow = { id: number; name: string; price: number; image: string; rating: number; category: string; description: string };
+type OrderProduct = {
+  productId?: string;
+  name: string;
+  qty: number;
+  price: number;
+};
+
+type OrderProductRow = {
+  productId?: number | string;
+  name?: string | null;
+  qty?: number | string | null;
+  quantity?: number | string | null;
+  price?: number | string | null;
+};
+
 export interface Order {
   id: string;
   /** Numeric id as returned by backend — needed to create a payment */
   numericId: number;
   userId?: string;
   customerName?: string;
-  products: { name: string; qty: number; price: number }[];
+  products: OrderProduct[];
   totalPrice: number;
   address: string;
   status: OrderStatus;
@@ -111,8 +126,8 @@ type OrderRow = {
   id: number;
   userId?: number;
   customerName?: string;
-  products: { name: string; qty: number; price: number }[];
-  totalPrice: number;
+  products: OrderProductRow[];
+  totalPrice: number | string;
   address: string;
   status: Order['status'];
   createdAt: string;
@@ -566,13 +581,25 @@ const compareBookingsBySchedule = <T extends { date: string; time: string; id: s
   return Number(b.id) - Number(a.id);
 };
 
+const toFiniteNumber = (value: unknown, fallback = 0) => {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const mapOrderProduct = (product: OrderProductRow): OrderProduct => ({
+  productId: product.productId === undefined ? undefined : String(product.productId),
+  name: product.name?.trim() || 'Unknown product',
+  qty: toFiniteNumber(product.qty ?? product.quantity),
+  price: toFiniteNumber(product.price),
+});
+
 const mapOrder = (row: OrderRow): Order => ({
   id: String(row.id),
   numericId: row.id,
   userId: row.userId === undefined ? undefined : String(row.userId),
   customerName: row.customerName,
-  products: row.products ?? [],
-  totalPrice: row.totalPrice,
+  products: (row.products ?? []).map(mapOrderProduct),
+  totalPrice: toFiniteNumber(row.totalPrice),
   address: row.address,
   status: row.status,
   createdAt: row.createdAt ?? '',
