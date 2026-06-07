@@ -218,7 +218,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     persistAuth(await response.json() as AuthResponse);
   }, [persistAuth]);
 
-  const logout = useCallback((options?: LogoutOptions) => {
+  const logout = useCallback(async (options?: LogoutOptions) => {
+    if (token) {
+      try {
+        await fetch(`${API_BASE_URL}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // ignore logout API errors — still clear local session
+      }
+    }
     clearAuth();
 
     if (options?.showToast) {
@@ -228,7 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (options?.redirectTo && location.pathname !== options.redirectTo) {
       navigate(options.redirectTo, { replace: true });
     }
-  }, [clearAuth, location.pathname, navigate]);
+  }, [clearAuth, location.pathname, navigate, token]);
 
   useEffect(() => {
     const restoreSession = async () => {
