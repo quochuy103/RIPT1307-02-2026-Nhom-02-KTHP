@@ -490,19 +490,6 @@ async function request<T>(path: string, init?: RequestInit, auth = false): Promi
   return await response.json() as T;
 }
 
-async function requestWithNotFoundFallback<T>(path: string, fallbackPath: string, init?: RequestInit, auth = false): Promise<T> {
-  try {
-    return await request<T>(path, init, auth);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) {
-      return await request<T>(fallbackPath, init, auth);
-    }
-    throw error;
-  }
-}
-
-
-
 const initials = (name: string) => {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
@@ -986,12 +973,7 @@ export const api = {
         sort: ['date,desc', 'time,desc', 'createdAt,desc'],
         status,
       });
-      const page = await requestWithNotFoundFallback<PageResponse<BookingRow> | BookingRow[]>(
-        `/api/user/me/bookings${query}`,
-        '/bookings/my',
-        undefined,
-        true,
-      );
+      const page = await request<PageResponse<BookingRow> | BookingRow[]>(`/api/bookings/my${query}`, undefined, true);
       const rows = Array.isArray(page) ? page : page.content;
       const bookings = rows.map(mapBooking).sort(compareBookingsBySchedule);
       if (!status) return bookings;
@@ -1002,14 +984,14 @@ export const api = {
         console.error('[API validation]', { endpoint: 'create booking', payload });
         throw new ApiError('Invalid booking payload. Required: serviceId, barberId, date, time', 400, payload);
       }
-      const row = await requestWithNotFoundFallback<BookingRow>('/bookings', '/api/bookings', { method: 'POST', body: JSON.stringify(payload) }, true);
+      const row = await request<BookingRow>('/api/bookings', { method: 'POST', body: JSON.stringify(payload) }, true);
       return mapBooking(row);
     },
     cancel: async (id: string): Promise<Booking> => {
       if (!id || id === 'undefined' || id === 'null') {
         throw new ApiError('Invalid booking id for cancellation', 400, { id });
       }
-      const row = await requestWithNotFoundFallback<BookingRow>(`/bookings/${id}/cancel`, `/api/bookings/${id}/cancel`, { method: 'POST' }, true);
+      const row = await request<BookingRow>(`/api/bookings/${id}/cancel`, { method: 'POST' }, true);
       return mapBooking(row);
     },
   },
@@ -1126,12 +1108,12 @@ export const api = {
     },
 
     getBookings: async (): Promise<AdminBooking[]> => {
-      const rows = await requestWithNotFoundFallback<Array<{ id: number; userId: number; userName: string; serviceId: number; serviceName: string; barberId: number; barberName: string; date: string; time: string; status: AdminBooking['status']; price: number }>>('/bookings', '/api/bookings', undefined, true);
+      const rows = await request<Array<{ id: number; userId: number; userName: string; serviceId: number; serviceName: string; barberId: number; barberName: string; date: string; time: string; status: AdminBooking['status']; price: number }>>('/api/bookings', undefined, true);
       return rows
         .map((r) => ({ ...r, id: String(r.id), userId: String(r.userId), serviceId: String(r.serviceId), barberId: String(r.barberId) }))
         .sort(compareBookingsBySchedule);
     },
-    updateBookingStatus: async (id: string, status: AdminBooking['status']) => requestWithNotFoundFallback(`/bookings/${id}/status`, `/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
+    updateBookingStatus: async (id: string, status: AdminBooking['status']) => request(`/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, true),
     getBookingsFiltered: async ({
       page = 0,
       size = 100,
@@ -1139,7 +1121,7 @@ export const api = {
       ...filters
     }: AdminBookingsFilters = {}): Promise<PaginatedResult<AdminBooking>> => {
       const query = buildQueryString({ page, size, sort, ...filters });
-      const rows = await requestWithNotFoundFallback<PageResponse<{
+      const rows = await request<PageResponse<{
         id: number;
         userId: number;
         userName: string;
@@ -1151,7 +1133,7 @@ export const api = {
         time: string;
         status: AdminBooking['status'];
         price: number;
-      }>>(`/bookings/page${query}`, `/api/bookings/page${query}`, undefined, true);
+      }>>(`/api/bookings/page${query}`, undefined, true);
       const mapped = mapPaginatedResponse(rows, (r) => ({
         ...r,
         id: String(r.id),
