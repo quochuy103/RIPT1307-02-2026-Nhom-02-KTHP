@@ -1,30 +1,40 @@
-
 # Graphify outputs (keep local only)
 graphify-out/
 backend/graphify-out/
 backend/cutie-cuts-app/graphify-out/
+<<<<<<< Updated upstream
 .codegraph/
 .claude-flow/
 agentdb.rvf.*
 agentdb.rvf
 ruvector.db
 # MCP and swarm config (local only)
+=======
+
+.codegraph/
+agentdb.rvf.*
+agentdb.rvf
+ruvector.db
+.graphify_incremental.json
+.graphify_python
+
+# Claude / local agent settings
+.claude/
+.claude-flow/
+
+>>>>>>> Stashed changes
 .mcp.json
 .swarm/
 .hive-mind/
 .ruvector.db
-.graphify_incremental.json
-
-# Agent
 .agent/
-/.claude/
+
+# Environment files
 .env
 
-# Temp/test files
+# Temp / generated files
 test_image.txt
-
-# Graphify python path marker
-.graphify_python
+*.log
 
 # Java build output
 backend/cutie-cuts-app/target/
@@ -44,13 +54,10 @@ backend/.idea/
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-
-
-# Others
+# Local docs / notes
 *.md
 CLAUDE.md
+
 .claude/
 
 # Payment Guide
@@ -66,5 +73,6 @@ node_modules
 
 # Env files
 .env
+
 
 
