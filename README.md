@@ -90,6 +90,7 @@ flowchart TD
 
 Hệ thống được tổ chức theo mô hình frontend SPA tách biệt với backend API. Frontend đảm nhiệm trải nghiệm public, khu vực người dùng và admin panel; backend chịu trách nhiệm cho nghiệp vụ booking, order, authentication, payment, review, media và quản trị. Bên dưới là cơ sở dữ liệu quan hệ cho dữ liệu nghiệp vụ, object storage cho tệp hình ảnh và các tích hợp ngoài cho email, OAuth và QR payment.
 
+
 ## Phù hợp cho bài toán nào
 
 Cutie Cuts phù hợp làm nền tảng cho salon, barbershop hoặc các mô hình dịch vụ tương tự cần kết hợp:

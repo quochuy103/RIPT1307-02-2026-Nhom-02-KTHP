@@ -36,6 +36,7 @@
   to = "http://160.250.5.197:8081/api/uploads/minio-legacy/:splat"
   status = 200
 
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

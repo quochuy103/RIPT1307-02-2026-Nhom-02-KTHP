@@ -2,14 +2,14 @@
 graphify-out/
 backend/graphify-out/
 backend/cutie-cuts-app/graphify-out/
-<<<<<<< Updated upstream
+
 .codegraph/
 .claude-flow/
 agentdb.rvf.*
 agentdb.rvf
 ruvector.db
 # MCP and swarm config (local only)
-=======
+
 
 .codegraph/
 agentdb.rvf.*
@@ -22,7 +22,7 @@ ruvector.db
 .claude/
 .claude-flow/
 
->>>>>>> Stashed changes
+
 .mcp.json
 .swarm/
 .hive-mind/
