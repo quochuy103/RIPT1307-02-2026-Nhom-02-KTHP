@@ -91,33 +91,33 @@ const AdminReviews = () => {
 
   const formatReviewType = (review: AdminReview) => (
     review.reviewType === 'product'
-      ? t('admin.reviewsPage.productReview', { defaultValue: 'Sản phẩm' })
-      : t('admin.reviewsPage.bookingReview', { defaultValue: 'Lịch hẹn' })
+      ? t('admin.reviewsPage.productReview')
+      : t('admin.reviewsPage.bookingReview')
   );
 
   const getTargetSummary = (review: AdminReview) => {
     if (review.reviewType === 'product') {
-      return review.productName ?? t('admin.reviewsPage.unknownProduct', { defaultValue: 'Sản phẩm không xác định' });
+      return review.productName ?? t('admin.reviewsPage.unknownProduct');
     }
 
     if (review.serviceName && review.barberName) {
       return `${review.serviceName} / ${review.barberName}`;
     }
 
-    return review.serviceName ?? review.barberName ?? t('admin.reviewsPage.unknownBookingTarget', { defaultValue: 'Dịch vụ hoặc barber không xác định' });
+    return review.serviceName ?? review.barberName ?? t('admin.reviewsPage.unknownBookingTarget');
   };
 
   const columns: Column<AdminReview>[] = [
     { key: 'userName', label: t('admin.fields.user'), render: (review) => <span className="font-medium">{review.userName}</span> },
     {
       key: 'reviewType',
-      label: t('admin.reviewsPage.reviewType', { defaultValue: 'Loại đánh giá' }),
+      label: t('admin.reviewsPage.reviewType'),
       render: (review) => <Badge variant={review.reviewType === 'product' ? 'outline' : 'secondary'}>{formatReviewType(review)}</Badge>,
       searchable: false,
     },
     {
       key: 'target',
-      label: t('admin.reviewsPage.target', { defaultValue: 'Đối tượng' }),
+      label: t('admin.reviewsPage.target'),
       render: (review) => <span className="text-sm text-foreground">{getTargetSummary(review)}</span>,
       searchable: false,
     },
@@ -165,7 +165,7 @@ const AdminReviews = () => {
         <Select value={userIdFilter} onValueChange={setUserIdFilter}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.reviewsPage.allUsers', { defaultValue: 'Tất cả người dùng' })}</SelectItem>
+            <SelectItem value="all">{t('admin.reviewsPage.allUsers')}</SelectItem>
             {users.map((user) => (
               <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
             ))}
@@ -175,16 +175,16 @@ const AdminReviews = () => {
         <Select value={reviewTypeFilter} onValueChange={(value) => setReviewTypeFilter(value as 'all' | 'product' | 'booking')}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.reviewsPage.allTypes', { defaultValue: 'Tất cả loại đánh giá' })}</SelectItem>
-            <SelectItem value="product">{t('admin.reviewsPage.productReview', { defaultValue: 'Sản phẩm' })}</SelectItem>
-            <SelectItem value="booking">{t('admin.reviewsPage.bookingReview', { defaultValue: 'Lịch hẹn' })}</SelectItem>
+            <SelectItem value="all">{t('admin.reviewsPage.allTypes')}</SelectItem>
+            <SelectItem value="product">{t('admin.reviewsPage.productReview')}</SelectItem>
+            <SelectItem value="booking">{t('admin.reviewsPage.bookingReview')}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={productIdFilter} onValueChange={setProductIdFilter}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.reviewsPage.allProducts', { defaultValue: 'Tất cả sản phẩm' })}</SelectItem>
+            <SelectItem value="all">{t('admin.reviewsPage.allProducts')}</SelectItem>
             {products.map((product) => (
               <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
             ))}
@@ -194,7 +194,7 @@ const AdminReviews = () => {
         <Select value={serviceIdFilter} onValueChange={setServiceIdFilter}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.reviewsPage.allServices', { defaultValue: 'Tất cả dịch vụ' })}</SelectItem>
+            <SelectItem value="all">{t('admin.reviewsPage.allServices')}</SelectItem>
             {services.map((service) => (
               <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
             ))}
@@ -204,7 +204,7 @@ const AdminReviews = () => {
         <Select value={barberIdFilter} onValueChange={setBarberIdFilter}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.reviewsPage.allBarbers', { defaultValue: 'Tất cả barber' })}</SelectItem>
+            <SelectItem value="all">{t('admin.reviewsPage.allBarbers')}</SelectItem>
             {barbers.map((barber) => (
               <SelectItem key={barber.id} value={barber.id}>{barber.name}</SelectItem>
             ))}
@@ -214,9 +214,9 @@ const AdminReviews = () => {
         <Select value={ratingFilter} onValueChange={setRatingFilter}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.reviewsPage.allRatings', { defaultValue: 'Tất cả số sao' })}</SelectItem>
+            <SelectItem value="all">{t('admin.reviewsPage.allRatings')}</SelectItem>
             {[5, 4, 3, 2, 1].map((rating) => (
-              <SelectItem key={rating} value={String(rating)}>{rating} sao</SelectItem>
+              <SelectItem key={rating} value={String(rating)}>{rating} {t('admin.reviewsPage.starsSuffix')}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -224,17 +224,17 @@ const AdminReviews = () => {
         <FilterDatePicker
           value={selectedDate}
           onChange={setSelectedDate}
-          placeholder={t('admin.reviewsPage.selectDate', { defaultValue: 'Chọn ngày' })}
+          placeholder={t('admin.reviewsPage.selectDate')}
         />
 
         <Button variant="outline" onClick={resetFilters}>
-          {t('common.reset', { defaultValue: 'Reset' })}
+          {t('common.reset')}
         </Button>
       </div>
 
       {isError && (
         <Alert variant="destructive">
-          <AlertTitle>{t('admin.reviewsPage.loadError', { defaultValue: 'Không thể tải đánh giá' })}</AlertTitle>
+          <AlertTitle>{t('admin.reviewsPage.loadError')}</AlertTitle>
           <AlertDescription>{error instanceof Error ? error.message : t('admin.common.loadFallback')}</AlertDescription>
         </Alert>
       )}
@@ -260,35 +260,35 @@ const AdminReviews = () => {
       <FormModal
         open={!!viewReview}
         onClose={() => setViewReview(null)}
-        title={t('admin.reviewsPage.details', { defaultValue: 'Chi tiết đánh giá' })}
+        title={t('admin.reviewsPage.details')}
         onSubmit={() => setViewReview(null)}
         submitLabel={t('admin.modal.close')}
       >
         {viewReview && (
           <div className="space-y-3 text-sm">
             <p><span className="text-muted-foreground">{t('admin.fields.user')}:</span> {viewReview.userName}</p>
-            <p><span className="text-muted-foreground">{t('admin.reviewsPage.reviewType', { defaultValue: 'Loại đánh giá' })}:</span> {formatReviewType(viewReview)}</p>
-            <p><span className="text-muted-foreground">{t('admin.reviewsPage.target', { defaultValue: 'Đối tượng' })}:</span> {getTargetSummary(viewReview)}</p>
+            <p><span className="text-muted-foreground">{t('admin.reviewsPage.reviewType')}:</span> {formatReviewType(viewReview)}</p>
+            <p><span className="text-muted-foreground">{t('admin.reviewsPage.target')}:</span> {getTargetSummary(viewReview)}</p>
             <p><span className="text-muted-foreground">{t('admin.fields.date')}:</span> {viewReview.date}</p>
 
             {viewReview.reviewType === 'product' ? (
               <>
                 <p><span className="text-muted-foreground">{t('admin.fields.rating')}:</span> {viewReview.rating}/5</p>
                 <p><span className="text-muted-foreground">{t('admin.fields.comment')}:</span> {viewReview.comment}</p>
-                <p><span className="text-muted-foreground">{t('admin.reviewsPage.order', { defaultValue: 'Đơn hàng' })}:</span> {viewReview.orderId ?? '-'}</p>
-                <p><span className="text-muted-foreground">{t('admin.reviewsPage.product', { defaultValue: 'Sản phẩm' })}:</span> {viewReview.productName ?? '-'}</p>
+                <p><span className="text-muted-foreground">{t('admin.reviewsPage.order')}:</span> {viewReview.orderId ?? '-'}</p>
+                <p><span className="text-muted-foreground">{t('admin.reviewsPage.product')}:</span> {viewReview.productName ?? '-'}</p>
               </>
             ) : (
               <>
-                <p><span className="text-muted-foreground">{t('admin.reviewsPage.booking', { defaultValue: 'Lịch hẹn' })}:</span> {viewReview.bookingId ?? '-'}</p>
+                <p><span className="text-muted-foreground">{t('admin.reviewsPage.booking')}:</span> {viewReview.bookingId ?? '-'}</p>
                 <p><span className="text-muted-foreground">{t('admin.fields.service')}:</span> {viewReview.serviceName ?? '-'}</p>
                 <p><span className="text-muted-foreground">{t('admin.fields.barber')}:</span> {viewReview.barberName ?? '-'}</p>
-                <p><span className="text-muted-foreground">{t('admin.reviewsPage.overallRating', { defaultValue: 'Điểm tổng' })}:</span> {viewReview.overallRating ?? viewReview.rating}/5</p>
-                <p><span className="text-muted-foreground">{t('admin.reviewsPage.overallComment', { defaultValue: 'Nhận xét tổng' })}:</span> {viewReview.overallComment ?? viewReview.comment}</p>
-                <p><span className="text-muted-foreground">{t('admin.reviewsPage.barberRating', { defaultValue: 'Điểm barber' })}:</span> {viewReview.barberRating ?? '-'}</p>
-                <p><span className="text-muted-foreground">{t('admin.reviewsPage.barberComment', { defaultValue: 'Nhận xét barber' })}:</span> {viewReview.barberComment ?? '-'}</p>
-                <p><span className="text-muted-foreground">{t('admin.reviewsPage.serviceRating', { defaultValue: 'Điểm dịch vụ' })}:</span> {viewReview.serviceRating ?? '-'}</p>
-                <p><span className="text-muted-foreground">{t('admin.reviewsPage.serviceComment', { defaultValue: 'Nhận xét dịch vụ' })}:</span> {viewReview.serviceComment ?? '-'}</p>
+                <p><span className="text-muted-foreground">{t('admin.reviewsPage.overallRating')}:</span> {viewReview.overallRating ?? viewReview.rating}/5</p>
+                <p><span className="text-muted-foreground">{t('admin.reviewsPage.overallComment')}:</span> {viewReview.overallComment ?? viewReview.comment}</p>
+                <p><span className="text-muted-foreground">{t('admin.reviewsPage.barberRating')}:</span> {viewReview.barberRating ?? '-'}</p>
+                <p><span className="text-muted-foreground">{t('admin.reviewsPage.barberComment')}:</span> {viewReview.barberComment ?? '-'}</p>
+                <p><span className="text-muted-foreground">{t('admin.reviewsPage.serviceRating')}:</span> {viewReview.serviceRating ?? '-'}</p>
+                <p><span className="text-muted-foreground">{t('admin.reviewsPage.serviceComment')}:</span> {viewReview.serviceComment ?? '-'}</p>
               </>
             )}
           </div>

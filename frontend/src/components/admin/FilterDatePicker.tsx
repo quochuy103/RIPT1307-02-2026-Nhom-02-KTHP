@@ -1,5 +1,6 @@
 import { format, parseISO } from 'date-fns';
 import { CalendarDays } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -15,31 +16,36 @@ interface FilterDatePickerProps {
 const FilterDatePicker = ({
   value,
   onChange,
-  placeholder = 'Chọn ngày',
-}: FilterDatePickerProps) => (
-  <Popover>
-    <PopoverTrigger asChild>
-      <Button
-        type="button"
-        variant="outline"
-        className={cn(
-          'w-full justify-between border-input bg-background px-3 text-left font-normal hover:bg-background',
-          !value && 'text-muted-foreground',
-        )}
-      >
-        <span>{value ? format(parseISO(value), 'dd/MM/yyyy') : placeholder}</span>
-        <CalendarDays className="h-4 w-4 shrink-0 text-yellow-400" />
-      </Button>
-    </PopoverTrigger>
-    <PopoverContent className="w-auto p-0" align="start">
-      <Calendar
-        mode="single"
-        selected={value ? parseISO(value) : undefined}
-        onSelect={(date) => onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-        initialFocus
-      />
-    </PopoverContent>
-  </Popover>
-);
+  placeholder,
+}: FilterDatePickerProps) => {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('common.selectDate');
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(
+            'w-full justify-between border-input bg-background px-3 text-left font-normal hover:bg-background',
+            !value && 'text-muted-foreground',
+          )}
+        >
+          <span>{value ? format(parseISO(value), 'dd/MM/yyyy') : resolvedPlaceholder}</span>
+          <CalendarDays className="h-4 w-4 shrink-0 text-yellow-400" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value ? parseISO(value) : undefined}
+          onSelect={(date) => onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 export default FilterDatePicker;

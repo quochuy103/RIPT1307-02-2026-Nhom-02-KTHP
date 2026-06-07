@@ -432,7 +432,8 @@
       "uploadImageFirst": "Please upload an image first",
       "fillAll": "Please fill all fields",
       "passwordMismatch": "Passwords do not match",
-      "passwordLength": "Password must be at least 6 characters"
+      "passwordLength": "Password must be at least 6 characters",
+      "allCategories": "All Categories"
     },
     "fields": {
       "avatar": "Avatar",
@@ -500,7 +501,12 @@
       "search": "Search bookings...",
       "loading": "Loading bookings...",
       "details": "Booking Details",
-      "updated": "Booking {{status}}"
+      "updated": "Booking {{status}}",
+      "allBookings": "All Bookings",
+      "upcomingOnly": "Upcoming",
+      "allBarbers": "All Barbers",
+      "allServices": "All Services",
+      "userIdPlaceholder": "User ID"
     },
     "servicesPage": {
       "title": "Service Management",
@@ -512,7 +518,10 @@
       "deleted": "Service deleted",
       "loadError": "Could not load services",
       "search": "Search services...",
-      "loading": "Loading services..."
+      "loading": "Loading services...",
+      "allServices": "All Services",
+      "minPrice": "Minimum price",
+      "minDuration": "Minimum duration"
     },
     "barbersPage": {
       "title": "Barber Management",
@@ -529,7 +538,8 @@
       "specialtiesRequired": "Specialties is required",
       "avatarImage": "Avatar Image",
       "manualUrl": "Or paste image URL manually",
-      "specialtiesPlaceholder": "Fade, Classic Cuts, Styling"
+      "specialtiesPlaceholder": "Fade, Classic Cuts, Styling",
+      "minExperience": "Minimum experience"
     },
     "productsPage": {
       "title": "Product Management",
@@ -542,7 +552,12 @@
       "loadError": "Could not load products",
       "search": "Search products...",
       "loading": "Loading products...",
-      "manualUrl": "Or paste image URL manually"
+      "manualUrl": "Or paste image URL manually",
+      "allStock": "All Stock Levels",
+      "inStock": "In Stock",
+      "outOfStock": "Out of Stock",
+      "allProducts": "All Products",
+      "minPrice": "Minimum price"
     },
     "ordersPage": {
       "title": "Order Management",
@@ -553,7 +568,10 @@
       "details": "Order Details",
       "ship": "Ship",
       "markShipped": "Mark Shipped",
-      "updated": "Order status updated to {{status}}"
+      "updated": "Order status updated to {{status}}",
+      "selectDate": "Select date",
+      "minTotal": "Minimum total",
+      "userIdPlaceholder": "User ID"
     },
     "galleryPage": {
       "title": "Gallery Management",
@@ -568,13 +586,40 @@
         "classic": "Classic",
         "modern": "Modern",
         "color": "Color"
-      }
+      },
+      "allCategories": "All Categories",
+      "loadError": "Could not load gallery"
     },
     "reviewsPage": {
       "title": "Review Management",
       "count": "{{count}} reviews",
       "search": "Search reviews...",
-      "deleted": "Review deleted"
+      "deleted": "Review deleted",
+      "allUsers": "All Users",
+      "allTypes": "All Review Types",
+      "allProducts": "All Products",
+      "allServices": "All Services",
+      "allBarbers": "All Barbers",
+      "allRatings": "All Ratings",
+      "productReview": "Product",
+      "bookingReview": "Booking",
+      "reviewType": "Review Type",
+      "target": "Target",
+      "selectDate": "Select date",
+      "loadError": "Could not load reviews",
+      "details": "Review Details",
+      "order": "Order",
+      "product": "Product",
+      "booking": "Booking",
+      "overallRating": "Overall Rating",
+      "overallComment": "Overall Comment",
+      "barberRating": "Barber Rating",
+      "barberComment": "Barber Comment",
+      "serviceRating": "Service Rating",
+      "serviceComment": "Service Comment",
+      "unknownProduct": "Unknown product",
+      "unknownBookingTarget": "Unknown service or barber",
+      "starsSuffix": "stars"
     },
     "settingsPage": {
       "title": "Settings",
@@ -606,7 +651,8 @@
     "editService": "Edit service",
     "editProduct": "Edit product",
     "confirmed": "Confirmed",
-    "pending": "Pending"
+    "pending": "Pending",
+    "dashboardLoadError": "Could not load dashboard"
   },
   "footer": {
     "description": "Premium grooming experience since 2010. Where tradition meets modern style.",
@@ -628,7 +674,9 @@
     "uploading": "Uploading...",
     "uploadImage": "Upload Image",
     "changeImage": "Change Image",
-    "uploadFailed": "Upload failed"
+    "uploadFailed": "Upload failed",
+    "reset": "Reset",
+    "selectDate": "Select date"
   },
   "notifications": {
     "title": "Notifications",

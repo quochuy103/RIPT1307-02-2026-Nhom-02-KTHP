@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import ImageUploader from '@/components/ImageUploader';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { compareAdminText, formatAdminCurrency } from '@/lib/admin-format';
 
 const emptyProduct: Omit<AdminProduct, 'id'> = { name: '', price: 0, image: '/placeholder.svg', description: '', stock: 0, category: '' };
 
@@ -27,7 +28,7 @@ const emptyForm: ProductFormState = { ...emptyProduct, objectKey: '', contentTyp
 const productsQueryKey = ['admin', 'products'] as const;
 
 const AdminProducts = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdminProduct | null>(null);
@@ -113,9 +114,9 @@ const AdminProducts = () => {
   };
 
   const productNameOptions = Array.from(new Set(productOptions.map((product) => product.name).filter(Boolean)))
-    .sort((a, b) => a.localeCompare(b, 'vi'));
+    .sort((a, b) => compareAdminText(a, b, i18n.language));
   const productCategoryOptions = Array.from(new Set(productOptions.map((product) => product.category).filter(Boolean)))
-    .sort((a, b) => a.localeCompare(b, 'vi'));
+    .sort((a, b) => compareAdminText(a, b, i18n.language));
 
   const columns: Column<AdminProduct>[] = [
     { key: 'image', label: t('admin.fields.image'), searchable: false, render: (product) => (
@@ -123,7 +124,7 @@ const AdminProducts = () => {
     )},
     { key: 'name', label: t('admin.fields.name'), render: (product) => <span className="font-medium">{product.name}</span> },
     { key: 'category', label: t('admin.fields.category') },
-    { key: 'price', label: t('admin.fields.price'), render: (product) => `${product.price.toLocaleString('vi-VN')}đ` },
+    { key: 'price', label: t('admin.fields.price'), render: (product) => formatAdminCurrency(product.price, i18n.language) },
     { key: 'stock', label: t('admin.fields.stock'), render: (product) => (
       <Badge variant={product.stock > 20 ? 'default' : product.stock > 0 ? 'outline' : 'destructive'}>
         {product.stock}
@@ -147,7 +148,7 @@ const AdminProducts = () => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.productsPage.search', { defaultValue: 'Tất cả sản phẩm' })}</SelectItem>
+            <SelectItem value="all">{t('admin.productsPage.allProducts')}</SelectItem>
             {productNameOptions.map((name) => (
               <SelectItem key={name} value={name}>{name}</SelectItem>
             ))}
@@ -158,25 +159,25 @@ const AdminProducts = () => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.common.allCategories', { defaultValue: 'Tất cả danh mục' })}</SelectItem>
+            <SelectItem value="all">{t('admin.common.allCategories')}</SelectItem>
             {productCategoryOptions.map((category) => (
               <SelectItem key={category} value={category}>{category}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Input type="number" min="0" value={minPriceFilter} onChange={(e) => setMinPriceFilter(e.target.value)} placeholder={t('admin.fields.price', { defaultValue: 'Giá tối thiểu' })} />
+        <Input type="number" min="0" value={minPriceFilter} onChange={(e) => setMinPriceFilter(e.target.value)} placeholder={t('admin.productsPage.minPrice')} />
         <Select value={stockFilter} onValueChange={(value) => setStockFilter(value as 'all' | 'in' | 'out')}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.productsPage.allStock', { defaultValue: 'Tất cả tồn kho' })}</SelectItem>
-            <SelectItem value="in">{t('admin.productsPage.inStock', { defaultValue: 'Còn hàng' })}</SelectItem>
-            <SelectItem value="out">{t('admin.productsPage.outOfStock', { defaultValue: 'Hết hàng' })}</SelectItem>
+            <SelectItem value="all">{t('admin.productsPage.allStock')}</SelectItem>
+            <SelectItem value="in">{t('admin.productsPage.inStock')}</SelectItem>
+            <SelectItem value="out">{t('admin.productsPage.outOfStock')}</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={resetFilters}>
-          {t('common.reset', { defaultValue: 'Reset' })}
+          {t('common.reset')}
         </Button>
       </div>
 

@@ -138,7 +138,7 @@ const AdminUsers = () => {
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={resetFilters}>
-          {t('common.reset', { defaultValue: 'Reset' })}
+          {t('common.reset')}
         </Button>
       </div>
 

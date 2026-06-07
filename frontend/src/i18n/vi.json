@@ -432,7 +432,8 @@
       "uploadImageFirst": "Vui lòng tải ảnh lên trước",
       "fillAll": "Vui lòng điền đầy đủ thông tin",
       "passwordMismatch": "Mật khẩu không khớp",
-      "passwordLength": "Mật khẩu phải có ít nhất 6 ký tự"
+      "passwordLength": "Mật khẩu phải có ít nhất 6 ký tự",
+      "allCategories": "Tất cả danh mục"
     },
     "fields": {
       "avatar": "Ảnh đại diện",
@@ -500,7 +501,12 @@
       "search": "Tìm lịch hẹn...",
       "loading": "Đang tải lịch hẹn...",
       "details": "Chi tiết lịch hẹn",
-      "updated": "Lịch hẹn đã chuyển sang {{status}}"
+      "updated": "Lịch hẹn đã chuyển sang {{status}}",
+      "allBookings": "Tất cả lịch hẹn",
+      "upcomingOnly": "Sắp tới",
+      "allBarbers": "Tất cả barber",
+      "allServices": "Tất cả dịch vụ",
+      "userIdPlaceholder": "User ID"
     },
     "servicesPage": {
       "title": "Quản lý dịch vụ",
@@ -512,7 +518,10 @@
       "deleted": "Đã xóa dịch vụ",
       "loadError": "Không thể tải dịch vụ",
       "search": "Tìm dịch vụ...",
-      "loading": "Đang tải dịch vụ..."
+      "loading": "Đang tải dịch vụ...",
+      "allServices": "Tất cả dịch vụ",
+      "minPrice": "Giá tối thiểu",
+      "minDuration": "Thời lượng tối thiểu"
     },
     "barbersPage": {
       "title": "Quản lý barber",
@@ -529,7 +538,8 @@
       "specialtiesRequired": "Vui lòng nhập chuyên môn",
       "avatarImage": "Ảnh đại diện",
       "manualUrl": "Hoặc dán URL ảnh thủ công",
-      "specialtiesPlaceholder": "Fade, Cắt tóc cổ điển, Tạo kiểu"
+      "specialtiesPlaceholder": "Fade, Cắt tóc cổ điển, Tạo kiểu",
+      "minExperience": "Kinh nghiệm tối thiểu"
     },
     "productsPage": {
       "title": "Quản lý sản phẩm",
@@ -542,7 +552,12 @@
       "loadError": "Không thể tải sản phẩm",
       "search": "Tìm sản phẩm...",
       "loading": "Đang tải sản phẩm...",
-      "manualUrl": "Hoặc dán URL ảnh thủ công"
+      "manualUrl": "Hoặc dán URL ảnh thủ công",
+      "allStock": "Tất cả tồn kho",
+      "inStock": "Còn hàng",
+      "outOfStock": "Hết hàng",
+      "allProducts": "Tất cả sản phẩm",
+      "minPrice": "Giá tối thiểu"
     },
     "ordersPage": {
       "title": "Quản lý đơn hàng",
@@ -553,7 +568,10 @@
       "details": "Chi tiết đơn hàng",
       "ship": "Giao hàng",
       "markShipped": "Đã gửi hàng",
-      "updated": "Đã cập nhật trạng thái đơn hàng sang {{status}}"
+      "updated": "Đã cập nhật trạng thái đơn hàng sang {{status}}",
+      "selectDate": "Chọn ngày",
+      "minTotal": "Tổng tiền tối thiểu",
+      "userIdPlaceholder": "User ID"
     },
     "galleryPage": {
       "title": "Quản lý bộ sưu tập",
@@ -568,13 +586,40 @@
         "classic": "Cổ điển",
         "modern": "Hiện đại",
         "color": "Nhuộm"
-      }
+      },
+      "allCategories": "Tất cả danh mục",
+      "loadError": "Không thể tải bộ sưu tập"
     },
     "reviewsPage": {
       "title": "Quản lý đánh giá",
       "count": "{{count}} đánh giá",
       "search": "Tìm đánh giá...",
-      "deleted": "Đã xóa đánh giá"
+      "deleted": "Đã xóa đánh giá",
+      "allUsers": "Tất cả người dùng",
+      "allTypes": "Tất cả loại đánh giá",
+      "allProducts": "Tất cả sản phẩm",
+      "allServices": "Tất cả dịch vụ",
+      "allBarbers": "Tất cả barber",
+      "allRatings": "Tất cả số sao",
+      "productReview": "Sản phẩm",
+      "bookingReview": "Lịch hẹn",
+      "reviewType": "Loại đánh giá",
+      "target": "Đối tượng",
+      "selectDate": "Chọn ngày",
+      "loadError": "Không thể tải đánh giá",
+      "details": "Chi tiết đánh giá",
+      "order": "Đơn hàng",
+      "product": "Sản phẩm",
+      "booking": "Lịch hẹn",
+      "overallRating": "Điểm tổng",
+      "overallComment": "Nhận xét tổng",
+      "barberRating": "Điểm barber",
+      "barberComment": "Nhận xét barber",
+      "serviceRating": "Điểm dịch vụ",
+      "serviceComment": "Nhận xét dịch vụ",
+      "unknownProduct": "Sản phẩm không xác định",
+      "unknownBookingTarget": "Dịch vụ hoặc barber không xác định",
+      "starsSuffix": "sao"
     },
     "settingsPage": {
       "title": "Cài đặt",
@@ -606,7 +651,8 @@
     "editService": "Sửa dịch vụ",
     "editProduct": "Sửa sản phẩm",
     "confirmed": "Đã xác nhận",
-    "pending": "Chờ xử lý"
+    "pending": "Chờ xử lý",
+    "dashboardLoadError": "Không thể tải dashboard"
   },
   "footer": {
     "description": "Trải nghiệm chăm sóc cao cấp từ năm 2010. Nơi truyền thống gặp phong cách hiện đại.",
@@ -628,7 +674,9 @@
     "uploading": "Đang tải lên...",
     "uploadImage": "Tải ảnh lên",
     "changeImage": "Đổi ảnh",
-    "uploadFailed": "Tải ảnh thất bại"
+    "uploadFailed": "Tải ảnh thất bại",
+    "reset": "Đặt lại",
+    "selectDate": "Chọn ngày"
   },
   "notifications": {
     "title": "Thông báo",

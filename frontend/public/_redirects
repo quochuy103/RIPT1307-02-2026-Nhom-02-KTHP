@@ -1,4 +1,4 @@
-/api/*    http://e1.chiasegpu.vn:39225/api/:splat    200!
-/auth/*   http://e1.chiasegpu.vn:39225/auth/:splat   200!
-/minio/*  http://e1.chiasegpu.vn:53039/:splat        200!
+/api/*    http://160.250.5.197:8081/api/:splat                     200!
+/auth/*   http://160.250.5.197:8081/auth/:splat                    200!
+/minio/*  http://160.250.5.197:8081/api/uploads/minio-legacy/:splat 200!
 /*        /index.html                               200

@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormModal from '@/components/admin/FormModal';
 import { api } from '@/lib/api';
+import { formatAdminCurrency } from '@/lib/admin-format';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
@@ -22,7 +23,7 @@ const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'ou
 const bookingsQueryKey = ['admin', 'bookings'] as const;
 
 const AdminBookings = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('all');
   const [upcomingFilter, setUpcomingFilter] = useState<'all' | 'true'>('all');
@@ -72,7 +73,7 @@ const AdminBookings = () => {
     { key: 'barberName', label: t('admin.fields.barber') },
     { key: 'date', label: t('admin.fields.date') },
     { key: 'time', label: t('admin.fields.time') },
-    { key: 'price', label: t('admin.fields.price'), render: (b) => `${b.price.toLocaleString('vi-VN')}đ` },
+    { key: 'price', label: t('admin.fields.price'), render: (b) => formatAdminCurrency(b.price, i18n.language) },
     { key: 'status', label: t('admin.fields.status'), render: (b) => <Badge variant={statusColors[b.status.toLowerCase()] || 'outline'}>{t(`admin.status.${b.status.toLowerCase()}`)}</Badge> },
   ];
 
@@ -107,15 +108,15 @@ const AdminBookings = () => {
         <Select value={upcomingFilter} onValueChange={(value) => setUpcomingFilter(value as 'all' | 'true')}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.bookingsPage.allBookings', { defaultValue: 'Tất cả lịch hẹn' })}</SelectItem>
-            <SelectItem value="true">{t('admin.bookingsPage.upcomingOnly', { defaultValue: 'Sắp tới' })}</SelectItem>
+            <SelectItem value="all">{t('admin.bookingsPage.allBookings')}</SelectItem>
+            <SelectItem value="true">{t('admin.bookingsPage.upcomingOnly')}</SelectItem>
           </SelectContent>
         </Select>
-        <Input value={userIdFilter} onChange={(e) => setUserIdFilter(e.target.value)} placeholder={t('admin.fields.client', { defaultValue: 'User ID' })} />
+        <Input value={userIdFilter} onChange={(e) => setUserIdFilter(e.target.value)} placeholder={t('admin.bookingsPage.userIdPlaceholder')} />
         <Select value={barberIdFilter} onValueChange={setBarberIdFilter}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.bookingsPage.allBarbers', { defaultValue: 'Tất cả barber' })}</SelectItem>
+            <SelectItem value="all">{t('admin.bookingsPage.allBarbers')}</SelectItem>
             {barbers.map((barber) => (
               <SelectItem key={barber.id} value={barber.id}>{barber.name}</SelectItem>
             ))}
@@ -124,14 +125,14 @@ const AdminBookings = () => {
         <Select value={serviceIdFilter} onValueChange={setServiceIdFilter}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.bookingsPage.allServices', { defaultValue: 'Tất cả dịch vụ' })}</SelectItem>
+            <SelectItem value="all">{t('admin.bookingsPage.allServices')}</SelectItem>
             {services.map((service) => (
               <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={resetFilters}>
-          {t('common.reset', { defaultValue: 'Reset' })}
+          {t('common.reset')}
         </Button>
       </div>
 
@@ -177,7 +178,7 @@ const AdminBookings = () => {
             <p><span className="text-muted-foreground">{t('admin.fields.barber')}:</span> {viewBooking.barberName}</p>
             <p><span className="text-muted-foreground">{t('admin.fields.date')}:</span> {viewBooking.date}</p>
             <p><span className="text-muted-foreground">{t('admin.fields.time')}:</span> {viewBooking.time}</p>
-            <p><span className="text-muted-foreground">{t('admin.fields.price')}:</span> {viewBooking.price.toLocaleString('vi-VN')}đ</p>
+            <p><span className="text-muted-foreground">{t('admin.fields.price')}:</span> {formatAdminCurrency(viewBooking.price, i18n.language)}</p>
             <p><span className="text-muted-foreground">{t('admin.fields.status')}:</span> <Badge variant={statusColors[viewBooking.status.toLowerCase()] || 'outline'}>{t(`admin.status.${viewBooking.status.toLowerCase()}`)}</Badge></p>
           </div>
         )}

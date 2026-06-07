@@ -88,7 +88,7 @@ const AdminGallery = () => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.galleryPage.allCategories', { defaultValue: 'Tất cả danh mục' })}</SelectItem>
+            <SelectItem value="all">{t('admin.galleryPage.allCategories')}</SelectItem>
             <SelectItem value="fade">{t('admin.galleryPage.categories.fade')}</SelectItem>
             <SelectItem value="classic">{t('admin.galleryPage.categories.classic')}</SelectItem>
             <SelectItem value="modern">{t('admin.galleryPage.categories.modern')}</SelectItem>
@@ -96,13 +96,13 @@ const AdminGallery = () => {
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={resetFilters}>
-          {t('common.reset', { defaultValue: 'Reset' })}
+          {t('common.reset')}
         </Button>
       </div>
 
       {isError && (
         <Alert variant="destructive">
-          <AlertTitle>{t('admin.galleryPage.loadError', { defaultValue: 'Không thể tải bộ sưu tập' })}</AlertTitle>
+          <AlertTitle>{t('admin.galleryPage.loadError')}</AlertTitle>
           <AlertDescription>{error instanceof Error ? error.message : t('admin.common.loadFallback')}</AlertDescription>
         </Alert>
       )}

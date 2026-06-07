@@ -146,9 +146,9 @@ const AdminBarbers = () => {
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('admin.barbersPage.search')} />
         <Input value={specialtyFilter} onChange={(e) => setSpecialtyFilter(e.target.value)} placeholder={t('admin.fields.specialties')} />
-        <Input type="number" min="0" value={minExperienceFilter} onChange={(e) => setMinExperienceFilter(e.target.value)} placeholder={t('admin.fields.experience', { defaultValue: 'Kinh nghiệm tối thiểu' })} />
+        <Input type="number" min="0" value={minExperienceFilter} onChange={(e) => setMinExperienceFilter(e.target.value)} placeholder={t('admin.barbersPage.minExperience')} />
         <Button variant="outline" onClick={resetFilters}>
-          {t('common.reset', { defaultValue: 'Reset' })}
+          {t('common.reset')}
         </Button>
       </div>
 

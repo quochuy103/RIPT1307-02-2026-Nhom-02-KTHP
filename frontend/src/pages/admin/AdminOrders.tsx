@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormModal from '@/components/admin/FormModal';
 import { api } from '@/lib/api';
+import { formatAdminCurrency } from '@/lib/admin-format';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
 import { orderStatuses, type OrderStatus, type OrderStatusUpdate } from '@/types/order';
@@ -26,7 +27,7 @@ const statusColors: Record<OrderStatus, 'default' | 'secondary' | 'outline' | 'd
 const ordersQueryKey = ['admin', 'orders'] as const;
 
 const AdminOrders = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('all');
   const [userIdFilter, setUserIdFilter] = useState('');
@@ -64,7 +65,7 @@ const AdminOrders = () => {
   const columns: Column<AdminOrder>[] = [
     { key: 'customerName', label: t('admin.fields.customer'), render: (order) => <span className="font-medium">{order.customerName}</span> },
     { key: 'products', label: t('admin.fields.products'), render: (order) => order.products.map((product) => product.name).join(', '), searchable: false },
-    { key: 'totalPrice', label: t('admin.fields.total'), render: (order) => `${order.totalPrice.toLocaleString('vi-VN')}đ` },
+    { key: 'totalPrice', label: t('admin.fields.total'), render: (order) => formatAdminCurrency(order.totalPrice, i18n.language) },
     { key: 'address', label: t('admin.fields.address') },
     { key: 'status', label: t('admin.fields.status'), render: (order) => <Badge variant={statusColors[order.status]}>{statusLabel(order.status)}</Badge> },
     { key: 'createdAt', label: t('admin.fields.date') },
@@ -96,15 +97,15 @@ const AdminOrders = () => {
             ))}
           </SelectContent>
         </Select>
-        <Input value={userIdFilter} onChange={(e) => setUserIdFilter(e.target.value)} placeholder={t('admin.fields.customer', { defaultValue: 'User ID' })} />
+        <Input value={userIdFilter} onChange={(e) => setUserIdFilter(e.target.value)} placeholder={t('admin.ordersPage.userIdPlaceholder')} />
         <FilterDatePicker
           value={selectedDate}
           onChange={setSelectedDate}
-          placeholder={t('admin.ordersPage.selectDate', { defaultValue: 'Chọn ngày' })}
+          placeholder={t('admin.ordersPage.selectDate')}
         />
-        <Input type="number" min="0" value={totalFilter} onChange={(e) => setTotalFilter(e.target.value)} placeholder={t('admin.ordersPage.minTotal', { defaultValue: 'Tổng tiền tối thiểu' })} />
+        <Input type="number" min="0" value={totalFilter} onChange={(e) => setTotalFilter(e.target.value)} placeholder={t('admin.ordersPage.minTotal')} />
         <Button variant="outline" onClick={resetFilters}>
-          {t('common.reset', { defaultValue: 'Reset' })}
+          {t('common.reset')}
         </Button>
       </div>
 
@@ -134,10 +135,10 @@ const AdminOrders = () => {
             <div>
               <p className="mb-1 text-muted-foreground">{t('admin.fields.products')}:</p>
               {viewOrder.products.map((product, index) => (
-                <p key={index} className="ml-2">{product.name} × {product.qty} - {(product.price * product.qty).toLocaleString('vi-VN')}đ</p>
+                <p key={index} className="ml-2">{product.name} × {product.qty} - {formatAdminCurrency(product.price * product.qty, i18n.language)}</p>
               ))}
             </div>
-            <p className="font-bold">{t('admin.fields.total')}: {viewOrder.totalPrice.toLocaleString('vi-VN')}đ</p>
+            <p className="font-bold">{t('admin.fields.total')}: {formatAdminCurrency(viewOrder.totalPrice, i18n.language)}</p>
           </div>
         )}
       </FormModal>

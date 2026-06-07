@@ -12,12 +12,13 @@ import { api } from '@/lib/api';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { compareAdminText, formatAdminCurrency } from '@/lib/admin-format';
 
 const emptyService: Omit<AdminService, 'id'> = { name: '', price: 0, duration: 0, category: '', description: '' };
 const servicesQueryKey = ['admin', 'services'] as const;
 
 const AdminServices = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdminService | null>(null);
@@ -99,14 +100,14 @@ const AdminServices = () => {
   };
 
   const serviceNameOptions = Array.from(new Set(serviceOptions.map((service) => service.name).filter(Boolean)))
-    .sort((a, b) => a.localeCompare(b, 'vi'));
+    .sort((a, b) => compareAdminText(a, b, i18n.language));
   const serviceCategoryOptions = Array.from(new Set(serviceOptions.map((service) => service.category).filter(Boolean)))
-    .sort((a, b) => a.localeCompare(b, 'vi'));
+    .sort((a, b) => compareAdminText(a, b, i18n.language));
 
   const columns: Column<AdminService>[] = [
     { key: 'name', label: t('admin.fields.name'), render: (service) => <span className="font-medium">{service.name}</span> },
     { key: 'category', label: t('admin.fields.category') },
-    { key: 'price', label: t('admin.fields.price'), render: (service) => `${service.price.toLocaleString('vi-VN')}đ` },
+    { key: 'price', label: t('admin.fields.price'), render: (service) => formatAdminCurrency(service.price, i18n.language) },
     { key: 'duration', label: t('admin.fields.duration'), render: (service) => `${service.duration} ${t('services.min')}` },
   ];
 
@@ -124,7 +125,7 @@ const AdminServices = () => {
         <Select value={search} onValueChange={setSearch}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.servicesPage.search', { defaultValue: 'Tất cả dịch vụ' })}</SelectItem>
+            <SelectItem value="all">{t('admin.servicesPage.allServices')}</SelectItem>
             {serviceNameOptions.map((name) => (
               <SelectItem key={name} value={name}>{name}</SelectItem>
             ))}
@@ -133,16 +134,16 @@ const AdminServices = () => {
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('admin.common.allCategories', { defaultValue: 'Tất cả danh mục' })}</SelectItem>
+            <SelectItem value="all">{t('admin.common.allCategories')}</SelectItem>
             {serviceCategoryOptions.map((category) => (
               <SelectItem key={category} value={category}>{category}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Input type="number" min="0" value={minPriceFilter} onChange={(e) => setMinPriceFilter(e.target.value)} placeholder={t('admin.fields.price', { defaultValue: 'Giá tối thiểu' })} />
-        <Input type="number" min="0" value={minDurationFilter} onChange={(e) => setMinDurationFilter(e.target.value)} placeholder={t('admin.fields.duration', { defaultValue: 'Thời lượng tối thiểu' })} />
+        <Input type="number" min="0" value={minPriceFilter} onChange={(e) => setMinPriceFilter(e.target.value)} placeholder={t('admin.servicesPage.minPrice')} />
+        <Input type="number" min="0" value={minDurationFilter} onChange={(e) => setMinDurationFilter(e.target.value)} placeholder={t('admin.servicesPage.minDuration')} />
         <Button variant="outline" onClick={resetFilters}>
-          {t('common.reset', { defaultValue: 'Reset' })}
+          {t('common.reset')}
         </Button>
       </div>
 

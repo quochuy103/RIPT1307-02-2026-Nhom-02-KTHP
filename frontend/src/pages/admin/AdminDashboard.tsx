@@ -14,6 +14,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type { AdminBooking, AdminOrder, AdminUser } from '@/data/adminMockData';
 import { ApiError, api, type PaginatedResult } from '@/lib/api';
+import {
+  formatAdminCompactNumber,
+  formatAdminCurrency,
+  formatAdminMonthShort,
+  formatAdminNumber,
+} from '@/lib/admin-format';
 import StatsCard from '@/components/admin/StatsCard';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -84,7 +90,7 @@ const sumBookingRevenueInRange = (bookings: AdminBooking[], from: Date, to: Date
   ), 0)
 );
 
-const buildFallbackDashboard = async (): Promise<DashboardData> => {
+const buildFallbackDashboard = async (language: string): Promise<DashboardData> => {
   const [bookings, orders, users] = await Promise.all([
     fetchAllPages((page) => api.admin.getBookingsFiltered({
       page,
@@ -129,7 +135,7 @@ const buildFallbackDashboard = async (): Promise<DashboardData> => {
     const nextMonthDate = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1);
 
     return {
-      month: monthDate.toLocaleString('en-US', { month: 'short' }),
+      month: formatAdminMonthShort(monthDate, language),
       revenue: sumOrderRevenueInRange(orders, monthDate, nextMonthDate)
         + sumBookingRevenueInRange(bookings, monthDate, nextMonthDate),
       bookings: bookings.filter((booking) => isBetween(parseDateValue(booking.date), monthDate, nextMonthDate)).length,
@@ -162,7 +168,7 @@ const buildFallbackDashboard = async (): Promise<DashboardData> => {
 };
 
 const AdminDashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const { data: dashboardData, isLoading, isError, error } = useQuery({
     queryKey: ['admin', 'dashboard'],
@@ -171,7 +177,7 @@ const AdminDashboard = () => {
         return await api.admin.getDashboardStats();
       } catch (queryError) {
         if (queryError instanceof ApiError && queryError.status === 404) {
-          return buildFallbackDashboard();
+          return buildFallbackDashboard(i18n.language);
         }
 
         throw queryError;
@@ -195,7 +201,7 @@ const AdminDashboard = () => {
     return (
       <div className="space-y-2 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-destructive">
         <h3 className="text-lg font-semibold">
-          {t('admin.dashboardLoadError', { defaultValue: 'Không thể tải dashboard' })}
+          {t('admin.dashboardLoadError')}
         </h3>
         <p className="text-sm">{error instanceof Error ? error.message : t('admin.common.loadFallback')}</p>
       </div>
@@ -225,10 +231,10 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard title={t('admin.stats.totalBookings')} value={stats.totalBookings.toLocaleString()} icon={CalendarDays} growth={stats.bookingGrowth} />
-        <StatsCard title={t('admin.stats.totalRevenue')} value={`${stats.totalRevenue.toLocaleString('vi-VN')}đ`} icon={DollarSign} growth={stats.revenueGrowth} />
-        <StatsCard title={t('admin.stats.totalUsers')} value={stats.totalUsers.toLocaleString()} icon={Users} growth={stats.userGrowth} />
-        <StatsCard title={t('admin.stats.totalOrders')} value={stats.totalOrders.toLocaleString()} icon={ShoppingCart} growth={stats.orderGrowth} />
+        <StatsCard title={t('admin.stats.totalBookings')} value={formatAdminNumber(stats.totalBookings, i18n.language)} icon={CalendarDays} growth={stats.bookingGrowth} />
+        <StatsCard title={t('admin.stats.totalRevenue')} value={formatAdminCurrency(stats.totalRevenue, i18n.language)} icon={DollarSign} growth={stats.revenueGrowth} />
+        <StatsCard title={t('admin.stats.totalUsers')} value={formatAdminNumber(stats.totalUsers, i18n.language)} icon={Users} growth={stats.userGrowth} />
+        <StatsCard title={t('admin.stats.totalOrders')} value={formatAdminNumber(stats.totalOrders, i18n.language)} icon={ShoppingCart} growth={stats.orderGrowth} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -245,7 +251,9 @@ const AdminDashboard = () => {
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={11}
                   tickFormatter={(value) => (
-                    value >= 1000000 ? `${value / 1000000}M` : value.toLocaleString('vi-VN')
+                    value >= 1000000
+                      ? formatAdminCompactNumber(value, i18n.language)
+                      : formatAdminNumber(value, i18n.language)
                   )}
                 />
                 <Tooltip
@@ -255,7 +263,7 @@ const AdminDashboard = () => {
                     borderRadius: '8px',
                     color: 'hsl(var(--foreground))',
                   }}
-                  formatter={(value: number | string) => [`${Number(value).toLocaleString('vi-VN')}đ`, t('admin.stats.totalRevenue')]}
+                  formatter={(value: number | string) => [formatAdminCurrency(Number(value), i18n.language), t('admin.stats.totalRevenue')]}
                 />
                 <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" strokeWidth={2} />
               </AreaChart>

@@ -4,19 +4,19 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "http://e1.chiasegpu.vn:39225/api/:splat"
+  to = "http://160.250.5.197:8081/api/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/auth/*"
-  to = "http://e1.chiasegpu.vn:39225/auth/:splat"
+  to = "http://160.250.5.197:8081/auth/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/minio/*"
-  to = "http://e1.chiasegpu.vn:39225/api/uploads/minio-legacy/:splat"
+  to = "http://160.250.5.197:8081/api/uploads/minio-legacy/:splat"
   status = 200
   force = true
 
