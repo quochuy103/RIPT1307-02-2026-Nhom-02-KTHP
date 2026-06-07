@@ -8,22 +8,30 @@ import com.cutie_cuts_app.example.cutie_cuts_app.dto.auth.RegisterRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.auth.ResendVerificationOtpRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.auth.ResetPasswordRequest;
 import com.cutie_cuts_app.example.cutie_cuts_app.dto.auth.VerifyEmailOtpRequest;
+import com.cutie_cuts_app.example.cutie_cuts_app.entity.User;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.AuthService;
+import com.cutie_cuts_app.example.cutie_cuts_app.service.CurrentUserService;
 import com.cutie_cuts_app.example.cutie_cuts_app.service.OAuthService;
+import com.cutie_cuts_app.example.cutie_cuts_app.service.TokenRevocationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
+
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
 @RequestMapping("/auth")
@@ -32,10 +40,16 @@ public class AuthController {
 
     private final AuthService authService;
     private final OAuthService oAuthService;
+    private final TokenRevocationService tokenRevocationService;
+    private final CurrentUserService currentUserService;
 
-    public AuthController(AuthService authService, OAuthService oAuthService) {
+    public AuthController(AuthService authService, OAuthService oAuthService,
+                          TokenRevocationService tokenRevocationService,
+                          CurrentUserService currentUserService) {
         this.authService = authService;
         this.oAuthService = oAuthService;
+        this.tokenRevocationService = tokenRevocationService;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping("/register")
@@ -98,5 +112,18 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Invalid OAuth token")
     public AuthResponse oauthLogin(@RequestBody OAuthLoginRequest request) {
         return oAuthService.authenticate(request.getProvider(), request.getToken());
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Logout", description = "Revokes the current JWT token and logs the user out")
+    @ApiResponse(responseCode = "200", description = "Logged out successfully")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    public Map<String, String> logout(HttpServletRequest request, Authentication authentication) {
+        if (authentication == null) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Not authenticated");
+        }
+        User user = currentUserService.getByEmail(authentication.getName());
+        tokenRevocationService.revokeBearerToken(request.getHeader("Authorization"), user, "LOGOUT");
+        return Map.of("message", "Logged out successfully");
     }
 }

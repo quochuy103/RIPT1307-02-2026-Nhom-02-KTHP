@@ -851,7 +851,7 @@ flowchart TB
 | POST | `/api/auth/verify-email-otp` | Xác thực email OTP | Public |
 | POST | `/api/auth/resend-verification-otp` | Gửi lại OTP xác thực | Public |
 | POST | `/api/auth/change-password` | Đổi mật khẩu | USER |
-| POST | `/api/auth/logout` | Đăng xuất (thu hồi JWT) | USER |
+| POST | `/auth/logout` | Đăng xuất và thu hồi JWT | USER |
 
 #### 4.6.2. Barber APIs
 
